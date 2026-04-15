@@ -8,7 +8,7 @@
 
 ## 1. Overview
 
-**Mars Trail** is a browser-based survival/strategy game — a modernized Oregon Trail set on Mars. The player commands a 3-4 person crew on a one-way trek across the Martian surface, managing resources (O₂, water, power, food, spare parts) across ~8 landmark waypoints over ~20-30 in-game sols. Each playthrough is **15-25 minutes**, single session, auto-saved to localStorage.
+**Mars Trail** is a browser-based survival/strategy game — a modernized Oregon Trail set on Mars. The player commands a 5-6 person crew (4 specialists + 1-2 generalists/"security") on a one-way trek across the Martian surface, managing resources (O₂, water, power, food, spare parts) across ~8 landmark waypoints over ~20-30 in-game sols. Each playthrough is **15-25 minutes**, single session, auto-saved to localStorage.
 
 The game has two distinct rhythms:
 
@@ -107,12 +107,14 @@ state = {
     spareParts: 5      // discrete units
   },
 
-  // Crew (3-4 named astronauts)
+  // Crew (5-6 named astronauts: 4 specialists + 1-2 security/generalists)
   crew: [
-    { id:"c1", name:"Alex",  role:"engineer", health:100, status:"healthy", alive:true },
+    { id:"c1", name:"Alex",  role:"engineer",  health:100, status:"healthy", alive:true },
     { id:"c2", name:"Riya",  role:"biologist", health:100, status:"healthy", alive:true },
     { id:"c3", name:"Tomás", role:"medic",     health:100, status:"healthy", alive:true },
-    { id:"c4", name:"Mei",   role:"pilot",     health:100, status:"healthy", alive:true }
+    { id:"c4", name:"Mei",   role:"pilot",     health:100, status:"healthy", alive:true },
+    { id:"c5", name:"Sam",   role:"security",  health:100, status:"healthy", alive:true },
+    { id:"c6", name:"Jordan",role:"security",  health:100, status:"healthy", alive:true }
   ],
 
   // Run choices
@@ -151,8 +153,9 @@ Each returns a new state (shallow clone of changed branches). `render(state)` ru
 - **Biologist** — bonus science points on biological phenomena.
 - **Medic** — all crew damage reduced 30% while alive.
 - **Pilot** — faster travel (+10% km/sol), fewer navigation events.
+- **Security (generalist / "red shirt")** — no specialty bonus; instead, when a crew-damage outcome resolves, security is selected first if alive, absorbing damage in place of a specialist. Adds redundancy: the run can survive 1-2 deaths before specialty losses start cascading. There are 1-2 security per crew.
 
-When a specialist dies, runs become noticeably harder. That is the strategic weight of permadeath.
+When a specialist dies, runs become noticeably harder. Losing a security crew stings narratively but doesn't break a strategy. That is the strategic weight of permadeath: red shirts make the *first* death survivable, so when a specialist eventually does die, it really matters.
 
 ---
 
@@ -181,7 +184,8 @@ Five small modules, each with a clear job. All take `state` and return new `stat
 ### `crew.js` — health & death
 
 - Health 0–100 per crew member. Statuses: `healthy / injured / sick / critical / dead`.
-- `applyDamage(crew, amount, cause)` handles status transitions and logs deaths narratively ("Tomás succumbed to radiation poisoning, sol 14").
+- `applyDamage(state, targetSelector, amount, cause)` handles status transitions and logs deaths narratively ("Tomás succumbed to radiation poisoning, sol 14").
+- **Damage-target resolution order** when an outcome targets "a crew member" (rather than a named role): living security first → randomly selected specialist if no security alive. This is the red-shirt mechanic.
 - Medic alive → all damage reduced 30%.
 
 ### `experiments.js` — phenomenon encounters
@@ -220,14 +224,15 @@ Single dashboard screen, CSS Grid, mission-control aesthetic. No scene switching
 │ MARS TRAIL · MISSION CTRL              SOL 127 · 14:22 LMST      │ ← top bar
 ├──────────────────────┬───────────────────┬───────────────────────┤
 │   ROUTE / MAP        │    TELEMETRY      │      CREW             │
-│   (mini-map +        │    O2 ▓▓▓▓▓░ 78%  │   ┌─ Alex (ENG)  ●   │
-│    landmark list)    │    H2O ▓▓▓░░ 61%  │   ├─ Riya (BIO)  ●   │
-│                      │    PWR ▓▓░░░ 43%  │   ├─ Tomás(MED)  ◐   │ ← injured
-│   ▶ Jezero          │   FOOD ▓▓▓░░ 52%  │   └─ Mei (PILOT)●   │
-│     Arabia          │   PARTS    5      │                       │
-│     Meridiani       │                   │   PACE: ◯ ● ◯         │
-│     Gale            │                   │   RATIONS: ◯ ● ◯      │
-│     Olympus Base    │                   │                       │
+│   (mini-map +        │    O2 ▓▓▓▓▓░ 78%  │   ├─ Alex   (ENG) ●  │
+│    landmark list)    │    H2O ▓▓▓░░ 61%  │   ├─ Riya   (BIO) ●  │
+│                      │    PWR ▓▓░░░ 43%  │   ├─ Tomás  (MED) ◐  │ ← injured
+│   ▶ Jezero          │   FOOD ▓▓▓░░ 52%  │   ├─ Mei    (PIL) ●  │
+│     Syrtis          │   PARTS    5      │   ├─ Sam    (SEC) ●  │
+│     Arabia          │                   │   └─ Jordan (SEC) ✕  │ ← KIA sol 14
+│     Meridiani       │                   │                       │
+│     Gale            │                   │   PACE: ◯ ● ◯         │
+│     ...             │                   │   RATIONS: ◯ ● ◯      │
 ├──────────────────────┴───────────────────┴───────────────────────┤
 │   MISSION LOG                                                    │
 │   > SOL 126 · Dust storm cleared. -8% PWR.                       │
@@ -356,12 +361,17 @@ export const scenarios = {
 
 ### `content/crew-classes.js`
 
-Four roles with specialty modifiers and a stock name pool for quick-start.
+Five roles with specialty modifiers and a stock name pool for quick-start.
 
 ```js
 { role:"engineer",
   bonuses:{ repairSuccessBonus:0.3, equipmentEventChance:-0.2 },
   defaultName:"Alex Park" }
+
+{ role:"security",
+  bonuses:{ damageAbsorbPriority:1 },   // damage-target resolution prefers security first
+  defaultName:"Sam Vega",
+  countPerCrew:2 }                       // 1-2 per starting crew, vs. 1 of each specialist
 ```
 
 ### Content quantities for v1
@@ -370,7 +380,8 @@ Four roles with specialty modifiers and a stock name pool for quick-start.
 - 8 landmarks for the Trek route (~12 defined in `landmarks.js`; extras reserved for Survey/Distress)
 - ~20 events
 - ~15 phenomena
-- 4 crew classes, ~12 stock first names in a gender-neutral pool
+- 5 crew classes (engineer, biologist, medic, pilot, security), ~12 stock first names in a gender-neutral pool
+- Default starting crew: 4 specialists + 2 security = 6 total
 
 Two consecutive runs feel meaningfully different. Adding more is purely additive.
 
