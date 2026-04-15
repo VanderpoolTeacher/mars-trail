@@ -14,6 +14,7 @@ function bindDom() {
   $.rationsSeg   = document.getElementById('rations-seg');
   $.log          = document.getElementById('log');
   $.minimapPos   = document.getElementById('minimap-position');
+  $.nextSolBtn   = document.getElementById('next-sol-btn');
 }
 
 // ---------- Topbar ----------
@@ -146,6 +147,23 @@ function renderLog(state) {
   $.log.scrollTop = $.log.scrollHeight;
 }
 
+// ---------- Action bar ----------
+
+function renderActionBar(state) {
+  const btn = $.nextSolBtn;
+  if (!btn) return;
+  if (state.status === 'won') {
+    btn.textContent = '✓ MISSION COMPLETE';
+    btn.disabled = true;
+  } else if (state.status === 'lost') {
+    btn.textContent = '✕ MISSION LOST';
+    btn.disabled = true;
+  } else {
+    btn.textContent = 'NEXT SOL →';
+    btn.disabled = false;
+  }
+}
+
 // ---------- Top-level render ----------
 
 let bound = false;
@@ -157,4 +175,5 @@ export function render(state) {
   renderCrew(state);
   renderControls(state);
   renderLog(state);
+  renderActionBar(state);
 }
