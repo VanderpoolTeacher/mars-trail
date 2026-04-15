@@ -1,0 +1,88 @@
+/* Mars Trail — dashboard grid layout
+   Three top panels (route / telemetry / crew), one wide log, one action bar. */
+
+body {
+  display: flex;
+  flex-direction: column;
+}
+
+.topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 16px;
+  border-bottom: 1px solid var(--fg-faint);
+  background: var(--bg-panel);
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  color: var(--fg-dim);
+}
+
+.topbar .brand {
+  color: var(--fg);
+  text-shadow: var(--glow);
+}
+
+.topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.dashboard {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  grid-template-rows: 1fr auto auto;
+  grid-template-areas:
+    "route   telemetry crew"
+    "log     log       log"
+    "action  action    action";
+  gap: 8px;
+  padding: 8px;
+  min-height: 0;
+}
+
+.panel-route     { grid-area: route; }
+.panel-telemetry { grid-area: telemetry; }
+.panel-crew      { grid-area: crew; }
+.panel-log       { grid-area: log; }
+.actionbar       { grid-area: action; }
+
+.panel {
+  background: var(--bg-panel);
+  border: 1px solid var(--fg-faint);
+  box-shadow: var(--glow);
+  padding: 10px 14px;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.panel-title {
+  font-size: 11px;
+  color: var(--fg-dim);
+  letter-spacing: 0.2em;
+  margin-bottom: 8px;
+  border-bottom: 1px dashed var(--fg-faint);
+  padding-bottom: 4px;
+}
+
+.actionbar {
+  display: flex;
+  justify-content: center;
+  padding: 4px;
+}
+
+/* Mobile: stack vertically */
+@media (max-width: 720px) {
+  .dashboard {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "route"
+      "telemetry"
+      "crew"
+      "log"
+      "action";
+  }
+}

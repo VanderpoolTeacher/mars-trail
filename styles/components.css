@@ -1,0 +1,257 @@
+/* Mars Trail — component styles for individual panel widgets */
+
+/* ---------- Route panel ---------- */
+
+.minimap {
+  width: 100%;
+  height: 70px;
+  margin-bottom: 10px;
+  filter: drop-shadow(0 0 2px rgba(0,255,100,0.4));
+}
+
+.landmarks {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  font-size: 12px;
+}
+
+.landmark {
+  padding: 2px 4px;
+  color: var(--fg-dim);
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.landmark .marker {
+  width: 1ch;
+  color: var(--fg-faint);
+}
+
+.landmark.current {
+  color: var(--fg);
+  text-shadow: var(--glow);
+}
+
+.landmark.current .marker {
+  color: var(--warn);
+}
+
+.landmark.dest .marker {
+  color: var(--fg);
+}
+
+/* ---------- Telemetry panel ---------- */
+
+.readouts {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.readout {
+  display: grid;
+  grid-template-columns: 4em 1fr 3em;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+}
+
+.readout-label {
+  color: var(--fg-dim);
+  letter-spacing: 0.1em;
+}
+
+.readout-value {
+  text-align: right;
+  color: var(--fg);
+}
+
+.readout-value.pad {
+  font-size: 18px;
+  letter-spacing: 0.05em;
+}
+
+.bar {
+  position: relative;
+  height: 10px;
+  background: rgba(0, 255, 100, 0.06);
+  border: 1px solid var(--fg-faint);
+  overflow: hidden;
+}
+
+.bar-fill {
+  display: block;
+  height: 100%;
+  background: var(--fg);
+  box-shadow: var(--glow);
+  transition: width 250ms ease;
+}
+
+.readout.warn .bar-fill { background: var(--warn); box-shadow: 0 0 4px rgba(251, 191, 36, 0.5); }
+.readout.warn .readout-value { color: var(--warn); }
+.readout.crit .bar-fill { background: var(--crit); box-shadow: 0 0 4px rgba(239, 68, 68, 0.5); }
+.readout.crit .readout-value { color: var(--crit); }
+
+.readout.discrete {
+  grid-template-columns: 4em 1fr;
+  border-top: 1px dashed var(--fg-faint);
+  padding-top: 8px;
+}
+
+/* ---------- Crew panel ---------- */
+
+.crew-list {
+  list-style: none;
+  margin: 0 0 14px 0;
+  padding: 0;
+  font-size: 12px;
+}
+
+.crew-row {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 8px;
+  padding: 3px 4px;
+  align-items: center;
+}
+
+.crew-name {
+  color: var(--fg);
+}
+
+.crew-role {
+  color: var(--fg-faint);
+  font-size: 10px;
+  letter-spacing: 0.15em;
+}
+
+.crew-status {
+  font-size: 14px;
+  width: 14px;
+  text-align: center;
+  text-shadow: 0 0 4px currentColor;
+}
+
+.crew-status.healthy { color: var(--healthy); }
+.crew-status.injured { color: var(--warn); }
+.crew-status.critical { color: var(--crit); }
+.crew-status.dead    { color: var(--crit); opacity: 0.6; }
+
+.crew-row.dead .crew-name,
+.crew-row.dead .crew-role {
+  text-decoration: line-through;
+  opacity: 0.5;
+}
+
+/* ---------- Pace / rations controls ---------- */
+
+.controls {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 8px;
+  border-top: 1px dashed var(--fg-faint);
+}
+
+.control-group {
+  display: grid;
+  grid-template-columns: 5em 1fr;
+  align-items: center;
+  gap: 8px;
+}
+
+.control-label {
+  color: var(--fg-dim);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+}
+
+.seg {
+  display: flex;
+  border: 1px solid var(--fg-faint);
+}
+
+.seg-btn {
+  flex: 1;
+  border: none;
+  border-right: 1px solid var(--fg-faint);
+  padding: 3px 6px;
+  font-size: 10px;
+  color: var(--fg-dim);
+  letter-spacing: 0.1em;
+}
+
+.seg-btn:last-child { border-right: none; }
+
+.seg-btn.active {
+  background: rgba(0, 255, 100, 0.15);
+  color: var(--fg);
+  text-shadow: var(--glow);
+}
+
+/* ---------- Mission log ---------- */
+
+.log {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  max-height: 220px;
+  font-size: 12px;
+}
+
+.log-entry {
+  padding: 2px 4px;
+  color: var(--fg-dim);
+  display: flex;
+  gap: 10px;
+}
+
+.log-entry::before {
+  content: ">";
+  color: var(--fg-faint);
+  flex-shrink: 0;
+}
+
+.log-entry .log-sol {
+  color: var(--fg-faint);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  flex-shrink: 0;
+}
+
+.log-entry.latest {
+  color: var(--fg);
+}
+
+.cursor {
+  display: inline-block;
+  animation: blink 1s steps(2) infinite;
+  color: var(--fg);
+}
+
+@keyframes blink {
+  to { opacity: 0; }
+}
+
+/* ---------- Primary action button ---------- */
+
+.btn-primary {
+  font-size: 14px;
+  padding: 10px 32px;
+  letter-spacing: 0.2em;
+  border: 1px solid var(--fg);
+  color: var(--fg);
+  text-shadow: var(--glow);
+  box-shadow: var(--glow);
+}
+
+.btn-primary:hover {
+  background: rgba(0, 255, 100, 0.12);
+  box-shadow: var(--glow-strong);
+}

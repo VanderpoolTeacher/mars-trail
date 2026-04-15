@@ -1,0 +1,86 @@
+/* Mars Trail — Mission Control theme
+   Phosphor green on black, monospace, faint CRT vibes. */
+
+:root {
+  --bg:        #000000;
+  --bg-panel:  #020a05;
+  --grid:      rgba(0, 255, 100, 0.04);
+
+  --fg:        #00ff66;       /* primary phosphor */
+  --fg-dim:    #00aa55;       /* secondary */
+  --fg-faint:  #006633;       /* tertiary / borders */
+
+  --warn:      #fbbf24;
+  --crit:      #ef4444;
+  --healthy:   #00ff66;
+
+  --glow:      0 0 4px rgba(0, 255, 100, 0.35);
+  --glow-strong: 0 0 8px rgba(0, 255, 100, 0.55);
+
+  --font-mono: 'JetBrains Mono', 'Fira Code', ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  --font-size: 13px;
+  --line-h:    1.45;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-mono);
+  font-size: var(--font-size);
+  line-height: var(--line-h);
+  min-height: 100vh;
+  /* faint grid background */
+  background-image:
+    linear-gradient(var(--grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+
+/* CRT scanline overlay */
+.scanlines {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9999;
+  background: repeating-linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0) 0,
+    rgba(0, 0, 0, 0) 2px,
+    rgba(0, 0, 0, 0.18) 3px,
+    rgba(0, 0, 0, 0) 4px
+  );
+  mix-blend-mode: multiply;
+}
+
+h1, h2, h3 {
+  font-weight: 400;
+  letter-spacing: 0.12em;
+  color: var(--fg);
+  margin: 0;
+}
+
+button {
+  font-family: inherit;
+  font-size: inherit;
+  background: transparent;
+  color: var(--fg);
+  border: 1px solid var(--fg-faint);
+  padding: 4px 10px;
+  cursor: pointer;
+  letter-spacing: 0.1em;
+  transition: background-color 80ms ease, color 80ms ease, box-shadow 80ms ease;
+}
+
+button:hover {
+  background: rgba(0, 255, 100, 0.08);
+  box-shadow: var(--glow);
+}
+
+button:focus-visible {
+  outline: 1px solid var(--fg);
+  outline-offset: 2px;
+}

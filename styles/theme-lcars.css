@@ -1,0 +1,185 @@
+/* Mars Trail — LCARS-inspired skin (Star Trek TNG)
+   Activated via body[data-theme="lcars"]. Color/font swap only;
+   panel layout structure stays the same. */
+
+body[data-theme="lcars"] {
+  --bg:        #000000;
+  --bg-panel:  #1a0a00;          /* very dark warm */
+  --grid:      transparent;       /* no terminal grid */
+
+  --fg:        #ff9900;          /* signature LCARS orange */
+  --fg-dim:    #cc99cc;          /* mauve */
+  --fg-faint:  #99668b;          /* dim magenta */
+
+  --warn:      #ffcc00;          /* gold */
+  --crit:      #ff6666;          /* LCARS red */
+  --healthy:   #99cc99;          /* LCARS green */
+
+  --glow:        0 0 0 transparent;   /* no glow — LCARS is flat */
+  --glow-strong: 0 0 0 transparent;
+
+  --font-mono: 'Helvetica Neue', 'Arial Narrow', 'Liberation Sans Narrow', sans-serif;
+  --font-size: 14px;
+  --line-h:    1.4;
+
+  font-stretch: condensed;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  background-image: none;
+}
+
+/* No CRT scanlines in LCARS mode */
+body[data-theme="lcars"] .scanlines { display: none; }
+
+/* Headings & labels: bigger, all caps, LCARS-style */
+body[data-theme="lcars"] h1,
+body[data-theme="lcars"] h2,
+body[data-theme="lcars"] h3,
+body[data-theme="lcars"] .panel-title,
+body[data-theme="lcars"] .control-label,
+body[data-theme="lcars"] .topbar {
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  color: var(--fg);
+  text-shadow: none;
+}
+
+/* Panels: pillow corners + warm border, no glow */
+body[data-theme="lcars"] .panel {
+  border: 2px solid var(--fg);
+  border-radius: 14px;
+  background: var(--bg-panel);
+  box-shadow: none;
+}
+
+body[data-theme="lcars"] .panel-title {
+  border-bottom: 2px solid var(--fg-dim);
+  color: var(--warn);
+  font-size: 13px;
+}
+
+/* Topbar: tan strip across top */
+body[data-theme="lcars"] .topbar {
+  background: var(--fg);
+  color: #000;
+  border-bottom: 4px solid var(--warn);
+  font-size: 13px;
+  letter-spacing: 0.2em;
+  font-weight: 700;
+}
+
+body[data-theme="lcars"] .topbar .brand,
+body[data-theme="lcars"] .topbar .clock {
+  color: #000;
+  text-shadow: none;
+}
+
+/* Telemetry bars: pill-shaped */
+body[data-theme="lcars"] .bar {
+  border: none;
+  background: rgba(255, 153, 0, 0.15);
+  border-radius: 999px;
+  height: 12px;
+}
+
+body[data-theme="lcars"] .bar-fill {
+  background: var(--fg);
+  border-radius: 999px;
+  box-shadow: none;
+}
+
+body[data-theme="lcars"] .readout.warn .bar-fill { background: var(--warn); }
+body[data-theme="lcars"] .readout.crit .bar-fill { background: var(--crit); }
+
+body[data-theme="lcars"] .readout-label { color: var(--fg-dim); }
+body[data-theme="lcars"] .readout-value { color: var(--fg); }
+
+/* Buttons: pill-shaped, bold */
+body[data-theme="lcars"] button {
+  border: none;
+  background: var(--fg-dim);
+  color: #000;
+  border-radius: 999px;
+  padding: 6px 14px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  box-shadow: none;
+}
+
+body[data-theme="lcars"] button:hover {
+  background: var(--warn);
+  color: #000;
+  box-shadow: none;
+}
+
+body[data-theme="lcars"] .seg {
+  border: none;
+  gap: 4px;
+  display: flex;
+}
+
+body[data-theme="lcars"] .seg-btn {
+  border: none;
+  border-radius: 999px;
+  background: var(--fg-faint);
+  color: #000;
+  padding: 4px 10px;
+}
+
+body[data-theme="lcars"] .seg-btn.active {
+  background: var(--fg);
+  color: #000;
+  text-shadow: none;
+}
+
+body[data-theme="lcars"] .btn-primary {
+  background: var(--warn);
+  color: #000;
+  border: none;
+  padding: 12px 36px;
+  font-size: 16px;
+  text-shadow: none;
+  box-shadow: none;
+}
+
+body[data-theme="lcars"] .btn-primary:hover {
+  background: var(--fg);
+  color: #000;
+}
+
+/* Crew status colors stay the same hues but no glow */
+body[data-theme="lcars"] .crew-status { text-shadow: none; }
+body[data-theme="lcars"] .crew-name { color: var(--fg); }
+body[data-theme="lcars"] .crew-role { color: var(--fg-dim); }
+
+/* Landmarks */
+body[data-theme="lcars"] .landmark { color: var(--fg-dim); }
+body[data-theme="lcars"] .landmark.current { color: var(--warn); text-shadow: none; }
+body[data-theme="lcars"] .landmark.current .marker { color: var(--warn); }
+
+/* Mini-map: re-tint to match LCARS palette */
+body[data-theme="lcars"] .minimap {
+  filter: hue-rotate(120deg) saturate(1.4);
+}
+
+/* Log: warm, no terminal '>' prompt — LCARS uses bullets */
+body[data-theme="lcars"] .log-entry {
+  color: var(--fg-dim);
+}
+body[data-theme="lcars"] .log-entry::before {
+  content: "•";
+  color: var(--warn);
+}
+body[data-theme="lcars"] .log-entry .log-sol {
+  color: var(--fg);
+}
+body[data-theme="lcars"] .log-entry.latest { color: var(--fg); }
+body[data-theme="lcars"] .cursor { color: var(--warn); }
+
+/* Theme toggle button visual treatment */
+.theme-toggle {
+  font-size: 10px;
+  padding: 3px 10px;
+  margin-left: 12px;
+}
