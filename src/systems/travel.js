@@ -2,6 +2,7 @@
 // Pure functions. advanceSol(state) → newState.
 
 import { landmarkName } from '../state.js';
+import { rollEvent } from './events.js';
 
 // Tunable per-sol values. Balanced for a ~17-sol clean trek at steady pace.
 
@@ -102,6 +103,14 @@ export function advanceSol(state) {
     s.status = 'lost';
     s.lossReason = 'no_oxygen';
     s.log.push({ sol: s.sol, text: 'Oxygen tanks depleted. Mission lost.' });
+  }
+
+  // ---- Roll for random event (only if still active) ----
+  if (s.status === 'active') {
+    const event = rollEvent(s);
+    if (event) {
+      s.activeModal = { type: 'event', payload: event };
+    }
   }
 
   return s;

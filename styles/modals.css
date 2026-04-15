@@ -1,0 +1,269 @@
+/* Mars Trail — modal overlay (events, encounters, end-of-run) */
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.78);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+  animation: fade-in 140ms ease;
+}
+
+.modal-panel {
+  background: var(--bg-panel);
+  border: 1px solid var(--fg);
+  box-shadow: var(--glow-strong, 0 0 8px rgba(0, 255, 100, 0.55));
+  max-width: 540px;
+  width: 100%;
+  padding: 22px 26px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  font-family: var(--font-mono);
+  color: var(--fg);
+}
+
+.modal-severity {
+  font-size: 10px;
+  letter-spacing: 0.3em;
+  color: var(--warn);
+  text-transform: uppercase;
+}
+
+.modal-title {
+  font-size: 20px;
+  letter-spacing: 0.15em;
+  color: var(--fg);
+  text-shadow: var(--glow);
+  margin: 0;
+}
+
+.modal-description {
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--fg-dim);
+  margin: 0;
+  border-top: 1px dashed var(--fg-faint);
+  border-bottom: 1px dashed var(--fg-faint);
+  padding: 12px 0;
+}
+
+.modal-choices {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.modal-choice {
+  text-align: left;
+  padding: 10px 14px;
+  border: 1px solid var(--fg-faint);
+  background: transparent;
+  color: var(--fg);
+  font-size: 13px;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.modal-choice:hover {
+  background: rgba(0, 255, 100, 0.08);
+  border-color: var(--fg);
+  box-shadow: var(--glow);
+}
+
+.modal-choice-label {
+  font-size: 13px;
+  color: var(--fg);
+}
+
+.modal-choice-cost {
+  font-size: 11px;
+  color: var(--fg-dim);
+  letter-spacing: 0.08em;
+}
+
+.modal-choice-check {
+  font-size: 10px;
+  color: var(--warn);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* ---- Outcome modal (post-choice resolution screen) ---- */
+
+.outcome-chose {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 0;
+  border-bottom: 1px dashed var(--fg-faint);
+}
+
+.outcome-chose-label {
+  font-size: 10px;
+  color: var(--fg-faint);
+  letter-spacing: 0.25em;
+}
+
+.outcome-chose-value {
+  font-size: 14px;
+  color: var(--fg);
+}
+
+.outcome-skill {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  padding: 6px 10px;
+  border-left: 3px solid var(--fg-faint);
+}
+
+.outcome-skill.ok   { border-left-color: var(--healthy); color: var(--healthy); }
+.outcome-skill.fail { border-left-color: var(--crit);    color: var(--crit); }
+
+.outcome-skill-result {
+  font-weight: 700;
+  letter-spacing: 0.2em;
+}
+
+.outcome-skill-note {
+  color: var(--fg-faint);
+  font-size: 10px;
+  margin-left: auto;
+  text-transform: none;
+  letter-spacing: 0.05em;
+}
+
+.outcome-section-label {
+  font-size: 10px;
+  color: var(--fg-faint);
+  letter-spacing: 0.3em;
+  margin-top: 4px;
+}
+
+.outcome-deltas {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.outcome-delta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 12px;
+  font-size: 13px;
+  border: 1px solid var(--fg-faint);
+}
+
+.outcome-delta.neg { border-left: 3px solid var(--crit); }
+.outcome-delta.pos { border-left: 3px solid var(--healthy); }
+
+.outcome-delta-label {
+  color: var(--fg-dim);
+  letter-spacing: 0.08em;
+}
+
+.outcome-delta-value {
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  color: var(--fg);
+}
+
+.outcome-delta.neg .outcome-delta-value { color: var(--crit); }
+.outcome-delta.pos .outcome-delta-value { color: var(--healthy); }
+
+.outcome-empty {
+  color: var(--fg-dim);
+  font-style: italic;
+  margin: 0;
+  padding: 8px 0;
+}
+
+.modal-continue {
+  align-self: flex-end;
+  margin-top: 8px;
+  padding: 8px 24px;
+  letter-spacing: 0.18em;
+  border: 1px solid var(--fg);
+  color: var(--fg);
+  text-shadow: var(--glow);
+  box-shadow: var(--glow);
+}
+
+/* LCARS treatment for outcome elements */
+body[data-theme="lcars"] .outcome-skill {
+  border-left: none;
+  border-radius: 999px;
+  background: rgba(204, 153, 204, 0.15);
+  padding: 6px 14px;
+}
+body[data-theme="lcars"] .outcome-skill.ok   { background: rgba(153, 204, 153, 0.20); color: #99cc99; }
+body[data-theme="lcars"] .outcome-skill.fail { background: rgba(255, 102, 102, 0.20); color: var(--crit); }
+
+body[data-theme="lcars"] .outcome-delta {
+  border: none;
+  border-radius: 999px;
+  background: rgba(255, 153, 0, 0.10);
+}
+body[data-theme="lcars"] .outcome-delta.neg { background: rgba(255, 102, 102, 0.15); }
+body[data-theme="lcars"] .outcome-delta.pos { background: rgba(153, 204, 153, 0.15); }
+
+body[data-theme="lcars"] .modal-continue {
+  background: var(--warn);
+  color: #000;
+  border: none;
+  border-radius: 999px;
+  text-shadow: none;
+  box-shadow: none;
+  padding: 10px 30px;
+}
+
+/* ---- LCARS modal overrides ---- */
+
+body[data-theme="lcars"] .modal-panel {
+  border: 2px solid var(--fg);
+  border-radius: 14px;
+  box-shadow: none;
+}
+
+body[data-theme="lcars"] .modal-title {
+  color: var(--warn);
+  text-shadow: none;
+}
+
+body[data-theme="lcars"] .modal-choice {
+  border-radius: 999px;
+  background: var(--fg-dim);
+  color: #000;
+  border: none;
+  padding: 10px 18px;
+}
+
+body[data-theme="lcars"] .modal-choice:hover {
+  background: var(--warn);
+  color: #000;
+  box-shadow: none;
+}
+
+body[data-theme="lcars"] .modal-choice-label,
+body[data-theme="lcars"] .modal-choice-cost,
+body[data-theme="lcars"] .modal-choice-check {
+  color: #000;
+}
