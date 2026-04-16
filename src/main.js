@@ -7,9 +7,21 @@ import { advanceSol, setPace, setRations, repairBattery, cleanPanels } from './s
 import { applyEventChoice } from './systems/events.js';
 import { showEventModal, showOutcomeModal, showBriefingModal, showLoadoutModal, showTitleModal, closeModal } from './ui/modals.js';
 import './ui/codex.js';   // registers global click handler for codex terms
+import { GAMEPLAY_TRACKS, getSelectedTrackId, isMuted, playTitle, playGameplay, selectTrack, toggleMute, fadeOut, fadeInGameplay, cycleTrack } from './audio.js';
 
 let state = createInitialState();
 renderAll();
+
+// Try playing title music immediately. If browser blocks autoplay,
+// a one-time interaction listener picks it up.
+playTitle();
+function unlockAudio() {
+  playTitle();
+  document.removeEventListener('click', unlockAudio);
+  document.removeEventListener('keydown', unlockAudio);
+}
+document.addEventListener('click', unlockAudio);
+document.addEventListener('keydown', unlockAudio);
 
 // ---- NEXT SOL ----
 document.getElementById('next-sol-btn').addEventListener('click', () => {
@@ -60,6 +72,7 @@ function renderAll() {
 
   if (modal.type === 'title') {
     showTitleModal(() => {
+      playTitle();   // first user click unlocks audio → title theme starts
       state = { ...state, activeModal: { type: 'briefing' } };
       renderAll();
     });
@@ -78,17 +91,29 @@ function renderAll() {
     const initial = {};
     PART_TYPES.forEach(t => { initial[t.key] = state.resources[t.key] ?? t.default ?? 0; });
     showLoadoutModal(initial, CARGO_BUDGET, PART_TYPES, (picked) => {
-      const resources = { ...state.resources };
-      for (const t of PART_TYPES) {
-        if (t.supply) {
-          resources[t.supply.resource] += picked[t.key] * t.supply.perUnit;
-        } else {
-          resources[t.key] = picked[t.key];
+      // Cinematic transition: fade audio + screen to black, switch, fade in.
+      const overlay = document.getElementById('transition-overlay');
+      overlay.classList.add('active');
+      fadeOut(2500);
+
+      setTimeout(() => {
+        const resources = { ...state.resources };
+        for (const t of PART_TYPES) {
+          if (t.supply) {
+            resources[t.supply.resource] += picked[t.key] * t.supply.perUnit;
+          } else {
+            resources[t.key] = picked[t.key];
+          }
         }
-      }
-      state = { ...state, resources, activeModal: null };
-      closeModal();
-      renderAll();
+        state = { ...state, resources, activeModal: null };
+        closeModal();
+        renderAll();
+
+        setTimeout(() => {
+          overlay.classList.remove('active');
+          fadeInGameplay(1500);
+        }, 400);
+      }, 2600);
     });
     return;
   }
@@ -109,6 +134,43 @@ function renderAll() {
 
   closeModal();
 }
+
+// ---- Music controls ----
+const musicSelect = document.getElementById('music-select');
+const musicMute   = document.getElementById('music-mute');
+
+// Populate track selector.
+GAMEPLAY_TRACKS.forEach(t => {
+  const opt = document.createElement('option');
+  opt.value = t.id;
+  opt.textContent = t.name;
+  musicSelect.appendChild(opt);
+});
+musicSelect.value = getSelectedTrackId();
+musicMute.textContent = isMuted() ? '🔇' : '🔊';
+musicMute.classList.toggle('muted', isMuted());
+
+musicSelect.addEventListener('change', () => {
+  selectTrack(musicSelect.value);
+});
+
+musicMute.addEventListener('click', () => {
+  const muted = toggleMute();
+  musicMute.textContent = muted ? '🔇' : '🔊';
+  musicMute.classList.toggle('muted', muted);
+});
+
+// Up/down arrows cycle gameplay tracks.
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+    // Don't hijack arrows when a select/input is focused.
+    if (document.activeElement && (document.activeElement.tagName === 'SELECT' || document.activeElement.tagName === 'INPUT')) return;
+    e.preventDefault();
+    const dir = e.key === 'ArrowUp' ? -1 : 1;
+    const newId = cycleTrack(dir);
+    musicSelect.value = newId;
+  }
+});
 
 // Expose for browser-console inspection.
 window.__marsTrail = {

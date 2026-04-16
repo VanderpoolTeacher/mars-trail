@@ -16,6 +16,10 @@
   <header class="topbar">
     <span class="brand">MARS TRAIL · MISSION CTRL</span>
     <span class="topbar-right">
+      <span class="music-controls">
+        <select id="music-select" title="Select track"></select>
+        <button id="music-mute" type="button" title="Mute/unmute music">🔊</button>
+      </span>
       <span class="clock" id="clock">SOL 1 · 00:00 LMST</span>
       <button id="theme-toggle-btn" class="theme-toggle" type="button">TNG SKIN</button>
     </span>
@@ -25,6 +29,7 @@
 
     <section class="panel panel-route" aria-label="Route">
       <h2 class="panel-title">ROUTE</h2>
+      <div class="route-image" id="route-image"></div>
       <svg class="minimap" viewBox="0 0 200 100" aria-hidden="true">
         <rect x="0" y="0" width="200" height="100" fill="#001a0a" stroke="#0a8" stroke-width="0.5"/>
         <!-- base route: dashed, represents unvisited path -->
@@ -78,6 +83,7 @@
   </main>
 
   <div id="modal-root"></div>
+  <div id="transition-overlay" class="transition-overlay"></div>
 
   <script type="module" src="src/theme.js"></script>
   <script type="module" src="src/main.js"></script>

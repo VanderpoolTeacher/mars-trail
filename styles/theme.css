@@ -90,6 +90,21 @@ button:disabled {
   cursor: not-allowed;
 }
 
+.transition-overlay {
+  position: fixed;
+  inset: 0;
+  background: #000;
+  z-index: 5000;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 2.5s ease;
+}
+
+.transition-overlay.active {
+  opacity: 1;
+  pointer-events: all;
+}
+
 button:disabled:hover {
   background: transparent;
   box-shadow: none;

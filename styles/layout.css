@@ -29,14 +29,51 @@ body {
   gap: 12px;
 }
 
+.music-controls {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+#music-select {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  background: transparent;
+  color: var(--fg-dim);
+  border: 1px solid var(--fg-faint);
+  padding: 2px 4px;
+  cursor: pointer;
+  max-width: 140px;
+}
+
+#music-select:focus { outline: 1px solid var(--fg); }
+
+#music-select option {
+  background: var(--bg);
+  color: var(--fg);
+}
+
+#music-mute {
+  font-size: 12px;
+  padding: 1px 5px;
+  border: 1px solid var(--fg-faint);
+  line-height: 1;
+  min-width: 0;
+}
+
+#music-mute.muted {
+  opacity: 0.45;
+}
+
 .dashboard {
   flex: 1;
   display: grid;
   grid-template-columns: 1fr 1fr 1fr;
-  grid-template-rows: 1fr auto auto;
+  grid-template-rows: 1fr 1fr auto;
   grid-template-areas:
     "route   telemetry crew"
-    "log     log       log"
+    "route   log       log"
     "action  action    action";
   gap: 8px;
   padding: 8px;
@@ -76,10 +113,15 @@ body {
   padding: 4px;
 }
 
+.panel-route {
+  overflow-y: auto;
+}
+
 /* Mobile: stack vertically */
 @media (max-width: 720px) {
   .dashboard {
     grid-template-columns: 1fr;
+    grid-template-rows: auto;
     grid-template-areas:
       "route"
       "telemetry"

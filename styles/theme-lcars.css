@@ -186,6 +186,12 @@ body[data-theme="lcars"] .landmark { color: var(--fg-dim); }
 body[data-theme="lcars"] .landmark.current { color: var(--warn); text-shadow: none; }
 body[data-theme="lcars"] .landmark.current .marker { color: var(--warn); }
 
+/* Route image in LCARS */
+body[data-theme="lcars"] .route-image {
+  border-radius: 10px;
+  margin-bottom: 12px;
+}
+
 /* Mini-map: gold landmarks to match LCARS palette. Drop the hue-rotate hack
    and color everything via explicit fills. */
 body[data-theme="lcars"] .minimap           { filter: none; }

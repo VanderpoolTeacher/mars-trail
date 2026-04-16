@@ -62,7 +62,6 @@ export function makeLandmarkEncounter(landmarkId) {
     id: 'landmark_' + landmarkId,
     severity: 'landmark',
     isLandmark: true,
-    image: entry.image || null,
     modal: {
       title: `Arrival — ${entry.name}`,
       description: entry.flavor + ' Dedicate this sol to:',

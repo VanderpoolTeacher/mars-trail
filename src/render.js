@@ -2,6 +2,7 @@
 // Each renderer is idempotent: pass current state, DOM reflects it.
 
 import { landmarkName, ROLE_CODE, RESOURCE_LABELS } from './state.js';
+import { LANDMARKS } from './content/landmarks.js';
 
 // Cache DOM lookups once on init.
 const $ = {};
@@ -14,6 +15,7 @@ function bindDom() {
   $.rationsSeg   = document.getElementById('rations-seg');
   $.log          = document.getElementById('log');
   $.minimapPos   = document.getElementById('minimap-position');
+  $.routeImage   = document.getElementById('route-image');
   $.minimapPath  = document.getElementById('minimap-path');
   $.minimapTrail = document.getElementById('minimap-trail');
   $.minimapLands = document.getElementById('minimap-landmarks');
@@ -44,6 +46,19 @@ function renderRoute(state) {
     return `<li class="${cls.join(' ')}"><span class="marker">${marker}</span> ${landmarkName(id)}</li>`;
   }).join('');
   $.landmarks.innerHTML = items;
+
+  // Route image: show current landmark photo.
+  if ($.routeImage) {
+    const lid = state.route[state.currentLandmarkIndex];
+    const lm = LANDMARKS[lid];
+    if (lm && lm.image) {
+      $.routeImage.innerHTML =
+        `<img src="${lm.image}" alt="${lm.name}">` +
+        `<span class="route-image-label">${lm.name.toUpperCase()}</span>`;
+    } else {
+      $.routeImage.innerHTML = '';
+    }
+  }
 
   renderMinimap(state);
 }
