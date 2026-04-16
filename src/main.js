@@ -5,7 +5,8 @@ import { createInitialState, CARGO_BUDGET, PART_TYPES } from './state.js';
 import { render } from './render.js';
 import { advanceSol, setPace, setRations, repairBattery, cleanPanels } from './systems/travel.js';
 import { applyEventChoice } from './systems/events.js';
-import { showEventModal, showOutcomeModal, showBriefingModal, showLoadoutModal, closeModal } from './ui/modals.js';
+import { showEventModal, showOutcomeModal, showBriefingModal, showLoadoutModal, showTitleModal, closeModal } from './ui/modals.js';
+import './ui/codex.js';   // registers global click handler for codex terms
 
 let state = createInitialState();
 renderAll();
@@ -57,6 +58,14 @@ function renderAll() {
   const modal = state.activeModal;
   if (!modal) { closeModal(); return; }
 
+  if (modal.type === 'title') {
+    showTitleModal(() => {
+      state = { ...state, activeModal: { type: 'briefing' } };
+      renderAll();
+    });
+    return;
+  }
+
   if (modal.type === 'briefing') {
     showBriefingModal(() => {
       state = { ...state, activeModal: { type: 'loadout' } };
@@ -66,17 +75,18 @@ function renderAll() {
   }
 
   if (modal.type === 'loadout') {
-    const initial = {
-      mech: state.resources.mech,
-      eva:  state.resources.eva,
-      cell: state.resources.cell
-    };
+    const initial = {};
+    PART_TYPES.forEach(t => { initial[t.key] = state.resources[t.key] ?? t.default ?? 0; });
     showLoadoutModal(initial, CARGO_BUDGET, PART_TYPES, (picked) => {
-      state = {
-        ...state,
-        resources: { ...state.resources, ...picked },
-        activeModal: null
-      };
+      const resources = { ...state.resources };
+      for (const t of PART_TYPES) {
+        if (t.supply) {
+          resources[t.supply.resource] += picked[t.key] * t.supply.perUnit;
+        } else {
+          resources[t.key] = picked[t.key];
+        }
+      }
+      state = { ...state, resources, activeModal: null };
       closeModal();
       renderAll();
     });

@@ -121,12 +121,14 @@ function renderTelemetry(state) {
   const r = state.resources;
   const rows = [];
   for (const key of ['oxygen','water','power','food','panels']) {
-    const v = Math.max(0, Math.min(100, Math.round(r[key])));
-    const band = bandFor(v);
+    const v = Math.max(0, Math.round(r[key]));
+    const barWidth = Math.min(100, v);
+    const band = bandFor(Math.min(100, v));
+    const over = v > 100 ? ' over' : '';
     rows.push(`
-      <li class="readout ${band}">
+      <li class="readout ${band}${over}">
         <span class="readout-label">${RESOURCE_LABELS[key]}</span>
-        <span class="bar"><span class="bar-fill" style="width:${v}%"></span></span>
+        <span class="bar"><span class="bar-fill" style="width:${barWidth}%"></span></span>
         <span class="readout-value">${v}%</span>
       </li>
     `);

@@ -121,6 +121,146 @@
   to   { opacity: 1; }
 }
 
+/* ---- Title screen ---- */
+
+.title-backdrop {
+  background: #000;
+  flex-direction: column;
+}
+
+.title-screen {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+  text-align: center;
+  max-width: 580px;
+  padding: 40px 20px;
+  animation: title-fade-in 1.2s ease;
+}
+
+.title-mars-glyph {
+  font-size: 72px;
+  color: #c86b3c;
+  text-shadow:
+    0 0 30px rgba(200, 107, 60, 0.6),
+    0 0 60px rgba(200, 107, 60, 0.3);
+  margin-bottom: 16px;
+  animation: title-pulse 3s ease-in-out infinite;
+}
+
+.title-heading {
+  font-family: var(--font-mono);
+  font-size: 56px;
+  font-weight: 400;
+  letter-spacing: 0.45em;
+  color: var(--fg);
+  text-shadow: var(--glow-strong);
+  margin: 0 0 12px 0;
+  line-height: 1;
+}
+
+.title-tagline {
+  font-size: 13px;
+  color: var(--fg-dim);
+  letter-spacing: 0.12em;
+  margin: 0 0 40px 0;
+  font-style: italic;
+}
+
+.title-start {
+  font-family: var(--font-mono);
+  font-size: 16px;
+  letter-spacing: 0.3em;
+  padding: 14px 48px;
+  border: 1px solid var(--fg);
+  background: rgba(0, 255, 100, 0.08);
+  color: var(--fg);
+  text-shadow: var(--glow);
+  box-shadow: var(--glow);
+  cursor: pointer;
+  margin-bottom: 48px;
+  transition: background 120ms, box-shadow 120ms;
+}
+
+.title-start:hover {
+  background: rgba(0, 255, 100, 0.18);
+  box-shadow: var(--glow-strong);
+}
+
+.title-credits {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  letter-spacing: 0.15em;
+  color: var(--fg-dim);
+}
+
+.title-credit-line {
+  font-size: 10px;
+  letter-spacing: 0.3em;
+  color: var(--fg-faint);
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+
+.title-studio {
+  color: var(--fg);
+  font-size: 14px;
+  letter-spacing: 0.18em;
+  text-shadow: var(--glow);
+}
+
+.title-ampersand {
+  color: var(--fg-faint);
+  font-size: 11px;
+  letter-spacing: 0.2em;
+}
+
+.title-version {
+  margin-top: 24px;
+  font-size: 10px;
+  letter-spacing: 0.3em;
+  color: var(--fg-faint);
+}
+
+@keyframes title-fade-in {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes title-pulse {
+  0%, 100% { opacity: 0.8; transform: scale(1); }
+  50%      { opacity: 1;   transform: scale(1.05); }
+}
+
+/* LCARS title */
+body[data-theme="lcars"] .title-backdrop { background: #000; }
+body[data-theme="lcars"] .title-mars-glyph {
+  color: var(--fg);
+  text-shadow: 0 0 30px rgba(255, 153, 0, 0.5), 0 0 60px rgba(255, 153, 0, 0.25);
+}
+body[data-theme="lcars"] .title-heading {
+  color: var(--warn);
+  text-shadow: none;
+  font-weight: 700;
+}
+body[data-theme="lcars"] .title-start {
+  background: var(--warn);
+  color: #000;
+  border: none;
+  border-radius: 999px;
+  text-shadow: none;
+  box-shadow: none;
+  font-weight: 700;
+}
+body[data-theme="lcars"] .title-start:hover {
+  background: var(--fg);
+}
+body[data-theme="lcars"] .title-studio { color: var(--fg); text-shadow: none; }
+
 /* ---- Loadout picker ---- */
 
 .loadout-panel {
@@ -464,6 +604,108 @@ body[data-theme="lcars"] .outcome-fact {
   background: rgba(255, 204, 0, 0.14);
 }
 body[data-theme="lcars"] .outcome-fact-label { color: var(--warn); text-shadow: none; }
+
+/* ---- Codex: clickable inline terms + popup ---- */
+
+.codex-term {
+  color: var(--fg);
+  text-decoration: underline;
+  text-decoration-style: dotted;
+  text-underline-offset: 2px;
+  cursor: pointer;
+  transition: color 80ms, text-shadow 80ms;
+}
+
+.codex-term:hover,
+.codex-term:focus-visible {
+  text-shadow: var(--glow);
+  text-decoration-style: solid;
+}
+
+.codex-popup {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 2000;
+  max-width: 440px;
+  width: 92%;
+  background: var(--bg-panel, #020a05);
+  border: 1px solid var(--fg);
+  box-shadow: 0 0 20px rgba(0, 255, 100, 0.25), 0 8px 32px rgba(0, 0, 0, 0.7);
+  font-family: var(--font-mono);
+  color: var(--fg);
+  animation: fade-in 100ms ease;
+}
+
+.codex-popup-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 14px;
+  background: rgba(0, 255, 100, 0.08);
+  border-bottom: 1px dashed var(--fg-faint);
+}
+
+.codex-popup-title {
+  font-size: 12px;
+  letter-spacing: 0.25em;
+  color: var(--fg);
+  text-shadow: var(--glow);
+}
+
+.codex-popup-close {
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--fg-dim);
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.codex-popup-close:hover {
+  color: var(--fg);
+  background: transparent;
+  box-shadow: none;
+}
+
+.codex-popup-body {
+  padding: 12px 14px;
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--fg-dim);
+}
+
+/* LCARS codex */
+body[data-theme="lcars"] .codex-term {
+  color: var(--warn);
+  text-decoration-color: var(--warn);
+}
+
+body[data-theme="lcars"] .codex-popup {
+  border: 2px solid var(--fg);
+  border-radius: 14px;
+  box-shadow: none;
+}
+
+body[data-theme="lcars"] .codex-popup-header {
+  background: var(--fg);
+  border-bottom: none;
+  border-radius: 12px 12px 0 0;
+}
+
+body[data-theme="lcars"] .codex-popup-title {
+  color: #000;
+  text-shadow: none;
+}
+
+body[data-theme="lcars"] .codex-popup-close {
+  color: #000;
+}
 
 .modal-continue {
   align-self: flex-end;

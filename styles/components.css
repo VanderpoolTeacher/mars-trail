@@ -103,6 +103,8 @@
 .readout.warn .readout-value { color: var(--warn); }
 .readout.crit .bar-fill { background: var(--crit); box-shadow: 0 0 4px rgba(239, 68, 68, 0.5); }
 .readout.crit .readout-value { color: var(--crit); }
+.readout.over .readout-value { color: #7df; }
+.readout.over .bar-fill { box-shadow: 0 0 6px rgba(125, 220, 255, 0.5); }
 
 .readout.discrete {
   grid-template-columns: 4em 1fr;

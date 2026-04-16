@@ -39,17 +39,17 @@ export function createInitialState() {
     kmToNextLandmark: TREK_ROUTE.kms[0],
     totalKmTraveled: 0,
 
-    // Resources (% except parts; parts are discrete by type)
-    // Default loadout — player can rebalance in the pre-mission loadout modal.
+    // Resources. % values (except panels which is efficiency, and parts which
+    // are discrete). Base levels are lower — supply loadout items bring them up.
     resources: {
-      oxygen: 100,
-      water:  100,
+      oxygen: 84,     // base; +8% per O₂ canister in loadout
+      water:  84,     // base; +8% per H₂O tank
       power:  100,
-      food:   100,
-      panels: 100,   // solar panel efficiency 0-100; multiplies solar recharge
-      mech: 4,
-      eva:  3,
-      cell: 3
+      food:   76,     // base; +8% per ration pack
+      panels: 100,
+      mech: 3,
+      eva:  2,
+      cell: 2
     },
 
     // Crew (4 specialists + 2 security)
@@ -73,21 +73,33 @@ export function createInitialState() {
       { sol: 1, text: 'Mission begins. Crew nominal. Departing Jezero Crater.' }
     ],
 
-    // UI ephemeral — open with the mission briefing, then the loadout picker.
-    activeModal: { type: 'briefing' }
+    // UI ephemeral — open with the title screen, then briefing, then loadout.
+    activeModal: { type: 'title' }
   };
 }
 
 // Cargo budget / loadout constants shared between state and UI.
-export const CARGO_BUDGET = 10;
+export const CARGO_BUDGET = 14;
 export const PART_TYPES = [
-  { key: 'mech', label: 'MECH',
+  { key: 'rations', label: 'FOOD', default: 3,
+    name:  'Ration Packs',
+    desc:  'Each pack adds +8% starting food. More packs = longer before starvation.',
+    supply: { resource: 'food', perUnit: 8 } },
+  { key: 'h2o', label: 'H₂O', default: 2,
+    name:  'Water Tanks',
+    desc:  'Each tank adds +8% starting water reserve.',
+    supply: { resource: 'water', perUnit: 8 } },
+  { key: 'o2', label: 'O₂', default: 2,
+    name:  'Oxygen Canisters',
+    desc:  'Each canister adds +8% starting oxygen.',
+    supply: { resource: 'oxygen', perUnit: 8 } },
+  { key: 'mech', label: 'MECH', default: 3,
     name:  'Mechanical Parts',
     desc:  'Bearings, gears, drill bits. Rover repair, mining, most events.' },
-  { key: 'eva',  label: 'EVA',
+  { key: 'eva',  label: 'EVA', default: 2,
     name:  'EVA Supplies',
     desc:  'Patches, tethers, O₂ lines. External work, climbs, cave descents.' },
-  { key: 'cell', label: 'CELL',
+  { key: 'cell', label: 'CELL', default: 2,
     name:  'Power Cells',
     desc:  'Battery modules. Consumed by REPAIR to restore +25% PWR.' }
 ];

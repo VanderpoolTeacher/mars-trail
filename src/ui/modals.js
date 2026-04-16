@@ -2,6 +2,8 @@
 // Renders the active modal (event/encounter/end-of-run) into #modal-root.
 // On choice, calls onChoose(choiceIdx) which the caller wires to apply outcomes.
 
+import { linkifyCodex } from './codex.js';
+
 const root = () => document.getElementById('modal-root');
 
 export function showEventModal(event, onChoose) {
@@ -30,7 +32,7 @@ export function showEventModal(event, onChoose) {
       <div class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="modal-title">
         <div class="modal-severity severity-${severity}">${severity}</div>
         <h2 class="modal-title" id="modal-title">${escapeHtml(event.modal.title)}</h2>
-        <p class="modal-description">${escapeHtml(event.modal.description)}</p>
+        <p class="modal-description">${linkifyCodex(escapeHtml(event.modal.description))}</p>
         <div class="modal-choices">${choicesHtml}</div>
       </div>
     </div>
@@ -76,7 +78,7 @@ export function showOutcomeModal(resolution, onContinue) {
   const factBlock = (outcome && outcome.fact) ? `
     <div class="outcome-fact">
       <div class="outcome-fact-label">⎋ DATA LOGGED · MARS SCIENCE</div>
-      <p class="outcome-fact-body">${escapeHtml(outcome.fact)}</p>
+      <p class="outcome-fact-body">${linkifyCodex(escapeHtml(outcome.fact))}</p>
     </div>` : '';
 
   r.innerHTML = `
@@ -98,6 +100,32 @@ export function showOutcomeModal(resolution, onContinue) {
   `;
 
   r.querySelector('.modal-continue').addEventListener('click', onContinue);
+}
+
+// Title screen — game branding + studio credits.
+export function showTitleModal(onStart) {
+  const r = root();
+  if (!r) return;
+
+  r.innerHTML = `
+    <div class="modal-backdrop title-backdrop">
+      <div class="title-screen">
+        <div class="title-mars-glyph" aria-hidden="true">◉</div>
+        <h1 class="title-heading">MARS TRAIL</h1>
+        <p class="title-tagline">The colony is waiting. Earth cannot help you from here.</p>
+        <button class="title-start" id="title-start" type="button">START MISSION</button>
+        <div class="title-credits">
+          <span class="title-credit-line">Created by</span>
+          <span class="title-studio">Get Good Games and Tech</span>
+          <span class="title-ampersand">&amp;</span>
+          <span class="title-studio">Infinite Monkeys</span>
+        </div>
+        <div class="title-version">v0.1 · 2026</div>
+      </div>
+    </div>
+  `;
+
+  r.querySelector('#title-start').addEventListener('click', onStart);
 }
 
 // Cargo loadout picker shown before the briefing. Player distributes a
@@ -135,7 +163,7 @@ export function showLoadoutModal(initial, budget, partTypes, onConfirm) {
       <div class="modal-panel loadout-panel" role="dialog" aria-modal="true" aria-labelledby="loadout-title">
         <div class="modal-severity severity-landmark">CARGO LOADOUT</div>
         <h2 class="modal-title" id="loadout-title">MOTV Cargo Manifest</h2>
-        <p class="modal-description">The <em>Carl Sagan</em> has finite hold space. Distribute <strong>${budget} cargo slots</strong> across the three part classes. Your choices shape which events you can handle in the field.</p>
+        <p class="modal-description">The <em>Carl Sagan</em> has finite hold space. Distribute <strong>${budget} cargo slots</strong> across supplies and spare parts. More parts means more repair capacity — but heavier cargo drains power faster.</p>
 
         <div class="loadout-rows">
           ${partTypes.map(rowHtml).join('')}
@@ -208,7 +236,7 @@ export function showBriefingModal(onBegin) {
         </div>
         <div class="briefing-body">
           <p>Descent successful. MOTV <em>Carl Sagan</em> is nominal on the crater floor, fifty meters forward of the vented descent module.</p>
-          <p>Ahead of you: 2,550 kilometers across the Syrtis basalts, the hematite plains of Meridiani, the layered sediments of Gale, the quake fields of Elysium, and up through the Tharsis uplift to the colony foundation site on Olympus Mons.</p>
+          <p>${linkifyCodex('Ahead of you: 2,550 kilometers across the Syrtis Major basalts, the hematite plains of Meridiani Planum, the layered sediments of Gale Crater, the quake fields of Elysium Planitia, and up through the Tharsis uplift to the colony foundation site on Olympus Mons.')}</p>
           <div class="briefing-roster">
             <div class="briefing-roster-title">CREW MANIFEST — 6 SOULS</div>
             <div class="briefing-roster-row"><span>ALEX PARK</span>         <span>Chief Engineer</span></div>

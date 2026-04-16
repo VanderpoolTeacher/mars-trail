@@ -52,6 +52,7 @@ const NO_POWER_DAMAGE        = 8;    // life support failure when batteries dead
 const REPAIR_POWER_GAIN      = 25;
 const REPAIR_CELL_COST       = 1;    // one power cell per REPAIR
 const CLEAN_EVA_COST         = 1;    // one EVA kit per panel cleaning
+const CARGO_WEIGHT_POWER     = 0.15; // +PWR drain per sol per part carried (lighter = faster)
 
 const PILOT_KM_BONUS = 0.10;   // +10% travel if pilot alive
 const NO_PILOT_VARIANCE_MULT = 1.5;   // wider day-to-day swings without a pilot
@@ -85,14 +86,14 @@ export function advanceSol(state, mode = 'travel') {
   }
 
   // ---- Resource consumption (life support always; travel power only when moving) ----
-  s.resources.oxygen = clamp(s.resources.oxygen - O2_PER_SOL,              0, 100);
-  s.resources.water  = clamp(s.resources.water  - H2O_PER_SOL,             0, 100);
-  s.resources.food   = clamp(s.resources.food   - FOOD_PER_SOL[s.rations], 0, 100);
+  s.resources.oxygen = Math.max(0, s.resources.oxygen - O2_PER_SOL);
+  s.resources.water  = Math.max(0, s.resources.water  - H2O_PER_SOL);
+  s.resources.food   = Math.max(0, s.resources.food   - FOOD_PER_SOL[s.rations]);
 
-  // Net power: travel-power consumption (if any) plus solar recharge
-  // (scaled by panel efficiency). Repair adds power on top.
-  const panelMult = s.resources.panels / 100;
-  let powerDelta  = SOLAR_RECHARGE_PER_SOL * panelMult;
+  // Net power: travel-power + cargo weight penalty + solar recharge (×panel efficiency).
+  const panelMult   = s.resources.panels / 100;
+  const cargoWeight = (s.resources.mech + s.resources.eva + s.resources.cell) * CARGO_WEIGHT_POWER;
+  let powerDelta    = SOLAR_RECHARGE_PER_SOL * panelMult - cargoWeight;
   if (mode === 'travel' && !powerDead) powerDelta -= POWER_PER_SOL[s.pace];
   if (mode === 'repair') {
     powerDelta += REPAIR_POWER_GAIN;
@@ -105,7 +106,7 @@ export function advanceSol(state, mode = 'travel') {
     // Natural wind cleaning a bit each sol (tops out at 100).
     s.resources.panels = clamp(s.resources.panels + PANEL_WIND_RECOVERY, 0, 100);
   }
-  s.resources.power = clamp(s.resources.power + powerDelta, 0, 100);
+  s.resources.power = clamp(s.resources.power + powerDelta, 0, 200);
 
   // ---- Crew health drain (can now kill) ----
   // Snapshot ids first so applyDamage's new crew array doesn't break iteration.
