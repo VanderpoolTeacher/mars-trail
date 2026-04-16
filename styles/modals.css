@@ -24,20 +24,26 @@
   gap: 16px;
   font-family: var(--font-mono);
   color: var(--fg);
+  overflow: hidden;
 }
 
 /* Modal header image (NASA photos for landmarks + some events) */
+.modal-panel.has-image {
+  padding-top: 0;
+}
+
 .modal-image {
   position: relative;
-  margin: -22px -26px 16px -26px;
+  margin: 0 -26px 8px -26px;
+  height: 160px;
   overflow: hidden;
-  max-height: 180px;
+  flex-shrink: 0;
 }
 
 .modal-image img {
   display: block;
   width: 100%;
-  height: 180px;
+  height: 100%;
   object-fit: cover;
   filter: saturate(0.7) brightness(0.85);
 }
@@ -51,14 +57,13 @@
   color: rgba(255, 255, 255, 0.5);
 }
 
-.modal-panel.has-image {
+body[data-theme="lcars"] .modal-panel.has-image {
   padding-top: 0;
 }
 
 body[data-theme="lcars"] .modal-image {
-  margin: -22px -26px 16px -26px;
+  margin: 0 -26px 8px -26px;
   border-radius: 12px 12px 0 0;
-  overflow: hidden;
 }
 
 .modal-severity {
