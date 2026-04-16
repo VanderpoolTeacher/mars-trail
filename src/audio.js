@@ -11,8 +11,10 @@ export const TITLE_TRACK = {
 export const GAMEPLAY_TRACKS = [
   { id: 'vacuum',    name: 'Vacuum Lullaby',    file: 'assets/music/Vacuum Lullaby.mp3' },
   { id: 'choir',     name: 'Vacuum Choir',      file: 'assets/music/Vacuum Choir.mp3' },
+  { id: 'violin',    name: 'Vacuum Violin',     file: 'assets/music/Vacuum Violin.mp3' },
   { id: 'void',      name: 'Void Algebra',      file: 'assets/music/Void Algebra.mp3' },
   { id: 'star',      name: 'Star-Salt Silence',  file: 'assets/music/Star-Salt Silence.mp3' },
+  { id: 'crater',    name: 'Crater Tongue',     file: 'assets/music/Crater Tongue.mp3' },
   { id: 'voidbread', name: 'Voidbread Hymn',    file: 'assets/music/Voidbread Hymn.mp3' }
 ];
 

@@ -52,14 +52,13 @@ export function createInitialState() {
       cell: 2
     },
 
-    // Crew (4 specialists + 2 security)
+    // Crew (4 specialists + 1 security)
     crew: [
-      { id:'c1', name:'Alex',   role:'engineer',  health:100, status:'healthy', alive:true },
-      { id:'c2', name:'Riya',   role:'biologist', health:100, status:'healthy', alive:true },
-      { id:'c3', name:'Tomás',  role:'medic',     health:100, status:'healthy', alive:true },
-      { id:'c4', name:'Mei',    role:'pilot',     health:100, status:'healthy', alive:true },
-      { id:'c5', name:'Sam',    role:'security',  health:100, status:'healthy', alive:true },
-      { id:'c6', name:'Jordan', role:'security',  health:100, status:'healthy', alive:true }
+      { id:'c1', name:'Alex',  role:'engineer',  health:100, status:'healthy', alive:true },
+      { id:'c2', name:'Riya',  role:'biologist', health:100, status:'healthy', alive:true },
+      { id:'c3', name:'Tomás', role:'medic',     health:100, status:'healthy', alive:true },
+      { id:'c4', name:'Mei',   role:'pilot',     health:100, status:'healthy', alive:true },
+      { id:'c5', name:'Sam',   role:'security',  health:100, status:'healthy', alive:true }
     ],
 
     // Run choices

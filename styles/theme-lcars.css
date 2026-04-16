@@ -186,10 +186,21 @@ body[data-theme="lcars"] .landmark { color: var(--fg-dim); }
 body[data-theme="lcars"] .landmark.current { color: var(--warn); text-shadow: none; }
 body[data-theme="lcars"] .landmark.current .marker { color: var(--warn); }
 
-/* Route image in LCARS */
+/* Route image + sections in LCARS */
 body[data-theme="lcars"] .route-image {
   border-radius: 10px;
-  margin-bottom: 12px;
+  border: none;
+  margin-bottom: 10px;
+}
+
+body[data-theme="lcars"] .route-section-header {
+  color: var(--warn);
+  border-bottom: 2px solid var(--fg-dim);
+}
+
+body[data-theme="lcars"] .route-location-name {
+  color: var(--warn);
+  text-shadow: none;
 }
 
 /* Mini-map: gold landmarks to match LCARS palette. Drop the hue-rotate hack

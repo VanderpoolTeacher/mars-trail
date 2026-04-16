@@ -16,6 +16,8 @@ function bindDom() {
   $.log          = document.getElementById('log');
   $.minimapPos   = document.getElementById('minimap-position');
   $.routeImage   = document.getElementById('route-image');
+  $.routeName    = document.getElementById('route-location-name');
+  $.routeDesc    = document.getElementById('route-location-desc');
   $.minimapPath  = document.getElementById('minimap-path');
   $.minimapTrail = document.getElementById('minimap-trail');
   $.minimapLands = document.getElementById('minimap-landmarks');
@@ -31,6 +33,9 @@ function renderTopbar(state) {
   const hours   = String((state.sol * 7) % 24).padStart(2, '0');
   const minutes = String((state.sol * 11) % 60).padStart(2, '0');
   $.clock.textContent = `SOL ${state.sol} · ${hours}:${minutes} LMST`;
+
+  const sci = document.getElementById('sci-counter');
+  if (sci) sci.textContent = `SCI ${state.sciencePoints || 0}`;
 }
 
 // ---------- Route ----------
@@ -47,18 +52,14 @@ function renderRoute(state) {
   }).join('');
   $.landmarks.innerHTML = items;
 
-  // Route image: show current landmark photo.
+  // Route image + name + description: current landmark detail.
+  const lid = state.route[state.currentLandmarkIndex];
+  const lm  = LANDMARKS[lid];
   if ($.routeImage) {
-    const lid = state.route[state.currentLandmarkIndex];
-    const lm = LANDMARKS[lid];
-    if (lm && lm.image) {
-      $.routeImage.innerHTML =
-        `<img src="${lm.image}" alt="${lm.name}">` +
-        `<span class="route-image-label">${lm.name.toUpperCase()}</span>`;
-    } else {
-      $.routeImage.innerHTML = '';
-    }
+    $.routeImage.innerHTML = lm && lm.image ? `<img src="${lm.image}" alt="${lm.name}">` : '';
   }
+  if ($.routeName) $.routeName.textContent = lm ? lm.name : '';
+  if ($.routeDesc) $.routeDesc.textContent = lm ? (lm.flavor || '') : '';
 
   renderMinimap(state);
 }

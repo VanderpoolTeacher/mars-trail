@@ -2,14 +2,37 @@
 
 /* ---------- Route panel ---------- */
 
-/* Route location image — shows current landmark photo */
+/* Route panel sections (Current Location, Navigation, Itinerary) */
+.route-section {
+  margin-bottom: 18px;
+}
+
+.route-section:last-child {
+  margin-bottom: 0;
+}
+
+.route-section-header {
+  font-size: 10px;
+  letter-spacing: 0.3em;
+  color: var(--warn);
+  margin: 0 0 8px 0;
+  padding-bottom: 4px;
+  border-bottom: 1px dashed var(--fg-faint);
+  text-transform: uppercase;
+  font-weight: 400;
+}
+
+/* Current Location section */
+.route-location-section {
+  margin-bottom: 22px;
+}
+
 .route-image {
-  margin: -10px -14px 10px -14px;
   height: 200px;
   overflow: hidden;
   background: #000;
-  position: relative;
-  flex-shrink: 0;
+  margin-bottom: 10px;
+  border: 1px solid var(--fg-faint);
 }
 
 .route-image img {
@@ -17,24 +40,25 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
-  filter: saturate(0.7) brightness(0.8);
+  filter: saturate(0.7) brightness(0.85);
 }
 
-.route-image-label {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  padding: 4px 8px;
-  font-size: 10px;
-  letter-spacing: 0.2em;
+.route-image:empty { display: none; }
+
+.route-location-name {
+  font-size: 15px;
+  letter-spacing: 0.12em;
   color: var(--fg);
-  text-shadow: 0 1px 3px rgba(0,0,0,0.8);
-  background: linear-gradient(transparent, rgba(0,0,0,0.7));
+  text-shadow: var(--glow);
+  margin: 0 0 6px 0;
+  font-weight: 400;
 }
 
-.route-image:empty {
-  display: none;
+.route-location-desc {
+  font-size: 12px;
+  line-height: 1.55;
+  color: var(--fg-dim);
+  margin: 0;
 }
 
 .minimap {

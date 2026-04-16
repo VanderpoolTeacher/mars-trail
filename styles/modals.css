@@ -3,13 +3,13 @@
 .modal-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.78);
+  background: rgba(0, 0, 0, 0.55);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 1000;
   padding: 20px;
-  animation: fade-in 140ms ease;
+  animation: fade-in 400ms ease;
 }
 
 .modal-panel {
@@ -161,22 +161,50 @@ body[data-theme="lcars"] .modal-image {
   to   { opacity: 1; }
 }
 
-/* ---- Title screen ---- */
+/* ---- Title screen (persistent layer behind briefing/loadout) ---- */
 
-.title-backdrop {
+.title-layer {
+  position: fixed;
+  inset: 0;
   background: #000;
-  flex-direction: column;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 500;        /* below modal-root (1000) */
+  opacity: 0;
+  transition: opacity 1.5s ease;
+  pointer-events: none;
   overflow: hidden;
 }
 
-.title-backdrop::before {
+.title-layer.active {
+  display: flex;
+  opacity: 1;
+  pointer-events: all;
+}
+
+.title-layer::before {
   content: '';
-  position: fixed;
+  position: absolute;
   inset: 0;
   background: url('../assets/images/mars-title.jpg') center/cover no-repeat;
   opacity: 0.2;
   filter: saturate(0.6);
   pointer-events: none;
+}
+
+/* When the game has started, fade out the START button but keep the backdrop */
+.title-layer.started .title-start {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 600ms ease;
+}
+
+.title-layer.started .title-tagline,
+.title-layer.started .title-heading,
+.title-layer.started .title-mars-glyph {
+  opacity: 0.55;
+  transition: opacity 600ms ease;
 }
 
 .title-screen {
@@ -657,6 +685,115 @@ body[data-theme="lcars"] .outcome-fact {
   background: rgba(255, 204, 0, 0.14);
 }
 body[data-theme="lcars"] .outcome-fact-label { color: var(--warn); text-shadow: none; }
+
+/* ---- End-of-run modal ---- */
+
+.eor-panel { max-width: 620px; }
+
+.eor-title {
+  font-size: 26px;
+  letter-spacing: 0.2em;
+  margin: 0;
+}
+
+.eor-won .eor-title  { color: var(--fg);   text-shadow: var(--glow-strong); }
+.eor-lost .eor-title { color: var(--crit); }
+
+.eor-reason {
+  margin: 0 0 4px 0;
+  color: var(--crit);
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  font-style: italic;
+}
+
+.eor-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  padding: 12px 0;
+  border-top: 1px dashed var(--fg-faint);
+  border-bottom: 1px dashed var(--fg-faint);
+}
+
+.eor-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.eor-stat-label {
+  font-size: 10px;
+  letter-spacing: 0.25em;
+  color: var(--fg-faint);
+}
+
+.eor-stat-value {
+  font-size: 22px;
+  color: var(--fg);
+  text-shadow: var(--glow);
+  letter-spacing: 0.08em;
+}
+
+.eor-stat-science .eor-stat-value { color: var(--warn); text-shadow: 0 0 4px rgba(251,191,36,0.4); }
+
+.eor-subhead {
+  font-size: 10px;
+  letter-spacing: 0.3em;
+  color: var(--warn);
+  margin-bottom: 8px;
+}
+
+.eor-dead-list, .eor-facts-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.eor-dead-list li {
+  color: var(--crit);
+  font-size: 13px;
+  letter-spacing: 0.05em;
+  text-decoration: line-through;
+  opacity: 0.75;
+}
+
+.eor-role {
+  color: var(--fg-faint);
+  font-size: 10px;
+  letter-spacing: 0.15em;
+  text-decoration: none;
+}
+
+.eor-facts {
+  max-height: 240px;
+  overflow-y: auto;
+}
+
+.eor-facts-list li {
+  padding: 8px 12px;
+  font-size: 12px;
+  line-height: 1.55;
+  color: var(--fg-dim);
+  border-left: 2px solid var(--fg-faint);
+  background: rgba(0, 255, 100, 0.04);
+}
+
+.eor-no-facts {
+  color: var(--fg-dim);
+  font-style: italic;
+  font-size: 12px;
+  margin: 0;
+}
+
+body[data-theme="lcars"] .eor-facts-list li {
+  border-left: none;
+  border-radius: 10px;
+  background: rgba(255, 153, 0, 0.10);
+}
 
 /* ---- Codex: clickable inline terms + popup ---- */
 

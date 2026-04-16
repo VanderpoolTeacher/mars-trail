@@ -5,7 +5,7 @@ import { createInitialState, CARGO_BUDGET, PART_TYPES } from './state.js';
 import { render } from './render.js';
 import { advanceSol, setPace, setRations, repairBattery, cleanPanels } from './systems/travel.js';
 import { applyEventChoice } from './systems/events.js';
-import { showEventModal, showOutcomeModal, showBriefingModal, showLoadoutModal, showTitleModal, closeModal } from './ui/modals.js';
+import { showEventModal, showOutcomeModal, showBriefingModal, showLoadoutModal, showTitleLayer, dimTitleStart, hideTitleLayer, showEndOfRunModal, closeModal } from './ui/modals.js';
 import './ui/codex.js';   // registers global click handler for codex terms
 import { GAMEPLAY_TRACKS, getSelectedTrackId, isMuted, playTitle, playGameplay, selectTrack, toggleMute, fadeOut, fadeInGameplay, cycleTrack } from './audio.js';
 
@@ -67,15 +67,23 @@ document.getElementById('rations-seg').addEventListener('click', (e) => {
 // ---- Renderer that also handles modal lifecycle ----
 function renderAll() {
   render(state);
+
+  // Auto-trigger the end-of-run modal when status changes to won/lost.
+  if (state.status !== 'active' && !state.activeModal) {
+    state = { ...state, activeModal: { type: 'end_of_run' } };
+  }
+
   const modal = state.activeModal;
   if (!modal) { closeModal(); return; }
 
   if (modal.type === 'title') {
-    showTitleModal(() => {
-      playTitle();   // first user click unlocks audio → title theme starts
+    showTitleLayer(() => {
+      playTitle();
+      dimTitleStart();   // START button fades out, backdrop stays
       state = { ...state, activeModal: { type: 'briefing' } };
       renderAll();
     });
+    closeModal();
     return;
   }
 
@@ -94,6 +102,7 @@ function renderAll() {
       // Cinematic transition: fade audio + screen to black, switch, fade in.
       const overlay = document.getElementById('transition-overlay');
       overlay.classList.add('active');
+      hideTitleLayer();   // fade title backdrop away
       fadeOut(2500);
 
       setTimeout(() => {
@@ -114,6 +123,15 @@ function renderAll() {
           fadeInGameplay(1500);
         }, 400);
       }, 2600);
+    });
+    return;
+  }
+
+  if (modal.type === 'end_of_run') {
+    showEndOfRunModal(state, () => {
+      state = createInitialState();
+      closeModal();
+      renderAll();
     });
     return;
   }

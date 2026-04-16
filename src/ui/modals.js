@@ -107,30 +107,45 @@ export function showOutcomeModal(resolution, onContinue) {
   r.querySelector('.modal-continue').addEventListener('click', onContinue);
 }
 
-// Title screen — game branding + studio credits.
-export function showTitleModal(onStart) {
-  const r = root();
-  if (!r) return;
+// Title screen — persistent layer, visible behind briefing/loadout.
+// Renders into #title-layer so it stays put across those modal states.
+export function showTitleLayer(onStart) {
+  const layer = document.getElementById('title-layer');
+  if (!layer) return;
 
-  r.innerHTML = `
-    <div class="modal-backdrop title-backdrop">
-      <div class="title-screen">
-        <div class="title-mars-glyph" aria-hidden="true">◉</div>
-        <h1 class="title-heading">MARS TRAIL</h1>
-        <p class="title-tagline">The colony is waiting. Earth cannot help you from here.</p>
-        <button class="title-start" id="title-start" type="button">START MISSION</button>
-        <div class="title-credits">
-          <span class="title-credit-line">Created by</span>
-          <span class="title-studio">Get Good Games and Tech</span>
-          <span class="title-ampersand">&amp;</span>
-          <span class="title-studio">Infinite Monkeys</span>
-        </div>
-        <div class="title-version">v0.1 · 2026</div>
+  layer.classList.add('active');
+  layer.innerHTML = `
+    <div class="title-screen">
+      <div class="title-mars-glyph" aria-hidden="true">◉</div>
+      <h1 class="title-heading">MARS TRAIL</h1>
+      <p class="title-tagline">The colony is waiting. Earth cannot help you from here.</p>
+      <button class="title-start" id="title-start" type="button">START MISSION</button>
+      <div class="title-credits">
+        <span class="title-credit-line">Created by</span>
+        <span class="title-studio">Get Good Games and Tech</span>
+        <span class="title-ampersand">&amp;</span>
+        <span class="title-studio">Infinite Monkeys</span>
       </div>
+      <div class="title-version">v0.1 · 2026</div>
     </div>
   `;
 
-  r.querySelector('#title-start').addEventListener('click', onStart);
+  layer.querySelector('#title-start').addEventListener('click', onStart);
+}
+
+// Hide the START button once clicked; keep backdrop.
+export function dimTitleStart() {
+  const layer = document.getElementById('title-layer');
+  if (!layer) return;
+  layer.classList.add('started');
+}
+
+// Fade out the entire title layer (call during dashboard transition).
+export function hideTitleLayer() {
+  const layer = document.getElementById('title-layer');
+  if (!layer) return;
+  layer.classList.remove('active');
+  setTimeout(() => { layer.innerHTML = ''; }, 1600);
 }
 
 // Cargo loadout picker shown before the briefing. Player distributes a
@@ -243,13 +258,12 @@ export function showBriefingModal(onBegin) {
           <p>Descent successful. MOTV <em>Carl Sagan</em> is nominal on the crater floor, fifty meters forward of the vented descent module.</p>
           <p>${linkifyCodex('Ahead of you: 2,550 kilometers across the Syrtis Major basalts, the hematite plains of Meridiani Planum, the layered sediments of Gale Crater, the quake fields of Elysium Planitia, and up through the Tharsis uplift to the colony foundation site on Olympus Mons.')}</p>
           <div class="briefing-roster">
-            <div class="briefing-roster-title">CREW MANIFEST — 6 SOULS</div>
+            <div class="briefing-roster-title">CREW MANIFEST — 5 SOULS</div>
             <div class="briefing-roster-row"><span>ALEX PARK</span>         <span>Chief Engineer</span></div>
             <div class="briefing-roster-row"><span>RIYA NARAYANAN</span>    <span>Astrobiologist</span></div>
             <div class="briefing-roster-row"><span>TOMÁS FERREIRA</span>    <span>Flight Surgeon</span></div>
             <div class="briefing-roster-row"><span>MEI ONAKA</span>         <span>Pilot / Navigation</span></div>
             <div class="briefing-roster-row"><span>SAM VEGA</span>          <span>Mission Security</span></div>
-            <div class="briefing-roster-row"><span>JORDAN CRUZ</span>       <span>Mission Security</span></div>
           </div>
           <p>Systems nominal. Eight spare parts. Approximately thirty sols of consumables at standard burn.</p>
           <p class="briefing-stakes">Resupply is not possible. Earth cannot save us from here. We save ourselves.</p>
@@ -261,6 +275,70 @@ export function showBriefingModal(onBegin) {
   `;
 
   r.querySelector('#briefing-begin').addEventListener('click', onBegin);
+}
+
+// End-of-run modal: summary of the mission, facts learned, new-mission button.
+export function showEndOfRunModal(state, onNewMission) {
+  const r = root();
+  if (!r) return;
+
+  const won       = state.status === 'won';
+  const survived  = state.crew.filter(c => c.alive).length;
+  const total     = state.crew.length;
+  const dead      = state.crew.filter(c => !c.alive);
+  const km        = Math.round(state.totalKmTraveled);
+  const facts     = state.factsLearned || [];
+
+  const LOSS_LABEL = {
+    no_oxygen: 'Oxygen tanks depleted.',
+    no_power:  'Batteries failed.',
+    all_dead:  'All crew lost.'
+  };
+
+  const outcomeTitle = won ? 'MISSION SUCCESS' : 'MISSION LOST';
+  const reasonBlock = !won && state.lossReason
+    ? `<p class="eor-reason">${LOSS_LABEL[state.lossReason] || ''}</p>`
+    : '';
+
+  const deadBlock = dead.length ? `
+    <div class="eor-dead">
+      <div class="eor-subhead">IN MEMORIAM</div>
+      <ul class="eor-dead-list">
+        ${dead.map(c => `<li>${escapeHtml(c.name)} <span class="eor-role">(${c.role.toUpperCase()})</span></li>`).join('')}
+      </ul>
+    </div>` : '';
+
+  const factsBlock = facts.length ? `
+    <div class="eor-facts">
+      <div class="eor-subhead">⎋ FACTS LOGGED · ${facts.length}</div>
+      <ul class="eor-facts-list">
+        ${facts.map(f => `<li>${linkifyCodex(escapeHtml(f))}</li>`).join('')}
+      </ul>
+    </div>` : `<p class="eor-no-facts">No science data recorded.</p>`;
+
+  r.innerHTML = `
+    <div class="modal-backdrop">
+      <div class="modal-panel eor-panel ${won ? 'eor-won' : 'eor-lost'}" role="dialog" aria-modal="true">
+        <div class="modal-severity severity-${won ? 'landmark' : 'major'}">${won ? 'END OF MISSION' : 'MISSION TERMINATED'}</div>
+        <h2 class="modal-title eor-title">${outcomeTitle}</h2>
+        ${reasonBlock}
+
+        <div class="eor-stats">
+          <div class="eor-stat"><span class="eor-stat-label">SOLS</span><span class="eor-stat-value">${state.sol}</span></div>
+          <div class="eor-stat"><span class="eor-stat-label">KM TRAVELED</span><span class="eor-stat-value">${km.toLocaleString()}</span></div>
+          <div class="eor-stat"><span class="eor-stat-label">CREW SURVIVED</span><span class="eor-stat-value">${survived}/${total}</span></div>
+          <div class="eor-stat eor-stat-science"><span class="eor-stat-label">SCIENCE</span><span class="eor-stat-value">${state.sciencePoints}</span></div>
+        </div>
+
+        ${deadBlock}
+        ${factsBlock}
+
+        <button class="modal-continue primary" id="eor-new" type="button">NEW MISSION →</button>
+      </div>
+    </div>
+  `;
+
+  r.querySelector('#eor-new').addEventListener('click', onNewMission);
 }
 
 export function closeModal() {

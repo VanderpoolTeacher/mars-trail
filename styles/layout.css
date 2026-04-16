@@ -29,6 +29,15 @@ body {
   gap: 12px;
 }
 
+.sci-counter {
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  color: var(--fg);
+  text-shadow: var(--glow);
+  padding: 2px 8px;
+  border: 1px solid var(--fg-faint);
+}
+
 .music-controls {
   display: flex;
   align-items: center;
