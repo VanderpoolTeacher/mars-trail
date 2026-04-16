@@ -87,17 +87,25 @@ export function playGameplay() {
   play(getSelectedTrackId());
 }
 
+// Shared fade timer so a new fade cancels any in-flight fade.
+let currentFadeTimer = null;
+
+function clearFade() {
+  if (currentFadeTimer) { clearInterval(currentFadeTimer); currentFadeTimer = null; }
+}
+
 export function fadeOut(durationMs = 1500) {
   return new Promise(resolve => {
+    clearFade();
     const startVol = audio.volume;
     const steps = 30;
     const interval = durationMs / steps;
     let step = 0;
-    const timer = setInterval(() => {
+    currentFadeTimer = setInterval(() => {
       step++;
       audio.volume = Math.max(0, startVol * (1 - step / steps));
       if (step >= steps) {
-        clearInterval(timer);
+        clearFade();
         audio.pause();
         audio.volume = startVol;
         resolve();
@@ -107,6 +115,7 @@ export function fadeOut(durationMs = 1500) {
 }
 
 export function fadeInGameplay(durationMs = 1500) {
+  clearFade();
   const trackId = getSelectedTrackId();
   const track = GAMEPLAY_TRACKS.find(t => t.id === trackId);
   if (!track) return;
@@ -119,10 +128,10 @@ export function fadeInGameplay(durationMs = 1500) {
   const steps = 30;
   const interval = durationMs / steps;
   let step = 0;
-  const timer = setInterval(() => {
+  currentFadeTimer = setInterval(() => {
     step++;
     audio.volume = Math.min(targetVol, targetVol * (step / steps));
-    if (step >= steps) clearInterval(timer);
+    if (step >= steps) clearFade();
   }, interval);
 }
 

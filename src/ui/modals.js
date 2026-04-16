@@ -86,8 +86,25 @@ export function showOutcomeModal(resolution, onContinue) {
       <p class="outcome-fact-body">${linkifyCodex(escapeHtml(outcome.fact))}</p>
     </div>` : '';
 
-  const catastropheBlock = (resolution.applied && resolution.applied.catastrophe) ? `
-    <div class="outcome-catastrophe">⚠ COMPLICATION — result worse than estimated</div>` : '';
+  const catastrophe = resolution.applied && resolution.applied.catastrophe;
+  const catastropheBlock = catastrophe ? `
+    <div class="outcome-catastrophe">⚠ COMPLICATION</div>` : '';
+
+  // Use complicationNarrative when catastrophe fires AND it's defined;
+  // otherwise fall back to the regular narrative.
+  const narrativeText = catastrophe && outcome && outcome.complicationNarrative
+    ? outcome.complicationNarrative
+    : (outcome && outcome.narrative) || '';
+  const narrativeBlock = narrativeText ? `
+    <p class="outcome-narrative ${catastrophe ? 'outcome-narrative-bad' : ''}">${linkifyCodex(escapeHtml(narrativeText))}</p>` : '';
+
+  // Dialogue attributed to a specific crew member.
+  const dlg = outcome && outcome.dialogue;
+  const dialogueBlock = dlg ? `
+    <div class="outcome-dialogue">
+      <span class="outcome-dialogue-speaker">${escapeHtml((dlg.role || '').toUpperCase())}</span>
+      <p class="outcome-dialogue-text">“${escapeHtml(dlg.text)}”</p>
+    </div>` : '';
 
   r.innerHTML = `
     <div class="modal-backdrop">
@@ -99,6 +116,8 @@ export function showOutcomeModal(resolution, onContinue) {
           <span class="outcome-chose-value">${escapeHtml(choice.label)}</span>
         </div>
         ${skillBlock}
+        ${narrativeBlock}
+        ${dialogueBlock}
         ${catastropheBlock}
         <div class="outcome-section-label">EFFECTS</div>
         ${deltasHtml}
@@ -117,6 +136,7 @@ export function showTitleLayer(onStart) {
   const layer = document.getElementById('title-layer');
   if (!layer) return;
 
+  layer.classList.remove('started');
   layer.classList.add('active');
   layer.innerHTML = `
     <div class="title-screen">
@@ -166,6 +186,10 @@ export function showLoadoutModal(initial, budget, partTypes, onConfirm) {
     return partTypes.reduce((sum, t) => sum + picked[t.key], 0);
   }
 
+  function totalLbs() {
+    return partTypes.reduce((sum, t) => sum + (t.supply ? 0 : picked[t.key] * t.lbs), 0);
+  }
+
   function rowHtml(t) {
     return `
       <div class="loadout-row">
@@ -194,10 +218,11 @@ export function showLoadoutModal(initial, budget, partTypes, onConfirm) {
         </div>
 
         <div class="loadout-summary">
-          <span class="loadout-summary-label">USED</span>
+          <span class="loadout-summary-label">SLOTS</span>
           <span class="loadout-summary-value" id="loadout-used">${used()}</span>
           <span class="loadout-summary-sep">/</span>
           <span class="loadout-summary-max">${budget}</span>
+          <span class="loadout-summary-lbs"><span id="loadout-lbs">${totalLbs()}</span> LB · <span id="loadout-kg">${Math.round(totalLbs() * 0.4536)}</span> KG</span>
         </div>
 
         <div class="loadout-actions">
@@ -221,6 +246,10 @@ export function showLoadoutModal(initial, budget, partTypes, onConfirm) {
     const over = u > budget;
     usedEl.classList.toggle('over', over);
     confirm.disabled = over;
+    const lbsEl = r.querySelector('#loadout-lbs');
+    const kgEl  = r.querySelector('#loadout-kg');
+    if (lbsEl) lbsEl.textContent = totalLbs();
+    if (kgEl)  kgEl.textContent  = Math.round(totalLbs() * 0.4536);
   }
 
   r.querySelectorAll('.loadout-step').forEach(btn => {

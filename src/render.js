@@ -1,7 +1,7 @@
 // Mars Trail — DOM rendering
 // Each renderer is idempotent: pass current state, DOM reflects it.
 
-import { landmarkName, ROLE_CODE, RESOURCE_LABELS } from './state.js';
+import { landmarkName, ROLE_CODE, RESOURCE_LABELS, PART_TYPES, CARGO_MAX_LBS } from './state.js';
 import { LANDMARKS } from './content/landmarks.js';
 
 // Cache DOM lookups once on init.
@@ -158,17 +158,38 @@ function renderTelemetry(state) {
       </span>
     </li>
   `);
+
+  // Weight in pounds. Different parts have different masses (see PART_TYPES).
+  // Full cargo hold ≈ CARGO_MAX_LBS = 100% weight.
+  let lbs = 0;
+  for (const t of PART_TYPES) {
+    if (!t.supply) lbs += (r[t.key] || 0) * t.lbs;
+  }
+  const weightPct  = Math.min(100, Math.round((lbs / CARGO_MAX_LBS) * 100));
+  const weightBand = lbs >= CARGO_MAX_LBS * 0.9 ? 'warn' : '';
+  const kg = Math.round(lbs * 0.4536);
+  rows.push(`
+    <li class="readout weight-row ${weightBand}">
+      <span class="readout-label">WEIGHT</span>
+      <span class="bar"><span class="bar-fill" style="width:${weightPct}%"></span></span>
+      <span class="readout-value weight-label">${lbs} LB · ${kg} KG</span>
+    </li>
+  `);
   $.readouts.innerHTML = rows.join('');
 }
 
 // ---------- Crew ----------
 
 function renderCrew(state) {
+  const activeDialogue = state.crewDialogue;
   const rows = state.crew.map(c => {
     const hp = Math.max(0, Math.round(c.health));
     const cls = ['crew-row'];
     if (!c.alive) cls.push('dead');
     const hpLabel = c.alive ? `${hp}` : 'KIA';
+    const bubble = (activeDialogue && activeDialogue.crewId === c.id)
+      ? `<div class="crew-bubble">“${escapeHtml(activeDialogue.text)}”</div>`
+      : '';
     return `
       <li class="${cls.join(' ')}" data-status="${c.status}">
         <div class="crew-row-header">
@@ -177,10 +198,15 @@ function renderCrew(state) {
           <span class="crew-hp-text">${hpLabel}</span>
         </div>
         <div class="crew-hp-bar"><div class="crew-hp-fill" style="width:${hp}%"></div></div>
+        ${bubble}
       </li>
     `;
   }).join('');
   $.crewList.innerHTML = rows;
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
 }
 
 // ---------- Pace / Rations controls ----------

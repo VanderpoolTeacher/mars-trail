@@ -163,7 +163,12 @@ body[data-theme="lcars"] .btn-secondary:hover {
 
 /* Crew name/role + life bars in LCARS palette */
 body[data-theme="lcars"] .crew-name { color: var(--fg); }
-body[data-theme="lcars"] .crew-role { color: var(--fg-dim); }
+body[data-theme="lcars"] .crew-role {
+  color: #000;
+  background: var(--fg-dim);
+  border: none;
+  border-radius: 999px;
+}
 body[data-theme="lcars"] .crew-hp-text { color: var(--fg); }
 
 body[data-theme="lcars"] .crew-hp-bar {

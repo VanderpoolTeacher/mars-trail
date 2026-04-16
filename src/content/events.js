@@ -149,6 +149,7 @@ export const EVENTS = [
     id: 'lava_tube_cave',
     weight: 5,
     severity: 'major',
+    oneShot: true,
     image: 'assets/images/lava-tube.jpg',
     modal: {
       title: 'Lava Tube Cave',
@@ -191,6 +192,7 @@ export const EVENTS = [
     id: 'crater_rim',
     weight: 4,
     severity: 'minor',
+    oneShot: true,
     image: 'assets/images/crater.jpg',
     modal: {
       title: 'Crater Rim Vista',
@@ -212,6 +214,7 @@ export const EVENTS = [
     id: 'ancient_riverbed',
     weight: 5,
     severity: 'moderate',
+    oneShot: true,
     image: 'assets/images/surface-panorama.jpg',
     modal: {
       title: 'Ancient Riverbed',
@@ -229,8 +232,132 @@ export const EVENTS = [
     }
   },
 
+  // ---------- Away-team missions ----------
+  // Rare, high-risk, high-reward EVA ops requiring specialist sign-off.
+  // Failure can be catastrophic; the cautious option is almost always free
+  // but surrenders major science. "No risk, no discovery."
+
+  {
+    id: 'away_distress_beacon',
+    weight: 3,
+    severity: 'away-team',
+    oneShot: true,
+    image: 'assets/images/surface-panorama.jpg',
+    modal: {
+      title: 'Distress Beacon — 12 km N',
+      description: 'A faint VHF pulse from beyond the next ridge. Encoded as an Ares-program emergency locator, but the signal is decades old. Whoever or whatever set it is still broadcasting.',
+      choices: [
+        { label: 'Dispatch away team',
+          skillCheck: { role: 'engineer', successP: 0.65 },
+          successOutcome: { sciencePoints: +80, water: -8, eva: -1, factCategory: 'MISSIONS',
+            narrative: 'Alex traces the beacon to a weathered comms stub jutting from a regolith drift — the last broadcast from a failed sample-return lander. The flight recorder survives. Forty-three sols of uncrewed transit data are now on your drives.',
+            dialogue: { role: 'engineer', text: 'Whoever left this wasn\'t coming back. Recorder\'s intact — someone on Earth is going to cry.' } },
+          failOutcome: { eva: -1, water: -12, sciencePoints: +20, crewDamage: { role: 'engineer', amount: 38 },
+            narrative: 'The beacon site is a collapsed regolith-covered pit. Alex punches through a crust and falls two meters onto jagged basalt. You recover the flight recorder but the EVA suit is trashed and the engineer is bleeding into their helmet on the drive back.',
+            dialogue: { role: 'engineer', text: 'I\'m through. Suit breach sealed. Give me… give me ten minutes.' } } },
+        { label: 'Triangulate and continue',
+          outcome: { sciencePoints: +15, power: -3,
+            narrative: 'You mark the beacon location on the orbital catalog for a future recovery mission. No EVA, no drama.' } },
+        { label: 'Ignore — not our mission',
+          primary: true,
+          outcome: { food: -3, water: -2, crewDamage: { amount: 6 },
+            narrative: 'The signal fades behind the ridge. The crew\'s silence is heavier than usual.' } }
+      ]
+    }
+  },
+
+  {
+    id: 'away_derelict_lander',
+    weight: 3,
+    severity: 'away-team',
+    oneShot: true,
+    image: 'assets/images/opportunity.jpg',
+    modal: {
+      title: 'Derelict Lander',
+      description: 'Half-buried wreckage of an uncrewed NASA lander from a previous decade. Its solid-state storage may hold unpublished data — and its RTG, if intact, tells a story about long-term surface exposure.',
+      choices: [
+        { label: 'Recover data core (Biologist + Engineer)',
+          skillCheck: { role: 'biologist', successP: 0.70 },
+          successOutcome: { sciencePoints: +95, eva: -1, factCategory: 'MISSIONS',
+            narrative: 'Riya extracts the storage module and jury-rigs a power supply. The data stretches back to the last week of the original mission — a cliffhanger that cost a prior generation of engineers their careers. Your drives now carry the answer.',
+            dialogue: { role: 'biologist', text: 'Thirty years of unpublished data. Commander — this changes everything.' } },
+          failOutcome:    { eva: -1, sciencePoints: +25, crewDamage: { role: 'biologist', amount: 30 },
+            narrative: 'The corroded chassis collapses as Riya leans into it. A panel shears off and catches her arm, tearing the EVA suit at the elbow. Emergency sealant holds. You get a partial data dump but lose an hour and a lot of blood on the return crawl.',
+            dialogue: { role: 'biologist', text: 'I\'ll wear the scar. We got the partial dump — and a lesson.' } } },
+        { label: 'Photograph exterior and move on',
+          outcome: { sciencePoints: +20,
+            narrative: 'High-res imagery of the weathered lander. Good enough for a paper. Not good enough for the grants.' } },
+        { label: 'Skip — safer to keep driving',
+          primary: true,
+          outcome: { food: -3, water: -2, crewDamage: { amount: 6 },
+            narrative: 'You drive past the wreckage. It will still be there in a thousand years.' } }
+      ]
+    }
+  },
+
+  {
+    id: 'away_brine_drill',
+    weight: 3,
+    severity: 'away-team',
+    oneShot: true,
+    image: 'assets/images/crater.jpg',
+    modal: {
+      title: 'Subsurface Brine Layer',
+      description: 'Ground-penetrating radar shows a 40-meter-deep perchlorate brine pocket below the rover. Liquid water on Mars, today. Possibly inhabited. Possibly not. A drill run takes most of a sol and a full EVA team.',
+      choices: [
+        { label: 'Deep drill + biosig sampling',
+          skillCheck: { role: 'biologist', successP: 0.60 },
+          successOutcome: { sciencePoints: +110, water: +20, mech: -1, eva: -1, factCategory: 'ASTROBIOLOGY',
+            narrative: 'The drill breaks through at 38 meters. Brine rises under its own pressure, dark with dissolved salts and suspended particulates. Riya runs the Raman spectrometer with her hands shaking. Organic signatures. Not proof. Not yet. But she cries into her helmet anyway.',
+            dialogue: { role: 'biologist', text: 'Organics. I\'m — I\'m not saying life. I\'m saying organics. God.' } },
+          failOutcome:    { mech: -1, eva: -1, water: -6, sciencePoints: +30, crewDamage: { role: 'biologist', amount: 40 },
+            narrative: 'The drill seizes at 22 meters. When Riya moves to clear the bit, a pocket of pressurized brine vents explosively into her face shield. Perchlorate burns through the seal before emergency decontamination can stop it. The sample is lost. Riya is alive.',
+            dialogue: { role: 'biologist', text: 'I can taste the perchlorate through the seal. Medical. Now.' } } },
+        { label: 'Shallow drill — water only',
+          outcome: { water: +15, mech: -1, sciencePoints: +15,
+            narrative: 'You bring up fifteen liters of filtered brine water. The deeper layer stays buried — next crew\'s problem.' } },
+        { label: 'Log the radar return and skip',
+          primary: true,
+          outcome: { sciencePoints: +8, food: -3,
+            narrative: 'The radar trace goes into the archive. Somewhere, a future geobiologist will argue about it.' } }
+      ]
+    }
+  },
+
+  {
+    id: 'away_canyon_wall',
+    weight: 3,
+    severity: 'away-team',
+    oneShot: true,
+    image: 'assets/images/crater.jpg',
+    modal: {
+      title: 'Canyon Wall Traverse',
+      description: 'A side gorge cuts through four billion years of Martian stratigraphy. Rappelling the full 800-meter face would expose layers from the Noachian down through the Amazonian. Gear-intensive. Crew-intensive. Dangerous.',
+      choices: [
+        { label: 'Full descent + sample run (Pilot + Engineer)',
+          skillCheck: { role: 'engineer', successP: 0.55 },
+          successOutcome: { sciencePoints: +100, eva: -2, factCategory: 'GEOLOGY',
+            narrative: 'Mei belays. Alex takes the line down. Every thirty meters he hammers a sample tube into a different epoch. At the bottom he stands in rock older than Earth\'s oldest continent and sends up a photograph that will be the cover of every textbook for a generation.',
+            dialogue: { role: 'engineer', text: 'Four billion years of rock. Every sample is gold. Haul me up.' } },
+          failOutcome:    { eva: -2, sciencePoints: +30, crewDamage: { role: 'engineer', amount: 42 },
+            narrative: 'The anchor pulls at 200 meters down. Alex swings into the wall — the emergency line catches but his shoulder separates and his kit scatters down the gorge. Mei hauls him back up over four sols of ugly winching. He lives. The samples do not.',
+            dialogue: { role: 'pilot', text: 'Hold on. I\'ve got you. Do not let go of that line — look at me, Alex.' } } },
+        { label: 'Partial descent to first ledge',
+          skillCheck: { role: 'engineer', successP: 0.80 },
+          successOutcome: { sciencePoints: +45, eva: -1, factCategory: 'GEOLOGY',
+            narrative: 'Alex reaches the first ledge, punches in anchor bolts, and collects a dozen samples from a single dramatic exposure. Solid science. No heroics.' },
+          failOutcome:    { eva: -1, sciencePoints: +15, crewDamage: { role: 'engineer', amount: 22 },
+            narrative: 'A loose shelf gives way under Alex\'s boot. The safety line catches but the jolt knocks him unconscious against the wall. Mei pulls him up. He takes a sol of medical recovery before he can work again.' } },
+        { label: 'Shoot drone telemetry from the rim',
+          outcome: { sciencePoints: +22, power: -4,
+            narrative: 'The survey drone whines into the canyon, imaging the wall in multispectral until its battery dies. No one EVAs. No one dies.' } }
+      ]
+    }
+  },
+
   {
     id: 'frozen_lake',
+    oneShot: true,
     weight: 5,
     severity: 'moderate',
     modal: {

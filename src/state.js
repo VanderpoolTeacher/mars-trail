@@ -42,14 +42,14 @@ export function createInitialState() {
     // Resources. % values (except panels which is efficiency, and parts which
     // are discrete). Base levels are lower — supply loadout items bring them up.
     resources: {
-      oxygen: 84,     // base; +8% per O₂ canister in loadout
-      water:  84,     // base; +8% per H₂O tank
+      oxygen: 76,     // base; +8% per O₂ canister (default 3 = 100%)
+      water:  76,     // base; +8% per H₂O tank (default 3 = 100%)
       power:  100,
-      food:   76,     // base; +8% per ration pack
+      food:   76,     // base; +8% per ration pack (default 3 = 100%)
       panels: 100,
-      mech: 3,
-      eva:  2,
-      cell: 2
+      mech: 4,
+      eva:  4,
+      cell: 3
     },
 
     // Crew (4 specialists + 1 security)
@@ -68,6 +68,7 @@ export function createInitialState() {
     // Score & log
     sciencePoints: 0,
     factsLearned: [],
+    firedEvents: [],   // IDs of one-shot events already triggered this run
     log: [
       { sol: 1, text: 'Mission begins. Crew nominal. Departing Jezero Crater.' }
     ],
@@ -78,29 +79,33 @@ export function createInitialState() {
 }
 
 // Cargo budget / loadout constants shared between state and UI.
-export const CARGO_BUDGET = 14;
+export const CARGO_BUDGET = 20;    // cargo hold slots
+export const CARGO_MAX_LBS = 600;  // full hold — 100% weight on display
+
+// Each item has: slot cost (1), mass in pounds, and either a supply conversion
+// (consumed at mission start into resources) or persistent parts count.
 export const PART_TYPES = [
-  { key: 'rations', label: 'FOOD', default: 3,
+  { key: 'rations', label: 'FOOD', default: 3, lbs: 8,
     name:  'Ration Packs',
-    desc:  'Each pack adds +8% starting food. More packs = longer before starvation.',
+    desc:  'Lightweight vacuum-packed food. 8 LB / 3.6 KG each, +8% starting food.',
     supply: { resource: 'food', perUnit: 8 } },
-  { key: 'h2o', label: 'H₂O', default: 2,
+  { key: 'h2o', label: 'H₂O', default: 3, lbs: 40,
     name:  'Water Tanks',
-    desc:  'Each tank adds +8% starting water reserve.',
+    desc:  'Pressurized H₂O containers. 40 LB / 18 KG each, +8% starting water.',
     supply: { resource: 'water', perUnit: 8 } },
-  { key: 'o2', label: 'O₂', default: 2,
+  { key: 'o2', label: 'O₂', default: 3, lbs: 20,
     name:  'Oxygen Canisters',
-    desc:  'Each canister adds +8% starting oxygen.',
+    desc:  'Compressed O₂ bottles. 20 LB / 9 KG each, +8% starting oxygen.',
     supply: { resource: 'oxygen', perUnit: 8 } },
-  { key: 'mech', label: 'MECH', default: 3,
+  { key: 'mech', label: 'MECH', default: 4, lbs: 30,
     name:  'Mechanical Parts',
-    desc:  'Bearings, gears, drill bits. Rover repair, mining, most events.' },
-  { key: 'eva',  label: 'EVA', default: 2,
+    desc:  'Bearings, gears, drill bits. 30 LB / 14 KG each. Rover repair and mining.' },
+  { key: 'eva',  label: 'EVA', default: 4, lbs: 12,
     name:  'EVA Supplies',
-    desc:  'Patches, tethers, O₂ lines. External work, climbs, cave descents.' },
-  { key: 'cell', label: 'CELL', default: 2,
+    desc:  'Patches, tethers, O₂ lines. 12 LB / 5.4 KG each. External work, climbs.' },
+  { key: 'cell', label: 'CELL', default: 3, lbs: 80,
     name:  'Power Cells',
-    desc:  'Battery modules. Consumed by REPAIR to restore +25% PWR.' }
+    desc:  'Lithium-ion battery modules. 80 LB / 36 KG each. Consumed by REPAIR for +25% PWR.' }
 ];
 
 export function landmarkName(id) {

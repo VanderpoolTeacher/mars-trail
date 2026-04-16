@@ -67,17 +67,26 @@ export function makeLandmarkEncounter(landmarkId) {
       description: entry.flavor + ' Dedicate this sol to:',
       choices: [
         { label: 'Rest the crew',
-          outcome: { food: -6, water: -4, crewHeal: 12, power: +18, panels: +15 } },
+          outcome: { food: -6, water: -4, crewHeal: 12, power: +18, panels: +15,
+            narrative: 'Eight hours of real sleep in rotating shifts. The rover\'s idle while the RTG trickles and solar tops off the batteries. Crew wake up in better shape; panels wiped down at sunrise.',
+            complicationNarrative: 'Rest cycle interrupted — a false-positive atmospheric alarm roused the crew at 02:00 LMST. By morning everyone is groggier than when they started, and rations took extra hits from midnight snacking.' } },
         { label: 'Run a science survey',
           outcome: { power: -4, sciencePoints: +30,
-                     fact: entry.fact || '' } },
+            narrative: 'Riya leads a short EVA circuit with the spectrometer while Alex runs diagnostics on the rover. Solid science, minimal risk.',
+            complicationNarrative: 'Mid-survey the spectrometer throws a calibration fault. The data is partial; the instrument needs longer to warm up than expected, eating more battery.',
+            fact: entry.fact || '' } },
         { label: 'Prospect for water ice',
           skillCheck: { role: 'engineer', successP: 0.70 },
-          successOutcome: { water: +15 },
-          failOutcome:    { food: -3, power: -4, crewDamage: { amount: 12 } } },
+          successOutcome: { water: +15,
+            narrative: 'Alex sinks a test core into a shadowed crater floor. Nine meters down, ice — clean enough to sublimate and filter straight into the tanks.' },
+          failOutcome: { food: -3, power: -4, crewDamage: { amount: 12 },
+            narrative: 'The first core bit snaps against buried basalt. A second attempt turns up dry regolith. Alex takes a fragment of shrapnel in the forearm during the withdrawal.',
+            complicationNarrative: 'A sudden crosswind catches the drill rig while Alex is leaning in. The whole assembly topples, and the emergency sealant on his suit burns through a kit of EVA supplies.' } },
         { label: 'Continue onward — no stop',
           primary: true,
-          outcome: { food: -3, water: -2, crewDamage: { amount: 6 } } }
+          outcome: { food: -3, water: -2, crewDamage: { amount: 6 },
+            narrative: 'No stop. The rover rolls through the landmark without pausing. Crew skip a proper meal and fluid cycle; small aches accumulate.',
+            complicationNarrative: 'Skipping the rest cycle stacked worse than usual — Tomás notes short tempers and dropped ration packs. By sunset three small procedural errors had to be logged for review.' } }
       ]
     }
   };

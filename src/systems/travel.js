@@ -1,10 +1,20 @@
 // Mars Trail — travel system
 // Pure functions. advanceSol(state) → newState.
 
-import { landmarkName } from '../state.js';
+import { landmarkName, PART_TYPES } from '../state.js';
 import { rollEvent } from './events.js';
 import { applyDamage, checkAllDead } from './crew.js';
 import { makeLandmarkEncounter } from '../content/landmarks.js';
+
+// Total carried weight in pounds. Only persistent parts (MECH/EVA/CELL)
+// count — supplies are consumed at mission start.
+function cargoPounds(resources) {
+  let lbs = 0;
+  for (const t of PART_TYPES) {
+    if (!t.supply) lbs += (resources[t.key] || 0) * t.lbs;
+  }
+  return lbs;
+}
 
 // Tunable per-sol values. Balanced for a ~17-sol clean trek at steady pace.
 
@@ -28,9 +38,9 @@ const POWER_PER_SOL = {
 };
 
 const FOOD_PER_SOL = {
-  meager:   1.5,
-  standard: 2.8,
-  full:     4.0
+  meager:   1.2,
+  standard: 2.2,
+  full:     3.2
 };
 
 const O2_PER_SOL  = 2.2;
@@ -58,7 +68,8 @@ const NO_POWER_DAMAGE        = 8;    // life support failure when batteries dead
 const REPAIR_POWER_GAIN      = 25;
 const REPAIR_CELL_COST       = 1;    // one power cell per REPAIR
 const CLEAN_EVA_COST         = 1;    // one EVA kit per panel cleaning
-const CARGO_WEIGHT_POWER     = 0.25; // +PWR drain per sol per part carried (lighter = faster)
+const CARGO_WEIGHT_POWER     = 0.005;  // +PWR drain per sol per lb carried
+const CARGO_WEIGHT_SPEED     = 0.00035;// −km/sol multiplier per lb carried
 
 const PILOT_KM_BONUS = 0.10;   // +10% travel if pilot alive
 const NO_PILOT_VARIANCE_MULT = 1.5;   // wider day-to-day swings without a pilot
@@ -70,7 +81,8 @@ export function advanceSol(state, mode = 'travel') {
   let s = { ...state,
     resources: { ...state.resources },
     crew: state.crew.map(c => ({ ...c })),
-    log: [...state.log]
+    log: [...state.log],
+    crewDialogue: null   // clear yesterday's speech bubble
   };
 
   s.sol = state.sol + 1;
@@ -84,7 +96,9 @@ export function advanceSol(state, mode = 'travel') {
     const variance   = KM_VARIANCE[s.pace] * (pilotAlive ? 1 : NO_PILOT_VARIANCE_MULT);
     const jitter     = (Math.random() * 2 - 1) * variance;
     const pilotMult  = pilotAlive ? 1 + PILOT_KM_BONUS : 1;
-    const km         = Math.max(0, baseKm * pilotMult * (1 + jitter));
+    const lbs        = cargoPounds(s.resources);
+    const weightMult = Math.max(0.5, 1 - lbs * CARGO_WEIGHT_SPEED);
+    const km         = Math.max(0, baseKm * pilotMult * weightMult * (1 + jitter));
     usableKm         = Math.min(km, s.kmToNextLandmark);
 
     s.totalKmTraveled += usableKm;
@@ -98,7 +112,7 @@ export function advanceSol(state, mode = 'travel') {
 
   // Net power: RTG baseline + solar bonus (×panel efficiency) − travel − cargo weight.
   const panelMult   = s.resources.panels / 100;
-  const cargoWeight = (s.resources.mech + s.resources.eva + s.resources.cell) * CARGO_WEIGHT_POWER;
+  const cargoWeight = cargoPounds(s.resources) * CARGO_WEIGHT_POWER;
   let powerDelta    = RTG_RECHARGE_PER_SOL + (SOLAR_RECHARGE_PER_SOL * panelMult) - cargoWeight;
   if (mode === 'travel' && !powerDead) powerDelta -= POWER_PER_SOL[s.pace];
   if (mode === 'repair') {
@@ -187,6 +201,7 @@ export function advanceSol(state, mode = 'travel') {
     const event = rollEvent(s);
     if (event) {
       s.activeModal = { type: 'event', payload: event };
+      if (event.oneShot) s.firedEvents = [...s.firedEvents, event.id];
     }
   }
 

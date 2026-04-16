@@ -22,16 +22,20 @@ const FACT_POOLS = {
 
 const EVENT_BASE_RATE = 0.65;   // P(event per sol). Will move to scenarios.js later.
 
-// Pick a random event using weighted selection. Returns an event object or null.
+// Pick a random event using weighted selection. One-shot events that have
+// already fired this run are filtered out. Returns an event object or null.
 export function rollEvent(state) {
   if (Math.random() > EVENT_BASE_RATE) return null;
-  const totalWeight = EVENTS.reduce((sum, e) => sum + e.weight, 0);
+  const fired = state.firedEvents || [];
+  const eligible = EVENTS.filter(e => !(e.oneShot && fired.includes(e.id)));
+  if (eligible.length === 0) return null;
+  const totalWeight = eligible.reduce((sum, e) => sum + e.weight, 0);
   let r = Math.random() * totalWeight;
-  for (const e of EVENTS) {
+  for (const e of eligible) {
     r -= e.weight;
     if (r <= 0) return e;
   }
-  return EVENTS[EVENTS.length - 1];   // fallback (floating-point edges)
+  return eligible[eligible.length - 1];
 }
 
 // Resolve a chosen event option.
@@ -61,7 +65,21 @@ export function applyEventChoice(state, event, choiceIdx) {
     resolvedOutcome = { ...outcome, fact };
   }
 
-  const { state: s, damageTarget, applied } = applyOutcome(state, resolvedOutcome);
+  let { state: s, damageTarget, applied } = applyOutcome(state, resolvedOutcome);
+
+  // Resolve dialogue (if present) to the matching alive crew member and
+  // pin it on state.crewDialogue — crew panel will show a bubble until
+  // the next advanceSol clears it.
+  if (resolvedOutcome && resolvedOutcome.dialogue) {
+    const dlg = resolvedOutcome.dialogue;
+    const speaker = s.crew.find(c => c.role === dlg.role && c.alive);
+    if (speaker) {
+      s = {
+        ...s,
+        crewDialogue: { crewId: speaker.id, name: speaker.name, text: dlg.text }
+      };
+    }
+  }
 
   // If the resolved outcome includes a Mars fact, log and remember it.
   if (resolvedOutcome && resolvedOutcome.fact) {

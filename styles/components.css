@@ -212,6 +212,24 @@
 }
 .part-pill.empty .part-n { color: var(--crit); }
 
+.weight-row .weight-label {
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-align: right;
+  min-width: 4em;
+}
+
+.readout.weight-row .bar-fill {
+  background: var(--fg-dim);
+}
+
+.readout.weight-row.warn .bar-fill {
+  background: var(--warn);
+}
+.readout.weight-row.warn .weight-label {
+  color: var(--warn);
+}
+
 /* ---------- Crew panel ---------- */
 
 .crew-list {
@@ -239,13 +257,16 @@
 
 .crew-name {
   color: var(--fg);
-  flex: 1;
 }
 
 .crew-role {
   color: var(--fg-faint);
   font-size: 10px;
   letter-spacing: 0.15em;
+  padding: 1px 6px;
+  border: 1px solid var(--fg-faint);
+  border-radius: 2px;
+  margin-left: 2px;
 }
 
 .crew-hp-text {
@@ -254,6 +275,7 @@
   min-width: 2.5em;
   text-align: right;
   letter-spacing: 0.05em;
+  margin-left: auto;
 }
 
 .crew-hp-bar {
@@ -276,6 +298,49 @@
 .crew-row[data-status="critical"] .crew-hp-text { color: var(--crit); }
 .crew-row[data-status="dead"]     .crew-hp-fill { background: var(--fg-faint); box-shadow: none; }
 .crew-row[data-status="dead"]     .crew-hp-text { color: var(--crit); }
+
+/* Ephemeral crew speech bubble */
+.crew-bubble {
+  margin-top: 6px;
+  padding: 8px 12px;
+  background: rgba(0, 255, 100, 0.06);
+  border: 1px solid var(--fg-dim);
+  color: var(--fg);
+  font-size: 11px;
+  font-style: italic;
+  line-height: 1.5;
+  border-radius: 4px 12px 12px 12px;
+  position: relative;
+  animation: fade-in 400ms ease;
+}
+
+.crew-bubble::before {
+  content: '';
+  position: absolute;
+  top: -5px;
+  left: 12px;
+  width: 10px;
+  height: 10px;
+  background: rgba(0, 255, 100, 0.12);
+  border-left: 1px solid var(--fg-dim);
+  border-top: 1px solid var(--fg-dim);
+  transform: rotate(45deg);
+}
+
+body[data-theme="lcars"] .crew-bubble {
+  background: rgba(255, 153, 0, 0.12);
+  border: none;
+  color: var(--fg);
+  border-radius: 999px;
+  padding: 8px 16px;
+}
+
+body[data-theme="lcars"] .crew-bubble::before { display: none; }
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
 
 .crew-row.dead .crew-name,
 .crew-row.dead .crew-role {
