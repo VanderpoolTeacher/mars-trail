@@ -196,15 +196,21 @@ musicMute.addEventListener('click', () => {
   musicMute.classList.toggle('muted', muted);
 });
 
-// Up/down arrows cycle gameplay tracks.
+// Up/down arrows cycle gameplay tracks; M toggles mute.
 document.addEventListener('keydown', (e) => {
+  // Don't hijack keys when a select/input is focused.
+  if (document.activeElement && (document.activeElement.tagName === 'SELECT' || document.activeElement.tagName === 'INPUT')) return;
+
   if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
-    // Don't hijack arrows when a select/input is focused.
-    if (document.activeElement && (document.activeElement.tagName === 'SELECT' || document.activeElement.tagName === 'INPUT')) return;
     e.preventDefault();
     const dir = e.key === 'ArrowUp' ? -1 : 1;
     const newId = cycleTrack(dir);
     musicSelect.value = newId;
+  } else if (e.key === 'm' || e.key === 'M') {
+    e.preventDefault();
+    const muted = toggleMute();
+    musicMute.textContent = muted ? '🔇' : '🔊';
+    musicMute.classList.toggle('muted', muted);
   }
 });
 
