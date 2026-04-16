@@ -99,30 +99,48 @@ function renderAll() {
     const initial = {};
     PART_TYPES.forEach(t => { initial[t.key] = state.resources[t.key] ?? t.default ?? 0; });
     showLoadoutModal(initial, CARGO_BUDGET, PART_TYPES, (picked) => {
-      // Cinematic transition: fade audio + screen to black, switch, fade in.
-      const overlay = document.getElementById('transition-overlay');
-      overlay.classList.add('active');
-      hideTitleLayer();   // fade title backdrop away
-      fadeOut(2500);
+      // Sequenced cinematic: loadout fades first (title stays visible),
+      // brief hold on title, then black overlay covers everything,
+      // state swaps, dashboard reveals.
+      const modalRoot = document.getElementById('modal-root');
+      const overlay   = document.getElementById('transition-overlay');
+
+      // Step 1: loadout modal fades out (~1s). Title layer remains.
+      modalRoot.classList.add('fading');
 
       setTimeout(() => {
-        const resources = { ...state.resources };
-        for (const t of PART_TYPES) {
-          if (t.supply) {
-            resources[t.supply.resource] = Math.min(100, resources[t.supply.resource] + picked[t.key] * t.supply.perUnit);
-          } else {
-            resources[t.key] = picked[t.key];
-          }
-        }
-        state = { ...state, resources, activeModal: null };
-        closeModal();
-        renderAll();
+        // Step 2: start black overlay + audio fade. Title + empty
+        //         modal-root fade to black together.
+        overlay.classList.add('active');
+        fadeOut(2500);
 
         setTimeout(() => {
-          overlay.classList.remove('active');
-          fadeInGameplay(1500);
-        }, 400);
-      }, 2600);
+          // Step 3: overlay is fully black — swap state silently.
+          const resources = { ...state.resources };
+          for (const t of PART_TYPES) {
+            if (t.supply) {
+              resources[t.supply.resource] = Math.min(100, resources[t.supply.resource] + picked[t.key] * t.supply.perUnit);
+            } else {
+              resources[t.key] = picked[t.key];
+            }
+          }
+          state = { ...state, resources, activeModal: null };
+          modalRoot.classList.remove('fading');
+          closeModal();
+
+          // Title layer removed under cover of black.
+          const layer = document.getElementById('title-layer');
+          if (layer) { layer.classList.remove('active'); layer.innerHTML = ''; }
+
+          renderAll();
+
+          // Step 4: brief hold on black, then fade back to dashboard.
+          setTimeout(() => {
+            overlay.classList.remove('active');
+            fadeInGameplay(1500);
+          }, 500);
+        }, 1700);
+      }, 1200);
     });
     return;
   }

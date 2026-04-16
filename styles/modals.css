@@ -10,6 +10,12 @@
   z-index: 1000;
   padding: 20px;
   animation: fade-in 400ms ease;
+  transition: opacity 1s ease;
+}
+
+#modal-root.fading .modal-backdrop {
+  opacity: 0;
+  pointer-events: none;
 }
 
 .modal-panel {
@@ -593,6 +599,25 @@ body[data-theme="lcars"] .briefing-stakes {
 
 .outcome-skill.ok   { border-left-color: var(--healthy); color: var(--healthy); }
 .outcome-skill.fail { border-left-color: var(--crit);    color: var(--crit); }
+
+.outcome-catastrophe {
+  padding: 10px 14px;
+  border-left: 3px solid var(--crit);
+  background: rgba(239, 68, 68, 0.12);
+  color: var(--crit);
+  font-size: 12px;
+  letter-spacing: 0.15em;
+  letter-spacing: 0.15em;
+  font-weight: 700;
+  animation: fade-in 300ms ease;
+}
+
+body[data-theme="lcars"] .outcome-catastrophe {
+  border-left: none;
+  border-radius: 999px;
+  background: rgba(255, 102, 102, 0.2);
+  padding: 8px 16px;
+}
 
 .outcome-skill-result {
   font-weight: 700;

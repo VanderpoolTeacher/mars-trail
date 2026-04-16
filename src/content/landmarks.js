@@ -67,7 +67,7 @@ export function makeLandmarkEncounter(landmarkId) {
       description: entry.flavor + ' Dedicate this sol to:',
       choices: [
         { label: 'Rest the crew',
-          outcome: { food: -6, water: -4, crewHeal: 12 } },
+          outcome: { food: -6, water: -4, crewHeal: 12, power: +18, panels: +15 } },
         { label: 'Run a science survey',
           outcome: { power: -4, sciencePoints: +30,
                      fact: entry.fact || '' } },
@@ -77,7 +77,7 @@ export function makeLandmarkEncounter(landmarkId) {
           failOutcome:    { food: -3, power: -4, crewDamage: { amount: 12 } } },
         { label: 'Continue onward — no stop',
           primary: true,
-          outcome: {} }
+          outcome: { food: -3, water: -2, crewDamage: { amount: 6 } } }
       ]
     }
   };

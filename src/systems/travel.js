@@ -22,37 +22,43 @@ const KM_VARIANCE = {
 };
 
 const POWER_PER_SOL = {
-  cautious: 2.0,
-  steady:   3.5,
-  push:     5.0
+  cautious: 2.5,
+  steady:   4.2,
+  push:     5.8
 };
 
 const FOOD_PER_SOL = {
-  meager:   1.3,
-  standard: 2.3,
-  full:     3.3
+  meager:   1.5,
+  standard: 2.8,
+  full:     4.0
 };
 
-const O2_PER_SOL  = 2.0;
-const H2O_PER_SOL = 2.0;
+const O2_PER_SOL  = 2.2;
+const H2O_PER_SOL = 2.2;
 
 // Background per-sol health drain (radiation, fatigue). Always present.
-const BACKGROUND_DAMAGE = 1;
+const BACKGROUND_DAMAGE = 2;
 
-// Health drain when a resource is critical (< 20%), per crew per sol.
-const STARVATION_DAMAGE = 3;
-const HYPOXIA_DAMAGE    = 10;
-const DEHYDRATION_DAMAGE = 5;
-const LOW_FOOD_DAMAGE   = 3;
+// Critical resource threshold — damage kicks in when resource < this value.
+const LOW_RESOURCE_THRESHOLD = 25;
+
+// Health drain when a resource is critical (< threshold), per crew per sol.
+const STARVATION_DAMAGE = 4;
+const HYPOXIA_DAMAGE    = 12;
+const DEHYDRATION_DAMAGE = 6;
+const LOW_FOOD_DAMAGE   = 4;
 
 // Power systems
-const SOLAR_RECHARGE_PER_SOL = 2;    // passive trickle from clean solar panels
+// Hybrid power: RTG trickle (always) + solar bonus (when panels are clean).
+// RTG = radioisotope thermoelectric generator; mirrors Curiosity/Perseverance.
+const RTG_RECHARGE_PER_SOL   = 1.5;  // reliable RTG baseline, weather-independent
+const SOLAR_RECHARGE_PER_SOL = 2;    // clean-panel solar bonus
 const PANEL_WIND_RECOVERY    = 3;    // % efficiency recovered naturally per sol
 const NO_POWER_DAMAGE        = 8;    // life support failure when batteries dead
 const REPAIR_POWER_GAIN      = 25;
 const REPAIR_CELL_COST       = 1;    // one power cell per REPAIR
 const CLEAN_EVA_COST         = 1;    // one EVA kit per panel cleaning
-const CARGO_WEIGHT_POWER     = 0.15; // +PWR drain per sol per part carried (lighter = faster)
+const CARGO_WEIGHT_POWER     = 0.25; // +PWR drain per sol per part carried (lighter = faster)
 
 const PILOT_KM_BONUS = 0.10;   // +10% travel if pilot alive
 const NO_PILOT_VARIANCE_MULT = 1.5;   // wider day-to-day swings without a pilot
@@ -90,10 +96,10 @@ export function advanceSol(state, mode = 'travel') {
   s.resources.water  = Math.max(0, s.resources.water  - H2O_PER_SOL);
   s.resources.food   = Math.max(0, s.resources.food   - FOOD_PER_SOL[s.rations]);
 
-  // Net power: travel-power + cargo weight penalty + solar recharge (×panel efficiency).
+  // Net power: RTG baseline + solar bonus (×panel efficiency) − travel − cargo weight.
   const panelMult   = s.resources.panels / 100;
   const cargoWeight = (s.resources.mech + s.resources.eva + s.resources.cell) * CARGO_WEIGHT_POWER;
-  let powerDelta    = SOLAR_RECHARGE_PER_SOL * panelMult - cargoWeight;
+  let powerDelta    = RTG_RECHARGE_PER_SOL + (SOLAR_RECHARGE_PER_SOL * panelMult) - cargoWeight;
   if (mode === 'travel' && !powerDead) powerDelta -= POWER_PER_SOL[s.pace];
   if (mode === 'repair') {
     powerDelta += REPAIR_POWER_GAIN;
@@ -118,13 +124,13 @@ export function advanceSol(state, mode = 'travel') {
   if (s.rations === 'meager') {
     for (const id of aliveIds) s = applyDamage(s, id, STARVATION_DAMAGE,  'starvation').state;
   }
-  if (s.resources.oxygen < 20) {
+  if (s.resources.oxygen < LOW_RESOURCE_THRESHOLD) {
     for (const id of aliveIds) s = applyDamage(s, id, HYPOXIA_DAMAGE,     'hypoxia').state;
   }
-  if (s.resources.water < 20) {
+  if (s.resources.water < LOW_RESOURCE_THRESHOLD) {
     for (const id of aliveIds) s = applyDamage(s, id, DEHYDRATION_DAMAGE, 'dehydration').state;
   }
-  if (s.resources.food < 20) {
+  if (s.resources.food < LOW_RESOURCE_THRESHOLD) {
     for (const id of aliveIds) s = applyDamage(s, id, LOW_FOOD_DAMAGE,    'malnutrition').state;
   }
   if (powerDead) {
@@ -145,7 +151,7 @@ export function advanceSol(state, mode = 'travel') {
     if (s.kmToNextLandmark === 0) {
       s.currentLandmarkIndex += 1;
       const arrivedId = s.route[s.currentLandmarkIndex];
-      s.log.push({ sol: s.sol, text: `Arrived at ${landmarkName(arrivedId)}.` });
+      s.log.push({ sol: s.sol, text: `Arrived at ${landmarkName(arrivedId)} before dusk. Parking for EVA prep.` });
 
       if (s.currentLandmarkIndex >= s.route.length - 1) {
         // Final destination — no stop encounter, mission complete.
@@ -158,10 +164,12 @@ export function advanceSol(state, mode = 'travel') {
         s.activeModal = { type: 'event', payload: makeLandmarkEncounter(arrivedId) };
       }
     } else {
+      // Sol rhythm flavor — rotate through dawn/midday/dusk phrasing.
+      const phrase = travelPhrase(s.sol, Math.round(usableKm));
       const nextName = landmarkName(s.route[s.currentLandmarkIndex + 1]);
       s.log.push({
         sol: s.sol,
-        text: `Traveled ${Math.round(usableKm)} km. ${Math.round(s.kmToNextLandmark)} km to ${nextName}.`
+        text: `${phrase} ${Math.round(s.kmToNextLandmark)} km to ${nextName}.`
       });
     }
   }
@@ -229,4 +237,20 @@ export function setRations(state, rations) {
 
 function clamp(v, lo, hi) {
   return Math.max(lo, Math.min(hi, v));
+}
+
+// Sol-phase flavor. Cycles through the daily rhythm: dawn prep →
+// morning drive → midday EVA → afternoon push → dusk park.
+function travelPhrase(sol, km) {
+  const phrases = [
+    `Dawn sys-check, drove ${km} km through morning light.`,
+    `Rolled ${km} km. Midday thermal radiators dumped cabin heat.`,
+    `Traversed ${km} km; stopped at noon for wheel inspection.`,
+    `Drove ${km} km into late afternoon, parked facing east for dawn charge.`,
+    `${km} km on steady power. Comms window with Earth at dusk — 18m delay.`,
+    `Skirted regolith drift; ${km} km logged. Night watch rotation begins.`,
+    `${km} km of basalt washboard. RTG steady; batteries at nominal.`,
+    `Covered ${km} km. Panel wipedown at parking. Perchlorate dust logged.`
+  ];
+  return phrases[sol % phrases.length];
 }

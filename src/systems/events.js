@@ -20,7 +20,7 @@ const FACT_POOLS = {
   ASTRONOMY:         ASTRONOMY_FROM_MARS_FACTS
 };
 
-const EVENT_BASE_RATE = 0.50;   // P(event per sol). Will move to scenarios.js later.
+const EVENT_BASE_RATE = 0.65;   // P(event per sol). Will move to scenarios.js later.
 
 // Pick a random event using weighted selection. Returns an event object or null.
 export function rollEvent(state) {
@@ -61,7 +61,7 @@ export function applyEventChoice(state, event, choiceIdx) {
     resolvedOutcome = { ...outcome, fact };
   }
 
-  const { state: s, damageTarget } = applyOutcome(state, resolvedOutcome);
+  const { state: s, damageTarget, applied } = applyOutcome(state, resolvedOutcome);
 
   // If the resolved outcome includes a Mars fact, log and remember it.
   if (resolvedOutcome && resolvedOutcome.fact) {
@@ -90,35 +90,66 @@ export function applyEventChoice(state, event, choiceIdx) {
 
   return {
     state: s,
-    resolution: { event, choice, outcome: resolvedOutcome, skillResult, damageTarget }
+    resolution: { event, choice, outcome: resolvedOutcome, applied, skillResult, damageTarget }
   };
 }
 
+// Jitter a numeric value by ±varianceFraction. Rarely rolls a "catastrophe"
+// (8% chance) that amplifies the negative by 1.8x, simulating a complication.
+const VARIANCE_FRACTION = 0.25;
+const CATASTROPHE_CHANCE = 0.08;
+const CATASTROPHE_MULT = 1.8;
+
+function jitter(value) {
+  const jitterAmount = (Math.random() * 2 - 1) * VARIANCE_FRACTION;
+  let result = value * (1 + jitterAmount);
+  // Catastrophe only amplifies negative values (bad luck gets worse).
+  if (value < 0 && Math.random() < CATASTROPHE_CHANCE) {
+    result *= CATASTROPHE_MULT;
+  }
+  return Math.round(result);
+}
+
 // Apply a single outcome object (resource deltas, science, crew damage).
-// Returns { state, damageTarget } so the caller can describe what happened.
+// Returns { state, damageTarget, applied } — `applied` holds the actual
+// jittered values so callers can show real numbers in the outcome modal.
 function applyOutcome(state, outcome) {
-  if (!outcome) return { state, damageTarget: null };
+  if (!outcome) return { state, damageTarget: null, applied: {} };
   let s = {
     ...state,
     resources: { ...state.resources },
     log: [...state.log]
   };
 
-  if (typeof outcome.oxygen        === 'number') s.resources.oxygen     = clamp(s.resources.oxygen     + outcome.oxygen,     0, 100);
-  if (typeof outcome.water         === 'number') s.resources.water      = clamp(s.resources.water      + outcome.water,      0, 100);
-  if (typeof outcome.power         === 'number') s.resources.power      = clamp(s.resources.power      + outcome.power,      0, 100);
-  if (typeof outcome.food          === 'number') s.resources.food       = clamp(s.resources.food       + outcome.food,       0, 100);
-  if (typeof outcome.panels        === 'number') s.resources.panels     = clamp(s.resources.panels     + outcome.panels,     0, 100);
-  if (typeof outcome.mech          === 'number') s.resources.mech       = Math.max(0, s.resources.mech + outcome.mech);
-  if (typeof outcome.eva           === 'number') s.resources.eva        = Math.max(0, s.resources.eva  + outcome.eva);
-  if (typeof outcome.cell          === 'number') s.resources.cell       = Math.max(0, s.resources.cell + outcome.cell);
-  if (typeof outcome.sciencePoints === 'number') s.sciencePoints        = Math.max(0, s.sciencePoints  + outcome.sciencePoints);
+  const applied = {};
+  let catastrophe = false;
+  const jitterAndTrack = (v) => {
+    const j = jitter(v);
+    if (v < 0 && j < v * 1.5) catastrophe = true;   // detect amplified bad roll
+    return j;
+  };
 
-  // Crew healing (e.g., rest at a landmark). Heals all alive crew.
+  if (typeof outcome.oxygen === 'number') { applied.oxygen = jitterAndTrack(outcome.oxygen); s.resources.oxygen = clamp(s.resources.oxygen + applied.oxygen, 0, 100); }
+  if (typeof outcome.water  === 'number') { applied.water  = jitterAndTrack(outcome.water);  s.resources.water  = clamp(s.resources.water  + applied.water,  0, 100); }
+  if (typeof outcome.power  === 'number') { applied.power  = jitterAndTrack(outcome.power);  s.resources.power  = clamp(s.resources.power  + applied.power,  0, 100); }
+  if (typeof outcome.food   === 'number') { applied.food   = jitterAndTrack(outcome.food);   s.resources.food   = clamp(s.resources.food   + applied.food,   0, 100); }
+  if (typeof outcome.panels === 'number') { applied.panels = jitterAndTrack(outcome.panels); s.resources.panels = clamp(s.resources.panels + applied.panels, 0, 100); }
+
+  // Discrete parts don't jitter (can't have half a bearing).
+  if (typeof outcome.mech === 'number') { applied.mech = outcome.mech; s.resources.mech = Math.max(0, s.resources.mech + outcome.mech); }
+  if (typeof outcome.eva  === 'number') { applied.eva  = outcome.eva;  s.resources.eva  = Math.max(0, s.resources.eva  + outcome.eva);  }
+  if (typeof outcome.cell === 'number') { applied.cell = outcome.cell; s.resources.cell = Math.max(0, s.resources.cell + outcome.cell); }
+
+  if (typeof outcome.sciencePoints === 'number') {
+    applied.sciencePoints = jitter(outcome.sciencePoints);
+    s.sciencePoints = Math.max(0, s.sciencePoints + applied.sciencePoints);
+  }
+
   if (typeof outcome.crewHeal === 'number' && outcome.crewHeal > 0) {
+    applied.crewHeal = Math.max(0, jitter(outcome.crewHeal));
     s.crew = s.crew.map(c => {
       if (!c.alive) return c;
-      const newHealth = clamp(c.health + outcome.crewHeal, 0, 100);
+      const newHealth = clamp(c.health + applied.crewHeal, 0, 100);
       return { ...c, health: newHealth, status: deriveStatus(newHealth) };
     });
   }
@@ -126,7 +157,9 @@ function applyOutcome(state, outcome) {
   let damageTarget = null;
   if (outcome.crewDamage) {
     const { role, amount } = outcome.crewDamage;
-    const result = applyDamage(s, role || null, amount, 'event injuries');
+    const actualAmount = Math.max(0, jitter(-amount) * -1);  // amount is positive; jitter as -amount then flip
+    if (amount > actualAmount * 1.5) catastrophe = true;
+    const result = applyDamage(s, role || null, actualAmount, 'event injuries');
     s = result.state;
     if (result.target) {
       damageTarget = {
@@ -138,8 +171,13 @@ function applyOutcome(state, outcome) {
     }
   }
 
+  if (catastrophe) {
+    s.log = [...s.log, { sol: s.sol, text: 'Complication — the situation turned worse than expected.' }];
+    applied.catastrophe = true;
+  }
+
   s = checkAllDead(s);
-  return { state: s, damageTarget };
+  return { state: s, damageTarget, applied };
 }
 
 function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }

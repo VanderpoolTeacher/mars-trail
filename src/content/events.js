@@ -82,6 +82,26 @@ export const EVENTS = [
   },
 
   {
+    id: 'perchlorate_contamination',
+    weight: 5,
+    severity: 'moderate',
+    modal: {
+      title: 'Perchlorate Contamination',
+      description: 'Regolith tracked in from recent EVA. Perchlorate salts spiking in the air-handling filters — toxic to thyroid function at prolonged exposure.',
+      choices: [
+        { label: 'Full decontamination protocol',
+          skillCheck: { role: 'medic', successP: 0.85 },
+          successOutcome: { water: -6, eva: -1, factCategory: 'ASTROBIOLOGY' },
+          failOutcome:    { water: -8, eva: -1, crewDamage: { amount: 10 } } },
+        { label: 'Quick rinse and ventilate',
+          outcome: { water: -4, crewDamage: { amount: 8 } } },
+        { label: 'Ignore — push through',
+          outcome: { crewDamage: { amount: 16 } } }
+      ]
+    }
+  },
+
+  {
     id: 'solar_flare',
     weight: 5,
     severity: 'moderate',

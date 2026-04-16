@@ -39,6 +39,11 @@ export const CODEX = {
   'Tharsis': 'A vast volcanic plateau roughly the size of North America, rising up to 10 km above surrounding terrain. Hosts Olympus Mons and three other giant shield volcanoes. Its mass may have shifted Mars\'s rotational axis early in the planet\'s history.',
   'Elysium Planitia': 'Volcanic plains in the northern lowlands. Home to Elysium Mons and the InSight landing site. Young lava flows near Cerberus Fossae may be among the most recently active volcanic features on Mars.',
 
+  // ---- Rover systems ----
+  'RTG': 'Radioisotope thermoelectric generator. Converts heat from plutonium-238 decay into ~100-400 W of continuous electricity. Used by Curiosity, Perseverance, Voyager, and Cassini. Produces stable power regardless of weather or dust and degrades only ~5% per decade.',
+  'radioisotope thermoelectric generator': 'RTG — a power source that converts heat from plutonium-238 decay into continuous electricity. Immune to dust storms and darkness, which is why both Curiosity and Perseverance carry them instead of solar panels.',
+  'MOTV': 'Mars Overland Transport Vehicle. Pressurized, crewed rover concept with RTG power, life support loop, airlock, and ~4-6 person capacity. NASA\'s Space Exploration Vehicle (SEV) is a related design. Intended for multi-week traverses away from a main habitat.',
+
   // ---- Concepts ----
   'Noachian': 'The earliest geological period in Martian history, roughly 4.1–3.7 billion years ago. Named after Noachis Terra. During this period Mars had a thicker atmosphere, warmer temperatures, and widespread liquid surface water.',
   'Recurring Slope Lineae': 'Dark streaks that appear seasonally on steep Martian slopes. First imaged by HiRISE in 2011. Initially thought to indicate briny water flow, though dry granular movement is now considered a more likely explanation.',

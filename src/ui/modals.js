@@ -71,7 +71,7 @@ export function showOutcomeModal(resolution, onContinue) {
     </div>
   ` : '';
 
-  const deltas = collectDeltas(outcome, damageTarget);
+  const deltas = collectDeltas(resolution.applied || outcome, damageTarget);
   const deltasHtml = deltas.length
     ? `<ul class="outcome-deltas">${deltas.map(d => `
         <li class="outcome-delta ${d.cls}">
@@ -86,6 +86,9 @@ export function showOutcomeModal(resolution, onContinue) {
       <p class="outcome-fact-body">${linkifyCodex(escapeHtml(outcome.fact))}</p>
     </div>` : '';
 
+  const catastropheBlock = (resolution.applied && resolution.applied.catastrophe) ? `
+    <div class="outcome-catastrophe">⚠ COMPLICATION — result worse than estimated</div>` : '';
+
   r.innerHTML = `
     <div class="modal-backdrop">
       <div class="modal-panel outcome-panel" role="dialog" aria-modal="true">
@@ -96,6 +99,7 @@ export function showOutcomeModal(resolution, onContinue) {
           <span class="outcome-chose-value">${escapeHtml(choice.label)}</span>
         </div>
         ${skillBlock}
+        ${catastropheBlock}
         <div class="outcome-section-label">EFFECTS</div>
         ${deltasHtml}
         ${factBlock}
@@ -265,7 +269,7 @@ export function showBriefingModal(onBegin) {
             <div class="briefing-roster-row"><span>MEI ONAKA</span>         <span>Pilot / Navigation</span></div>
             <div class="briefing-roster-row"><span>SAM VEGA</span>          <span>Mission Security</span></div>
           </div>
-          <p>Systems nominal. Eight spare parts. Approximately thirty sols of consumables at standard burn.</p>
+          <p>${linkifyCodex('Systems nominal. RTG providing steady trickle charge; solar array supplementing when panels are clean. Spare parts and consumables loaded for an estimated thirty-sol traverse at standard burn.')}</p>
           <p class="briefing-stakes">Resupply is not possible. Earth cannot save us from here. We save ourselves.</p>
           <p class="briefing-signoff">Good luck, Commander.<br>— Mission Director, Ares Program</p>
         </div>
@@ -372,21 +376,25 @@ function formatCost(choice) {
   return summarize(choice.outcome);
 }
 
+// Discrete (parts) fields get exact signs; everything else is an estimate (~).
+const EXACT_KEYS = new Set(['mech','eva','cell']);
+
 function summarize(outcome) {
   if (!outcome) return '';
   const parts = [];
   for (const key of ['oxygen','water','power','food','mech','eva','cell','sciencePoints']) {
     if (typeof outcome[key] === 'number' && outcome[key] !== 0) {
       const sign = outcome[key] > 0 ? '+' : '';
-      parts.push(`${sign}${outcome[key]} ${FIELD_LABELS[key]}`);
+      const prefix = EXACT_KEYS.has(key) ? sign : `~${sign}`;
+      parts.push(`${prefix}${outcome[key]} ${FIELD_LABELS[key]}`);
     }
   }
   if (typeof outcome.crewHeal === 'number' && outcome.crewHeal > 0) {
-    parts.push(`all crew +${outcome.crewHeal} HP`);
+    parts.push(`all crew ~+${outcome.crewHeal} HP`);
   }
   if (outcome.crewDamage) {
     const role = outcome.crewDamage.role ? outcome.crewDamage.role.toUpperCase() : 'crew';
-    parts.push(`${role} -${outcome.crewDamage.amount} HP`);
+    parts.push(`${role} ~-${outcome.crewDamage.amount} HP`);
   }
   return parts.join(' · ');
 }
