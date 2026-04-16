@@ -27,9 +27,14 @@ export function showEventModal(event, onChoose) {
   }).join('');
 
   const severity = event.severity || 'event';
+  const imageBlock = event.image
+    ? `<div class="modal-image"><img src="${event.image}" alt="" loading="eager"><span class="modal-image-credit">NASA/JPL-Caltech</span></div>`
+    : '';
+
   r.innerHTML = `
     <div class="modal-backdrop">
-      <div class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+      <div class="modal-panel ${event.image ? 'has-image' : ''}" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+        ${imageBlock}
         <div class="modal-severity severity-${severity}">${severity}</div>
         <h2 class="modal-title" id="modal-title">${escapeHtml(event.modal.title)}</h2>
         <p class="modal-description">${linkifyCodex(escapeHtml(event.modal.description))}</p>

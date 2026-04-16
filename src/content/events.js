@@ -11,6 +11,7 @@ export const EVENTS = [
     id: 'dust_storm',
     weight: 8,
     severity: 'major',
+    image: 'assets/images/dust-storm.jpg',
     modal: {
       title: 'Regional Dust Storm',
       description: 'Visibility drops to meters. Rover halts — life support keeps running. Panels will cake over if you sit through it. Push on and risk the rover.',
@@ -128,6 +129,7 @@ export const EVENTS = [
     id: 'lava_tube_cave',
     weight: 5,
     severity: 'major',
+    image: 'assets/images/lava-tube.jpg',
     modal: {
       title: 'Lava Tube Cave',
       description: 'A collapsed sky-light reveals a kilometers-long volcanic cave. Possible shelter for future colonies — and for whatever might still grow in the dark.',
@@ -169,6 +171,7 @@ export const EVENTS = [
     id: 'crater_rim',
     weight: 4,
     severity: 'minor',
+    image: 'assets/images/crater.jpg',
     modal: {
       title: 'Crater Rim Vista',
       description: 'A young impact crater. The rim is stable; the steep wall is not. Samples down there could be untouched bedrock.',
@@ -189,6 +192,7 @@ export const EVENTS = [
     id: 'ancient_riverbed',
     weight: 5,
     severity: 'moderate',
+    image: 'assets/images/surface-panorama.jpg',
     modal: {
       title: 'Ancient Riverbed',
       description: 'Layered sediment glints in the sun. Three billion years ago, water flowed here for millions of years. Whatever once lived in it might still be in the rock.',
@@ -219,8 +223,8 @@ export const EVENTS = [
           skillCheck: { role: 'biologist', successP: 0.65 },
           successOutcome: { sciencePoints: +50, water: +8, factCategory: 'WATER' },
           failOutcome:    { sciencePoints: +20, mech: -1, crewDamage: { role: 'biologist', amount: 22 } } },
-        { label: 'Drill twice for parts salvage',
-          outcome: { water: +12, mech: +1, food: -5, crewDamage: { amount: 8 } } }
+        { label: 'Extended extraction (more water, more time)',
+          outcome: { water: +30, food: -6, power: -5, crewDamage: { amount: 8 } } }
       ]
     }
   }

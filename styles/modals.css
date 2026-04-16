@@ -26,6 +26,41 @@
   color: var(--fg);
 }
 
+/* Modal header image (NASA photos for landmarks + some events) */
+.modal-image {
+  position: relative;
+  margin: -22px -26px 16px -26px;
+  overflow: hidden;
+  max-height: 180px;
+}
+
+.modal-image img {
+  display: block;
+  width: 100%;
+  height: 180px;
+  object-fit: cover;
+  filter: saturate(0.7) brightness(0.85);
+}
+
+.modal-image-credit {
+  position: absolute;
+  bottom: 4px;
+  right: 8px;
+  font-size: 9px;
+  letter-spacing: 0.15em;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.modal-panel.has-image {
+  padding-top: 0;
+}
+
+body[data-theme="lcars"] .modal-image {
+  margin: -22px -26px 16px -26px;
+  border-radius: 12px 12px 0 0;
+  overflow: hidden;
+}
+
 .modal-severity {
   font-size: 10px;
   letter-spacing: 0.3em;
@@ -126,6 +161,17 @@
 .title-backdrop {
   background: #000;
   flex-direction: column;
+  position: relative;
+  overflow: hidden;
+}
+
+.title-backdrop::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: url('../assets/images/mars-title.jpg') center/cover no-repeat;
+  opacity: 0.2;
+  filter: saturate(0.6);
 }
 
 .title-screen {
