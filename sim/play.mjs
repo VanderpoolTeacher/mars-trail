@@ -9,6 +9,75 @@ import { applyEventChoice } from '../src/systems/events.js';
 // Simplest strategy: always pick the first option.
 function strategyFirst(_state, _event) { return 0; }
 
+// Safe: minimize expected resource loss and crew damage.
+function strategySafe(_state, event) {
+  let best = 0, bestScore = Infinity;
+  event.modal.choices.forEach((c, i) => {
+    let score = 0;
+    const pools = c.skillCheck
+      ? [c.failOutcome, c.successOutcome]
+      : [c.outcome];
+    for (const o of pools) {
+      if (!o) continue;
+      if (o.crewDamage) score += 50 + (o.crewDamage.amount || 0);
+      for (const k of ['oxygen','water','food','power','panels']) {
+        if (typeof o[k] === 'number' && o[k] < 0) score += Math.abs(o[k]);
+      }
+      for (const k of ['mech','eva','cell']) {
+        if (typeof o[k] === 'number' && o[k] < 0) score += Math.abs(o[k]) * 5;
+      }
+    }
+    if (c.skillCheck) score *= (1 - (c.skillCheck.successP || 0.5)) + 0.5;
+    if (score < bestScore) { bestScore = score; best = i; }
+  });
+  return best;
+}
+
+// Skilled: prefer skill-check choices when the specialist is alive.
+function strategySkilled(state, event) {
+  let best = -1, bestP = 0;
+  event.modal.choices.forEach((c, i) => {
+    if (!c.skillCheck) return;
+    const alive = state.crew.some(cr => cr.role === c.skillCheck.role && cr.alive);
+    const p = alive ? c.skillCheck.successP : Math.max(0.2, c.skillCheck.successP - 0.4);
+    if (p > bestP) { bestP = p; best = i; }
+  });
+  if (best === -1) return strategySafe(state, event);
+  return best;
+}
+
+// Balanced: avoid worsening any currently-critical resource; otherwise favor skill checks with alive specialists.
+function strategyBalanced(state, event) {
+  const crit = {};
+  for (const k of ['oxygen','water','food','power']) {
+    if (state.resources[k] < 30) crit[k] = true;
+  }
+  const choices = event.modal.choices;
+  const viable = choices.map((c, i) => ({ c, i })).filter(({ c }) => {
+    const pools = c.skillCheck ? [c.failOutcome] : [c.outcome];
+    for (const o of pools) {
+      if (!o) continue;
+      for (const k of Object.keys(crit)) {
+        if (typeof o[k] === 'number' && o[k] < -8) return false;
+      }
+    }
+    return true;
+  });
+  const pool = viable.length ? viable.map(v => v.i) : choices.map((_, i) => i);
+  let best = pool[0], bestScore = -Infinity;
+  for (const i of pool) {
+    const c = choices[i];
+    let score = 0;
+    if (c.skillCheck) {
+      const alive = state.crew.some(cr => cr.role === c.skillCheck.role && cr.alive);
+      score += (alive ? c.skillCheck.successP : Math.max(0.2, c.skillCheck.successP - 0.4)) * 50;
+    }
+    if (c.outcome && typeof c.outcome.sciencePoints === 'number') score += c.outcome.sciencePoints * 0.2;
+    if (score > bestScore) { bestScore = score; best = i; }
+  }
+  return best;
+}
+
 // Decide whether to burn a sol on REPAIR or CLEAN before the next travel sol.
 function shouldMaintain(state) {
   if (state.resources.power < 35 && canRepair(state)) return 'repair';
@@ -74,7 +143,20 @@ function runBatch(cfg, N) {
 // --- Config rows: edit this array for ad-hoc tuning runs. ---
 const N = 500;
 const strategies = [
-  { name: 'FirstChoice / steady / standard', pace: 'steady', rations: 'standard', pick: strategyFirst }
+  // Pre-balance diagnostic set. After tuning (Task 6), these should show
+  // cautious ~70%, steady ~60%, push ~40–50% under Balanced.
+  { name: 'FirstChoice / cautious / standard', pace: 'cautious', rations: 'standard', pick: strategyFirst },
+  { name: 'FirstChoice / steady / standard',   pace: 'steady',   rations: 'standard', pick: strategyFirst },
+  { name: 'FirstChoice / push / standard',     pace: 'push',     rations: 'standard', pick: strategyFirst },
+  { name: 'Safe / cautious / standard',        pace: 'cautious', rations: 'standard', pick: strategySafe },
+  { name: 'Safe / steady / standard',          pace: 'steady',   rations: 'standard', pick: strategySafe },
+  { name: 'Safe / push / standard',            pace: 'push',     rations: 'standard', pick: strategySafe },
+  { name: 'Skilled / cautious / standard',     pace: 'cautious', rations: 'standard', pick: strategySkilled },
+  { name: 'Skilled / steady / standard',       pace: 'steady',   rations: 'standard', pick: strategySkilled },
+  { name: 'Skilled / push / standard',         pace: 'push',     rations: 'standard', pick: strategySkilled },
+  { name: 'Balanced / cautious / standard',    pace: 'cautious', rations: 'standard', pick: strategyBalanced },
+  { name: 'Balanced / steady / standard',      pace: 'steady',   rations: 'standard', pick: strategyBalanced },
+  { name: 'Balanced / push / standard',        pace: 'push',     rations: 'standard', pick: strategyBalanced }
 ];
 
 console.log(`Running ${N} games per configuration…\n`);
