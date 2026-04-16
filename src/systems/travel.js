@@ -106,7 +106,7 @@ export function advanceSol(state, mode = 'travel') {
     // Natural wind cleaning a bit each sol (tops out at 100).
     s.resources.panels = clamp(s.resources.panels + PANEL_WIND_RECOVERY, 0, 100);
   }
-  s.resources.power = clamp(s.resources.power + powerDelta, 0, 200);
+  s.resources.power = clamp(s.resources.power + powerDelta, 0, 100);
 
   // ---- Crew health drain (can now kill) ----
   // Snapshot ids first so applyDamage's new crew array doesn't break iteration.

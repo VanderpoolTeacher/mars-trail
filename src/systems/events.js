@@ -104,10 +104,10 @@ function applyOutcome(state, outcome) {
     log: [...state.log]
   };
 
-  if (typeof outcome.oxygen        === 'number') s.resources.oxygen     = clamp(s.resources.oxygen     + outcome.oxygen,     0, 200);
-  if (typeof outcome.water         === 'number') s.resources.water      = clamp(s.resources.water      + outcome.water,      0, 200);
-  if (typeof outcome.power         === 'number') s.resources.power      = clamp(s.resources.power      + outcome.power,      0, 200);
-  if (typeof outcome.food          === 'number') s.resources.food       = clamp(s.resources.food       + outcome.food,       0, 200);
+  if (typeof outcome.oxygen        === 'number') s.resources.oxygen     = clamp(s.resources.oxygen     + outcome.oxygen,     0, 100);
+  if (typeof outcome.water         === 'number') s.resources.water      = clamp(s.resources.water      + outcome.water,      0, 100);
+  if (typeof outcome.power         === 'number') s.resources.power      = clamp(s.resources.power      + outcome.power,      0, 100);
+  if (typeof outcome.food          === 'number') s.resources.food       = clamp(s.resources.food       + outcome.food,       0, 100);
   if (typeof outcome.panels        === 'number') s.resources.panels     = clamp(s.resources.panels     + outcome.panels,     0, 100);
   if (typeof outcome.mech          === 'number') s.resources.mech       = Math.max(0, s.resources.mech + outcome.mech);
   if (typeof outcome.eva           === 'number') s.resources.eva        = Math.max(0, s.resources.eva  + outcome.eva);

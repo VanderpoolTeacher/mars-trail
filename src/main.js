@@ -100,7 +100,7 @@ function renderAll() {
         const resources = { ...state.resources };
         for (const t of PART_TYPES) {
           if (t.supply) {
-            resources[t.supply.resource] += picked[t.key] * t.supply.perUnit;
+            resources[t.supply.resource] = Math.min(100, resources[t.supply.resource] + picked[t.key] * t.supply.perUnit);
           } else {
             resources[t.key] = picked[t.key];
           }
