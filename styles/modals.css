@@ -161,17 +161,17 @@ body[data-theme="lcars"] .modal-image {
 .title-backdrop {
   background: #000;
   flex-direction: column;
-  position: relative;
   overflow: hidden;
 }
 
 .title-backdrop::before {
   content: '';
-  position: absolute;
+  position: fixed;
   inset: 0;
   background: url('../assets/images/mars-title.jpg') center/cover no-repeat;
   opacity: 0.2;
   filter: saturate(0.6);
+  pointer-events: none;
 }
 
 .title-screen {
@@ -183,6 +183,8 @@ body[data-theme="lcars"] .modal-image {
   max-width: 580px;
   padding: 40px 20px;
   animation: title-fade-in 1.2s ease;
+  position: relative;
+  z-index: 1;
 }
 
 .title-mars-glyph {
