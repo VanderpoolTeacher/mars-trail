@@ -14,7 +14,7 @@ const LANDMARK_NAMES = {
 
 const TREK_ROUTE = {
   ids:  ['jezero','syrtis','arabia','meridiani','gale','elysium','tharsis','olympus_base'],
-  kms:  [220, 280, 195, 240, 305, 210, 250]   // 7 segments between 8 landmarks
+  kms:  [330, 420, 290, 360, 460, 315, 375]   // 7 segments, ~2550 km total
 };
 
 function uuid() {
@@ -39,13 +39,17 @@ export function createInitialState() {
     kmToNextLandmark: TREK_ROUTE.kms[0],
     totalKmTraveled: 0,
 
-    // Resources (% except parts)
+    // Resources (% except parts; parts are discrete by type)
+    // Default loadout — player can rebalance in the pre-mission loadout modal.
     resources: {
       oxygen: 100,
       water:  100,
       power:  100,
       food:   100,
-      spareParts: 8
+      panels: 100,   // solar panel efficiency 0-100; multiplies solar recharge
+      mech: 4,
+      eva:  3,
+      cell: 3
     },
 
     // Crew (4 specialists + 2 security)
@@ -69,10 +73,24 @@ export function createInitialState() {
       { sol: 1, text: 'Mission begins. Crew nominal. Departing Jezero Crater.' }
     ],
 
-    // UI ephemeral
-    activeModal: null
+    // UI ephemeral — open with the mission briefing, then the loadout picker.
+    activeModal: { type: 'briefing' }
   };
 }
+
+// Cargo budget / loadout constants shared between state and UI.
+export const CARGO_BUDGET = 10;
+export const PART_TYPES = [
+  { key: 'mech', label: 'MECH',
+    name:  'Mechanical Parts',
+    desc:  'Bearings, gears, drill bits. Rover repair, mining, most events.' },
+  { key: 'eva',  label: 'EVA',
+    name:  'EVA Supplies',
+    desc:  'Patches, tethers, O₂ lines. External work, climbs, cave descents.' },
+  { key: 'cell', label: 'CELL',
+    name:  'Power Cells',
+    desc:  'Battery modules. Consumed by REPAIR to restore +25% PWR.' }
+];
 
 export function landmarkName(id) {
   return LANDMARK_NAMES[id] || id;
@@ -91,5 +109,9 @@ export const RESOURCE_LABELS = {
   oxygen: 'O₂',
   water:  'H₂O',
   power:  'PWR',
-  food:   'FOOD'
+  food:   'FOOD',
+  panels: 'PANELS',
+  mech:   'MECH',
+  eva:    'EVA',
+  cell:   'CELL'
 };

@@ -9,6 +9,13 @@
   filter: drop-shadow(0 0 3px rgba(0,255,100,0.5));
 }
 
+/* Minimap landmark dots — rings for the route, filled for current position.
+   Classes set in render.js. */
+.landmark-dot            { fill: none; stroke: #0a8;     stroke-width: 0.9; }
+.landmark-dot.visited    { fill: none; stroke: #00ff66;  stroke-width: 0.9; }
+.landmark-dot.current    { fill: #fbbf24; stroke: #000;  stroke-width: 0.6; }
+.landmark-dot.dest       { fill: none; stroke: #00ff66;  stroke-width: 1.4; }
+
 .landmarks {
   list-style: none;
   margin: 0;
@@ -103,6 +110,49 @@
   padding-top: 8px;
 }
 
+/* Cargo inventory row (3 part pills) */
+.readout.parts-row {
+  grid-template-columns: 4em 1fr;
+  border-top: 1px dashed var(--fg-faint);
+  padding-top: 8px;
+}
+
+.parts-grid {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.part-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 7px;
+  border: 1px solid var(--fg-faint);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+}
+
+.part-pill .part-lbl {
+  color: var(--fg-dim);
+  font-size: 9px;
+  letter-spacing: 0.15em;
+}
+
+.part-pill .part-n {
+  color: var(--fg);
+  font-weight: 700;
+  font-size: 13px;
+  min-width: 1ch;
+  text-align: right;
+}
+
+.part-pill.empty {
+  opacity: 0.45;
+  border-color: var(--crit);
+}
+.part-pill.empty .part-n { color: var(--crit); }
+
 /* ---------- Crew panel ---------- */
 
 .crew-list {
@@ -110,18 +160,27 @@
   margin: 0 0 14px 0;
   padding: 0;
   font-size: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
 .crew-row {
-  display: grid;
-  grid-template-columns: 1fr auto auto;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 4px 0;
+}
+
+.crew-row-header {
+  display: flex;
+  align-items: baseline;
   gap: 8px;
-  padding: 3px 4px;
-  align-items: center;
 }
 
 .crew-name {
   color: var(--fg);
+  flex: 1;
 }
 
 .crew-role {
@@ -130,17 +189,34 @@
   letter-spacing: 0.15em;
 }
 
-.crew-status {
-  font-size: 14px;
-  width: 14px;
-  text-align: center;
-  text-shadow: 0 0 4px currentColor;
+.crew-hp-text {
+  color: var(--fg);
+  font-size: 11px;
+  min-width: 2.5em;
+  text-align: right;
+  letter-spacing: 0.05em;
 }
 
-.crew-status.healthy { color: var(--healthy); }
-.crew-status.injured { color: var(--warn); }
-.crew-status.critical { color: var(--crit); }
-.crew-status.dead    { color: var(--crit); opacity: 0.6; }
+.crew-hp-bar {
+  height: 6px;
+  background: rgba(0, 255, 100, 0.05);
+  border: 1px solid var(--fg-faint);
+  overflow: hidden;
+}
+
+.crew-hp-fill {
+  height: 100%;
+  background: var(--healthy);
+  box-shadow: 0 0 3px currentColor;
+  transition: width 280ms ease, background-color 200ms ease;
+}
+
+.crew-row[data-status="injured"]  .crew-hp-fill { background: var(--warn); }
+.crew-row[data-status="injured"]  .crew-hp-text { color: var(--warn); }
+.crew-row[data-status="critical"] .crew-hp-fill { background: var(--crit); }
+.crew-row[data-status="critical"] .crew-hp-text { color: var(--crit); }
+.crew-row[data-status="dead"]     .crew-hp-fill { background: var(--fg-faint); box-shadow: none; }
+.crew-row[data-status="dead"]     .crew-hp-text { color: var(--crit); }
 
 .crew-row.dead .crew-name,
 .crew-row.dead .crew-role {
@@ -254,4 +330,17 @@
 .btn-primary:hover {
   background: rgba(0, 255, 100, 0.12);
   box-shadow: var(--glow-strong);
+}
+
+.btn-secondary {
+  font-size: 12px;
+  padding: 8px 20px;
+  letter-spacing: 0.15em;
+  border: 1px solid var(--fg-faint);
+  color: var(--fg-dim);
+}
+
+.btn-secondary:hover {
+  border-color: var(--fg);
+  color: var(--fg);
 }

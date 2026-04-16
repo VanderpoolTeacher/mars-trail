@@ -14,7 +14,12 @@ function bindDom() {
   $.rationsSeg   = document.getElementById('rations-seg');
   $.log          = document.getElementById('log');
   $.minimapPos   = document.getElementById('minimap-position');
+  $.minimapPath  = document.getElementById('minimap-path');
+  $.minimapTrail = document.getElementById('minimap-trail');
+  $.minimapLands = document.getElementById('minimap-landmarks');
   $.nextSolBtn   = document.getElementById('next-sol-btn');
+  $.repairBtn    = document.getElementById('repair-btn');
+  $.cleanBtn     = document.getElementById('clean-btn');
 }
 
 // ---------- Topbar ----------
@@ -40,17 +45,67 @@ function renderRoute(state) {
   }).join('');
   $.landmarks.innerHTML = items;
 
-  // Reposition the mini-map "you are here" marker along the route.
-  // Route svg viewBox is 0 0 200 100. We have hard-coded landmark x,y in HTML.
-  // Use currentLandmarkIndex normalized to [0, n-1] as a fraction along x=20..185.
-  const n = state.route.length;
-  const fraction = state.currentLandmarkIndex / Math.max(1, n - 1);
-  const cx = 20 + fraction * (185 - 20);
-  // Approximate y by lerping the same path's bow (decorative only).
-  const cy = 70 - fraction * 40;
+  renderMinimap(state);
+}
+
+// Compute km-level progress and place:
+//   - rover dot at its actual fractional position along the route path
+//   - landmark dots at their cumulative-km fractions
+//   - a solid "trail" over the dashed path for the distance traveled so far
+function renderMinimap(state) {
+  const pathEl = $.minimapPath;
+  if (!pathEl) return;
+
+  // SVG may not have measured yet on first paint — guard.
+  let pathLen = 0;
+  try { pathLen = pathEl.getTotalLength(); } catch (_) { return; }
+  if (!pathLen) return;
+
+  const totalKm    = state.routeKm.reduce((a, b) => a + b, 0);
+  const kmBeforeIx = state.routeKm.slice(0, state.currentLandmarkIndex).reduce((a, b) => a + b, 0);
+  const segmentKm  = state.currentLandmarkIndex < state.routeKm.length
+    ? state.routeKm[state.currentLandmarkIndex] - state.kmToNextLandmark
+    : 0;
+  const traveled   = kmBeforeIx + segmentKm;
+  const fraction   = totalKm > 0 ? Math.min(1, traveled / totalKm) : 0;
+
+  // Rover dot
+  const rover = pathEl.getPointAtLength(pathLen * fraction);
   if ($.minimapPos) {
-    $.minimapPos.setAttribute('cx', cx.toFixed(1));
-    $.minimapPos.setAttribute('cy', cy.toFixed(1));
+    $.minimapPos.setAttribute('cx', rover.x.toFixed(1));
+    $.minimapPos.setAttribute('cy', rover.y.toFixed(1));
+  }
+
+  // Trail: solid portion overlaying the dashed base
+  if ($.minimapTrail) {
+    const visible = pathLen * fraction;
+    $.minimapTrail.setAttribute('stroke-dasharray', `${visible.toFixed(1)} ${pathLen.toFixed(1)}`);
+  }
+
+  // Landmark dots — positioned at each landmark's cumulative-km fraction.
+  // Fill comes from CSS so themes can restyle (see components.css / theme-lcars.css).
+  if ($.minimapLands) {
+    const n = state.route.length;
+    let cumKm = 0;
+    const dots = [];
+    for (let i = 0; i < n; i++) {
+      const f = totalKm > 0 ? cumKm / totalKm : 0;
+      const p = pathEl.getPointAtLength(pathLen * Math.min(1, f));
+      const isCurrent = i === state.currentLandmarkIndex;
+      const isDest    = i === n - 1;
+      const visited   = i < state.currentLandmarkIndex;
+      const r         = (isCurrent || isDest) ? 3.0 : 2.2;
+      const cls       = isCurrent ? 'current'
+                      : isDest    ? 'dest'
+                      : visited   ? 'visited'
+                                  : 'future';
+      dots.push(
+        `<circle class="landmark-dot ${cls}" cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="${r}">` +
+        `<title>${landmarkName(state.route[i])}</title></circle>`
+      );
+      if (i < state.routeKm.length) cumKm += state.routeKm[i];
+    }
+    $.minimapLands.innerHTML = dots.join('');
   }
 }
 
@@ -65,7 +120,7 @@ function bandFor(value) {
 function renderTelemetry(state) {
   const r = state.resources;
   const rows = [];
-  for (const key of ['oxygen','water','power','food']) {
+  for (const key of ['oxygen','water','power','food','panels']) {
     const v = Math.max(0, Math.min(100, Math.round(r[key])));
     const band = bandFor(v);
     rows.push(`
@@ -76,10 +131,15 @@ function renderTelemetry(state) {
       </li>
     `);
   }
+  // Part inventory (discrete counts)
   rows.push(`
-    <li class="readout discrete">
-      <span class="readout-label">PARTS</span>
-      <span class="readout-value pad">${r.spareParts}</span>
+    <li class="readout parts-row">
+      <span class="readout-label">CARGO</span>
+      <span class="parts-grid">
+        <span class="part-pill ${r.mech === 0 ? 'empty' : ''}"><span class="part-lbl">MECH</span><span class="part-n">${r.mech}</span></span>
+        <span class="part-pill ${r.eva  === 0 ? 'empty' : ''}"><span class="part-lbl">EVA</span> <span class="part-n">${r.eva}</span></span>
+        <span class="part-pill ${r.cell === 0 ? 'empty' : ''}"><span class="part-lbl">CELL</span><span class="part-n">${r.cell}</span></span>
+      </span>
     </li>
   `);
   $.readouts.innerHTML = rows.join('');
@@ -87,26 +147,20 @@ function renderTelemetry(state) {
 
 // ---------- Crew ----------
 
-function statusGlyph(s) {
-  switch (s) {
-    case 'healthy':  return '●';
-    case 'injured':  return '◐';
-    case 'sick':     return '◐';
-    case 'critical': return '○';
-    case 'dead':     return '✕';
-    default:         return '·';
-  }
-}
-
 function renderCrew(state) {
   const rows = state.crew.map(c => {
+    const hp = Math.max(0, Math.round(c.health));
     const cls = ['crew-row'];
     if (!c.alive) cls.push('dead');
+    const hpLabel = c.alive ? `${hp}` : 'KIA';
     return `
-      <li class="${cls.join(' ')}">
-        <span class="crew-name">${c.name}</span>
-        <span class="crew-role">${ROLE_CODE[c.role] || c.role.toUpperCase()}</span>
-        <span class="crew-status ${c.status}" title="${c.status}">${statusGlyph(c.status)}</span>
+      <li class="${cls.join(' ')}" data-status="${c.status}">
+        <div class="crew-row-header">
+          <span class="crew-name">${c.name}</span>
+          <span class="crew-role">${ROLE_CODE[c.role] || c.role.toUpperCase()}</span>
+          <span class="crew-hp-text">${hpLabel}</span>
+        </div>
+        <div class="crew-hp-bar"><div class="crew-hp-fill" style="width:${hp}%"></div></div>
       </li>
     `;
   }).join('');
@@ -161,6 +215,22 @@ function renderActionBar(state) {
   } else {
     btn.textContent = 'NEXT SOL →';
     btn.disabled = false;
+  }
+  // Repair button: enabled only when active, cells available, power < 100
+  const repair = $.repairBtn;
+  if (repair) {
+    const canRepair = state.status === 'active'
+                    && state.resources.cell >= 1
+                    && state.resources.power < 100;
+    repair.disabled = !canRepair;
+  }
+  // Clean button: enabled only when active, eva available, panels < 100
+  const clean = $.cleanBtn;
+  if (clean) {
+    const canClean = state.status === 'active'
+                    && state.resources.eva >= 1
+                    && state.resources.panels < 100;
+    clean.disabled = !canClean;
   }
 }
 

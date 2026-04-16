@@ -2,8 +2,25 @@
 // Pure functions over state.
 
 import { EVENTS } from '../content/events.js';
+import { applyDamage, checkAllDead, deriveStatus } from './crew.js';
+import {
+  GEOLOGY_FACTS, WATER_FACTS, ATMOSPHERE_FACTS, ASTROBIOLOGY_FACTS,
+  RADIATION_FACTS, MISSIONS_FACTS, HUMAN_EXPLORATION_FACTS,
+  ASTRONOMY_FROM_MARS_FACTS, getRandomFact
+} from '../content/marsFacts.js';
 
-const EVENT_BASE_RATE = 0.35;   // P(event per sol). Will move to scenarios.js later.
+const FACT_POOLS = {
+  GEOLOGY:           GEOLOGY_FACTS,
+  WATER:             WATER_FACTS,
+  ATMOSPHERE:        ATMOSPHERE_FACTS,
+  ASTROBIOLOGY:      ASTROBIOLOGY_FACTS,
+  RADIATION:         RADIATION_FACTS,
+  MISSIONS:          MISSIONS_FACTS,
+  HUMAN_EXPLORATION: HUMAN_EXPLORATION_FACTS,
+  ASTRONOMY:         ASTRONOMY_FROM_MARS_FACTS
+};
+
+const EVENT_BASE_RATE = 0.50;   // P(event per sol). Will move to scenarios.js later.
 
 // Pick a random event using weighted selection. Returns an event object or null.
 export function rollEvent(state) {
@@ -36,7 +53,23 @@ export function applyEventChoice(state, event, choiceIdx) {
     skillResult = { role, success, specialistAlive, effectiveP };
   }
 
-  const { state: s, damageTarget } = applyOutcome(state, outcome);
+  // Resolve factCategory → a concrete fact string from the pool.
+  let resolvedOutcome = outcome;
+  if (outcome && outcome.factCategory) {
+    const pool = FACT_POOLS[outcome.factCategory];
+    const fact = pool ? getRandomFact(pool) : '';
+    resolvedOutcome = { ...outcome, fact };
+  }
+
+  const { state: s, damageTarget } = applyOutcome(state, resolvedOutcome);
+
+  // If the resolved outcome includes a Mars fact, log and remember it.
+  if (resolvedOutcome && resolvedOutcome.fact) {
+    s.log.push({ sol: s.sol, text: `Data logged: ${resolvedOutcome.fact}` });
+    if (!s.factsLearned.includes(resolvedOutcome.fact)) {
+      s.factsLearned = [...s.factsLearned, resolvedOutcome.fact];
+    }
+  }
 
   // Append a log entry summarizing the resolution.
   const checkLabel = skillResult
@@ -57,7 +90,7 @@ export function applyEventChoice(state, event, choiceIdx) {
 
   return {
     state: s,
-    resolution: { event, choice, outcome, skillResult, damageTarget }
+    resolution: { event, choice, outcome: resolvedOutcome, skillResult, damageTarget }
   };
 }
 
@@ -65,10 +98,9 @@ export function applyEventChoice(state, event, choiceIdx) {
 // Returns { state, damageTarget } so the caller can describe what happened.
 function applyOutcome(state, outcome) {
   if (!outcome) return { state, damageTarget: null };
-  const s = {
+  let s = {
     ...state,
     resources: { ...state.resources },
-    crew: state.crew.map(c => ({ ...c })),
     log: [...state.log]
   };
 
@@ -76,34 +108,38 @@ function applyOutcome(state, outcome) {
   if (typeof outcome.water         === 'number') s.resources.water      = clamp(s.resources.water      + outcome.water,      0, 100);
   if (typeof outcome.power         === 'number') s.resources.power      = clamp(s.resources.power      + outcome.power,      0, 100);
   if (typeof outcome.food          === 'number') s.resources.food       = clamp(s.resources.food       + outcome.food,       0, 100);
-  if (typeof outcome.parts         === 'number') s.resources.spareParts = Math.max(0, s.resources.spareParts + outcome.parts);
+  if (typeof outcome.panels        === 'number') s.resources.panels     = clamp(s.resources.panels     + outcome.panels,     0, 100);
+  if (typeof outcome.mech          === 'number') s.resources.mech       = Math.max(0, s.resources.mech + outcome.mech);
+  if (typeof outcome.eva           === 'number') s.resources.eva        = Math.max(0, s.resources.eva  + outcome.eva);
+  if (typeof outcome.cell          === 'number') s.resources.cell       = Math.max(0, s.resources.cell + outcome.cell);
   if (typeof outcome.sciencePoints === 'number') s.sciencePoints        = Math.max(0, s.sciencePoints  + outcome.sciencePoints);
+
+  // Crew healing (e.g., rest at a landmark). Heals all alive crew.
+  if (typeof outcome.crewHeal === 'number' && outcome.crewHeal > 0) {
+    s.crew = s.crew.map(c => {
+      if (!c.alive) return c;
+      const newHealth = clamp(c.health + outcome.crewHeal, 0, 100);
+      return { ...c, health: newHealth, status: deriveStatus(newHealth) };
+    });
+  }
 
   let damageTarget = null;
   if (outcome.crewDamage) {
     const { role, amount } = outcome.crewDamage;
-    const target = pickDamageTarget(s.crew, role);
-    if (target) {
-      target.health = clamp(target.health - amount, 0, 100);
-      if (target.health <= 30 && target.status === 'healthy') target.status = 'injured';
-      damageTarget = { name: target.name, role: target.role, amount };
+    const result = applyDamage(s, role || null, amount, 'event injuries');
+    s = result.state;
+    if (result.target) {
+      damageTarget = {
+        name:   result.target.name,
+        role:   result.target.role,
+        amount: result.dealt,
+        died:   result.died
+      };
     }
   }
-  return { state: s, damageTarget };
-}
 
-function pickDamageTarget(crew, preferredRole) {
-  if (preferredRole) {
-    const roleMatch = crew.find(c => c.role === preferredRole && c.alive);
-    if (roleMatch) return roleMatch;
-  }
-  // Red-shirt: living security first
-  const sec = crew.find(c => c.role === 'security' && c.alive);
-  if (sec) return sec;
-  // Otherwise random alive crew
-  const alive = crew.filter(c => c.alive);
-  if (alive.length === 0) return null;
-  return alive[Math.floor(Math.random() * alive.length)];
+  s = checkAllDead(s);
+  return { state: s, damageTarget };
 }
 
 function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }

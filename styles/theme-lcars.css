@@ -148,20 +148,55 @@ body[data-theme="lcars"] .btn-primary:hover {
   color: #000;
 }
 
-/* Crew status colors stay the same hues but no glow */
-body[data-theme="lcars"] .crew-status { text-shadow: none; }
+body[data-theme="lcars"] .btn-secondary {
+  background: var(--fg-dim);
+  color: #000;
+  border: none;
+  padding: 10px 22px;
+  font-size: 12px;
+}
+
+body[data-theme="lcars"] .btn-secondary:hover {
+  background: var(--warn);
+  color: #000;
+}
+
+/* Crew name/role + life bars in LCARS palette */
 body[data-theme="lcars"] .crew-name { color: var(--fg); }
 body[data-theme="lcars"] .crew-role { color: var(--fg-dim); }
+body[data-theme="lcars"] .crew-hp-text { color: var(--fg); }
+
+body[data-theme="lcars"] .crew-hp-bar {
+  border: none;
+  border-radius: 999px;
+  background: rgba(255, 153, 0, 0.10);
+  height: 8px;
+}
+body[data-theme="lcars"] .crew-hp-fill {
+  background: var(--healthy);
+  border-radius: 999px;
+  box-shadow: none;
+}
+body[data-theme="lcars"] .crew-row[data-status="injured"]  .crew-hp-fill { background: var(--warn); }
+body[data-theme="lcars"] .crew-row[data-status="critical"] .crew-hp-fill { background: var(--crit); }
+body[data-theme="lcars"] .crew-row[data-status="dead"]     .crew-hp-fill { background: var(--fg-faint); }
 
 /* Landmarks */
 body[data-theme="lcars"] .landmark { color: var(--fg-dim); }
 body[data-theme="lcars"] .landmark.current { color: var(--warn); text-shadow: none; }
 body[data-theme="lcars"] .landmark.current .marker { color: var(--warn); }
 
-/* Mini-map: re-tint to match LCARS palette */
-body[data-theme="lcars"] .minimap {
-  filter: hue-rotate(120deg) saturate(1.4);
-}
+/* Mini-map: gold landmarks to match LCARS palette. Drop the hue-rotate hack
+   and color everything via explicit fills. */
+body[data-theme="lcars"] .minimap           { filter: none; }
+body[data-theme="lcars"] #minimap-path      { stroke: #99668b; }       /* dim mauve dashed route */
+body[data-theme="lcars"] #minimap-trail     { stroke: var(--fg); }     /* LCARS orange trail */
+body[data-theme="lcars"] #minimap-position  { fill: var(--warn); stroke: #000; }
+
+body[data-theme="lcars"] .landmark-dot           { fill: none; stroke: var(--warn); stroke-width: 0.9; }  /* gold ring */
+body[data-theme="lcars"] .landmark-dot.visited   { fill: none; stroke: var(--fg);   stroke-width: 0.9; }  /* LCARS orange ring */
+body[data-theme="lcars"] .landmark-dot.current   { fill: var(--warn); stroke: #000; stroke-width: 0.6; }  /* filled gold */
+body[data-theme="lcars"] .landmark-dot.dest      { fill: none; stroke: var(--warn); stroke-width: 1.4; }  /* gold ring, thicker */
 
 /* Log: warm, no terminal '>' prompt — LCARS uses bullets */
 body[data-theme="lcars"] .log-entry {

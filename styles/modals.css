@@ -33,6 +33,10 @@
   text-transform: uppercase;
 }
 
+.modal-severity.severity-landmark {
+  color: var(--healthy);
+}
+
 .modal-title {
   font-size: 20px;
   letter-spacing: 0.15em;
@@ -77,6 +81,23 @@
   box-shadow: var(--glow);
 }
 
+.modal-choice.primary {
+  border-color: var(--fg);
+  color: var(--fg);
+  background: rgba(0, 255, 100, 0.10);
+  box-shadow: var(--glow);
+}
+
+.modal-choice.primary:hover {
+  background: rgba(0, 255, 100, 0.20);
+  box-shadow: var(--glow-strong);
+}
+
+.modal-choice.primary .modal-choice-label {
+  color: var(--fg);
+  text-shadow: var(--glow);
+}
+
 .modal-choice-label {
   font-size: 13px;
   color: var(--fg);
@@ -98,6 +119,224 @@
 @keyframes fade-in {
   from { opacity: 0; }
   to   { opacity: 1; }
+}
+
+/* ---- Loadout picker ---- */
+
+.loadout-panel {
+  max-width: 620px;
+}
+
+.loadout-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.loadout-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 14px;
+  align-items: center;
+  padding: 10px 12px;
+  border: 1px solid var(--fg-faint);
+}
+
+.loadout-row-title {
+  color: var(--fg);
+  font-size: 13px;
+  letter-spacing: 0.1em;
+  margin-bottom: 3px;
+}
+
+.loadout-row-desc {
+  color: var(--fg-dim);
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.loadout-stepper {
+  display: inline-flex;
+  align-items: center;
+  gap: 0;
+  border: 1px solid var(--fg-faint);
+}
+
+.loadout-step {
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--fg);
+  font-size: 18px;
+  font-family: inherit;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.loadout-step:hover {
+  background: rgba(0,255,100,0.10);
+  box-shadow: none;
+}
+
+.loadout-count {
+  min-width: 2.5em;
+  text-align: center;
+  color: var(--fg);
+  font-size: 16px;
+  font-weight: 700;
+  padding: 0 4px;
+  border-left: 1px solid var(--fg-faint);
+  border-right: 1px solid var(--fg-faint);
+  line-height: 28px;
+}
+
+.loadout-summary {
+  display: flex;
+  align-items: baseline;
+  justify-content: flex-end;
+  gap: 4px;
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  color: var(--fg-dim);
+  padding: 8px 4px 0;
+  border-top: 1px dashed var(--fg-faint);
+  margin-top: 4px;
+}
+
+.loadout-summary-label { margin-right: 6px; }
+.loadout-summary-value {
+  color: var(--fg);
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+}
+.loadout-summary-value.over { color: var(--crit); }
+.loadout-summary-sep  { color: var(--fg-faint); }
+.loadout-summary-max  { color: var(--fg-dim); font-size: 14px; }
+
+.loadout-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+/* LCARS loadout */
+body[data-theme="lcars"] .loadout-row {
+  border: none;
+  border-radius: 14px;
+  background: rgba(255, 153, 0, 0.08);
+}
+body[data-theme="lcars"] .loadout-stepper {
+  border: none;
+  border-radius: 999px;
+  background: var(--fg-dim);
+  overflow: hidden;
+}
+body[data-theme="lcars"] .loadout-step {
+  color: #000;
+  background: var(--fg-dim);
+}
+body[data-theme="lcars"] .loadout-step:hover {
+  background: var(--warn);
+  color: #000;
+}
+body[data-theme="lcars"] .loadout-count {
+  color: #000;
+  background: var(--warn);
+  border-left: none;
+  border-right: none;
+}
+
+/* ---- Mission briefing modal ---- */
+
+.briefing-panel {
+  max-width: 640px;
+}
+
+.briefing-meta {
+  font-size: 10px;
+  letter-spacing: 0.25em;
+  color: var(--fg-dim);
+  text-transform: uppercase;
+  border-top: 1px dashed var(--fg-faint);
+  border-bottom: 1px dashed var(--fg-faint);
+  padding: 10px 0;
+  line-height: 1.6;
+}
+
+.briefing-body {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--fg-dim);
+}
+
+.briefing-body p { margin: 0; }
+.briefing-body em { color: var(--fg); font-style: italic; }
+
+.briefing-roster {
+  font-size: 12px;
+  padding: 10px 14px;
+  border-left: 3px solid var(--fg-faint);
+  background: rgba(0, 255, 100, 0.04);
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.briefing-roster-title {
+  font-size: 10px;
+  letter-spacing: 0.25em;
+  color: var(--fg-faint);
+  margin-bottom: 4px;
+}
+
+.briefing-roster-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--fg);
+}
+
+.briefing-roster-row > span:last-child {
+  color: var(--fg-dim);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+}
+
+.briefing-stakes {
+  color: var(--warn) !important;
+  font-style: italic;
+  border-left: 3px solid var(--warn);
+  padding-left: 10px;
+}
+
+.briefing-signoff {
+  margin-top: 4px;
+  color: var(--fg) !important;
+  font-size: 12px;
+  text-align: right;
+  letter-spacing: 0.06em;
+}
+
+/* LCARS briefing */
+body[data-theme="lcars"] .briefing-roster {
+  border-left: none;
+  border-radius: 14px;
+  background: rgba(255, 153, 0, 0.10);
+  padding: 12px 16px;
+}
+body[data-theme="lcars"] .briefing-stakes {
+  border-left: none;
+  background: rgba(255, 204, 0, 0.12);
+  border-radius: 999px;
+  padding: 8px 16px;
 }
 
 /* ---- Outcome modal (post-choice resolution screen) ---- */
@@ -196,6 +435,36 @@
   padding: 8px 0;
 }
 
+/* Discovery / Mars-fact block */
+.outcome-fact {
+  margin-top: 6px;
+  padding: 10px 14px;
+  border: 1px dashed var(--fg);
+  background: rgba(0, 255, 100, 0.06);
+}
+
+.outcome-fact-label {
+  font-size: 10px;
+  color: var(--fg);
+  letter-spacing: 0.3em;
+  text-shadow: var(--glow);
+  margin-bottom: 6px;
+}
+
+.outcome-fact-body {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.55;
+  color: var(--fg-dim);
+}
+
+body[data-theme="lcars"] .outcome-fact {
+  border: none;
+  border-radius: 14px;
+  background: rgba(255, 204, 0, 0.14);
+}
+body[data-theme="lcars"] .outcome-fact-label { color: var(--warn); text-shadow: none; }
+
 .modal-continue {
   align-self: flex-end;
   margin-top: 8px;
@@ -260,6 +529,20 @@ body[data-theme="lcars"] .modal-choice:hover {
   background: var(--warn);
   color: #000;
   box-shadow: none;
+}
+
+body[data-theme="lcars"] .modal-choice.primary {
+  background: var(--healthy);
+  color: #000;
+}
+
+body[data-theme="lcars"] .modal-choice.primary:hover {
+  background: var(--fg);
+}
+
+body[data-theme="lcars"] .modal-choice.primary .modal-choice-label {
+  color: #000;
+  text-shadow: none;
 }
 
 body[data-theme="lcars"] .modal-choice-label,

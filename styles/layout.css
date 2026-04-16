@@ -71,6 +71,8 @@ body {
 .actionbar {
   display: flex;
   justify-content: center;
+  align-items: center;
+  gap: 12px;
   padding: 4px;
 }
 
