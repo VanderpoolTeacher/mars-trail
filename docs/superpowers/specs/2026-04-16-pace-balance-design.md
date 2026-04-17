@@ -131,9 +131,17 @@ Once the harness is in place:
 
 **Added a third lever** after Task 5 revealed a structural problem. The two-lever design (background damage + event rate) cannot move cautious off 0% win rate because cautious's ~38-sol trip runs O₂ below the 25% critical threshold in the last ~4 sols regardless of attrition tuning. The critical-resource damage (hypoxia 12 hp/crew/sol) alone is enough to kill the crew.
 
-**Third lever:** `LIFE_SUPPORT_MULT_BY_PACE = { cautious: 0.75, steady: 1.0, push: 1.35 }` — multiplies the base `O2_PER_SOL` and `H2O_PER_SOL` rates in `src/systems/travel.js`. Thematic: slower rover draws less life-support power, faster rover works harder. Does not touch `FOOD_PER_SOL` (already indexed by rations, not pace).
+**Third lever:** `LIFE_SUPPORT_MULT_BY_PACE` — multiplies the base `O2_PER_SOL` and `H2O_PER_SOL` rates in `src/systems/travel.js`. Thematic: slower rover draws less life-support power, faster rover works harder. Does not touch `FOOD_PER_SOL` (already indexed by rations, not pace).
 
-**Starting guesses at cautious × 0.75 multiplier:** 1.65% O₂/sol × 38 sols = 62.7% burned; ends at 37%, above the 25% crit threshold. Cautious becomes survivable on supplies, then the two-lever levers handle crew attrition.
+**Starting guesses:** `{ cautious: 0.75, steady: 1.0, push: 1.35 }`.
+
+**Final tuned values (committed in d292d57):** `{ cautious: 0.56, steady: 0.80, push: 1.15 }`. Tuned via sim iteration to land the Balanced-strategy curve in target. The starting guesses were too aggressive on push's nerf (caused push to crash from 95% to 16% win) and not aggressive enough on cautious's supply relief. Final values also reflect a simultaneous tuning of the other two levers; all three constants were adjusted together. See the Task 6 commit message for the final sim numbers.
+
+**Final tuned values for the other two levers (for completeness):**
+- `BACKGROUND_DAMAGE_BY_PACE = { cautious: 0, steady: 1, push: 3 }` (spec guess: `{1, 2, 3}`)
+- `EVENT_BASE_RATE_BY_PACE = { cautious: 0.20, steady: 0.25, push: 0.78 }` (spec guess: `{0.45, 0.60, 0.78}`)
+
+Cautious and steady required more buffing than the original guesses anticipated, because every extra sol of the long cautious/steady trips is a compounding damage sink (background damage + event rolls stack over ~27–38 sols).
 
 Scope cost: one new constant, two modified call sites in `travel.js`. No new state, no UI, no new mechanics.
 
