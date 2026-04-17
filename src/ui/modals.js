@@ -231,32 +231,6 @@ export function showLoadoutModal(initial, budget, partTypes, onConfirm) {
     `;
   }
 
-  const loadoutCareerSci = loadCareerScience();
-  const nonRookieTiers = CAREER_TIERS.filter(t => t.id !== 'rookie');
-  const earnedTiers = nonRookieTiers.filter(t => loadoutCareerSci >= t.minSci);
-  const nextLocked = nonRookieTiers.find(t => loadoutCareerSci < t.minSci);
-
-  const activeBonusesBlock = (earnedTiers.length === 0 && !nextLocked)
-    ? ''
-    : `
-      <div class="loadout-bonuses">
-        <div class="loadout-bonuses-title">ACTIVE BONUSES</div>
-        ${earnedTiers.map(t => `
-          <div class="loadout-bonus earned">
-            <span class="loadout-bonus-check">✓</span>
-            <span class="loadout-bonus-name">${escapeHtml(t.name)}</span>
-            <span class="loadout-bonus-desc">${escapeHtml(t.description)}</span>
-          </div>
-        `).join('')}
-        ${nextLocked ? `
-          <div class="loadout-bonus locked">
-            <span class="loadout-bonus-check">□</span>
-            <span class="loadout-bonus-name">${escapeHtml(nextLocked.name)}</span>
-            <span class="loadout-bonus-desc">Locked — need ${nextLocked.minSci.toLocaleString()} SCI</span>
-          </div>` : ''}
-      </div>
-    `;
-
   r.innerHTML = `
     <div class="modal-backdrop">
       <div class="modal-panel loadout-panel" role="dialog" aria-modal="true" aria-labelledby="loadout-title">
@@ -275,8 +249,6 @@ export function showLoadoutModal(initial, budget, partTypes, onConfirm) {
           <span class="loadout-summary-max">${budget}</span>
           <span class="loadout-summary-lbs"><span id="loadout-lbs">${totalLbs()}</span> LB · <span id="loadout-kg">${Math.round(totalLbs() * 0.4536)}</span> KG</span>
         </div>
-
-        ${activeBonusesBlock}
 
         <div class="loadout-actions">
           <button type="button" class="btn-secondary" id="loadout-reset">RESET DEFAULT</button>
