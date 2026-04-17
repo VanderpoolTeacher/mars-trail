@@ -415,6 +415,72 @@ export function closeModal() {
   if (r) r.innerHTML = '';
 }
 
+// ---- Waypoint offer modal (issue #7 part 1) ----
+
+export function showWaypointOfferModal(waypoint, { onAccept, onDecline }) {
+  const r = root();
+  if (!r) return;
+
+  const imgBlock = waypoint.image
+    ? `<img class="modal-image" src="${waypoint.image}" alt="" />`
+    : '';
+
+  r.innerHTML = `
+    <div class="modal-backdrop">
+      <div class="modal-panel modal-waypoint-offer" role="dialog" aria-modal="true">
+        <div class="modal-severity severity-waypoint">⚡ ANOMALOUS SENSOR RETURN</div>
+        <h2 class="modal-title">${escapeHtml(waypoint.name)}</h2>
+        ${imgBlock}
+        <p class="modal-description">${escapeHtml(waypoint.briefing)}</p>
+        <div class="waypoint-costs">
+          <div class="waypoint-cost"><span class="wp-label">COST</span><span class="wp-value">~${waypoint.detourSols} sols · +${waypoint.detourKm} km</span></div>
+          <div class="waypoint-cost"><span class="wp-label">REWARD</span><span class="wp-value">~${waypoint.sciencePoints} SCI + advanced data</span></div>
+        </div>
+        <div class="modal-choices">
+          <button class="modal-choice primary" id="wp-accept" type="button">DIVERT →</button>
+          <button class="modal-choice" id="wp-decline" type="button">CONTINUE ON</button>
+        </div>
+      </div>
+    </div>
+  `;
+  r.querySelector('#wp-accept').addEventListener('click', onAccept);
+  r.querySelector('#wp-decline').addEventListener('click', onDecline);
+}
+
+// ---- Waypoint reward modal (issue #7 part 1) ----
+
+export function showWaypointRewardModal(payload, onContinue) {
+  const r = root();
+  if (!r) return;
+
+  const { waypoint, sciencePointsGained, fact } = payload;
+  const imgBlock = waypoint.image
+    ? `<img class="modal-image" src="${waypoint.image}" alt="" />`
+    : '';
+  const factBlock = fact
+    ? `
+      <div class="waypoint-fact">
+        <div class="waypoint-fact-label">⎋ ADVANCED DATA</div>
+        <p>${linkifyCodex(escapeHtml(fact))}</p>
+      </div>`
+    : '';
+
+  r.innerHTML = `
+    <div class="modal-backdrop">
+      <div class="modal-panel modal-waypoint-reward" role="dialog" aria-modal="true">
+        <div class="modal-severity severity-waypoint">⎋ DATA RECOVERED</div>
+        <h2 class="modal-title">${escapeHtml(waypoint.name)}</h2>
+        ${imgBlock}
+        <p class="modal-description">Sample returned. Crew back aboard, data logged.</p>
+        <div class="waypoint-sci">+${sciencePointsGained} SCI</div>
+        ${factBlock}
+        <button class="modal-continue primary" id="wp-continue" type="button">CONTINUE →</button>
+      </div>
+    </div>
+  `;
+  r.querySelector('#wp-continue').addEventListener('click', onContinue);
+}
+
 // ---- helpers ----
 
 const FIELD_LABELS = {
