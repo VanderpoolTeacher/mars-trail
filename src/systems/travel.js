@@ -5,6 +5,8 @@ import { landmarkName, PART_TYPES } from '../state.js';
 import { rollEvent } from './events.js';
 import { applyDamage, checkAllDead } from './crew.js';
 import { makeLandmarkEncounter } from '../content/landmarks.js';
+import { WAYPOINTS } from '../content/waypoints.js';
+import { resolveWaypoint } from './waypoints.js';
 
 // Total carried weight in pounds. Only persistent parts (MECH/EVA/CELL)
 // count — supplies are consumed at mission start.
@@ -188,8 +190,30 @@ export function advanceSol(state, mode = 'travel') {
         const survived = s.crew.filter(c => c.alive).length;
         s.log.push({ sol: s.sol, text: `Mission accomplished. ${survived}/${s.crew.length} crew survived.` });
       } else {
-        // Set up next segment and open a landmark-stop encounter.
+        // Set up the next segment's base distance.
         s.kmToNextLandmark = s.routeKm[s.currentLandmarkIndex];
+
+        // Step A — If a waypoint detour was in progress, fire the reward modal.
+        // It will chain to the offer (or the landmark encounter) when dismissed.
+        if (s.pendingWaypoint) {
+          s = resolveWaypoint(s);
+          return s;
+        }
+
+        // Step B — If this segment has a rolled waypoint not yet offered, open the offer.
+        const segmentWp = s.waypoints.find(w => w.segmentIdx === s.currentLandmarkIndex);
+        if (segmentWp && !s.firedWaypoints.includes(segmentWp.waypointId)) {
+          const waypoint = WAYPOINTS.find(w => w.id === segmentWp.waypointId);
+          if (waypoint) {
+            s.activeModal = {
+              type: 'waypoint_offer',
+              payload: { waypoint, segmentIdx: s.currentLandmarkIndex }
+            };
+            return s;
+          }
+        }
+
+        // Step C — Normal landmark encounter.
         s.activeModal = { type: 'event', payload: makeLandmarkEncounter(arrivedId) };
       }
     } else {
