@@ -366,9 +366,13 @@ body[data-theme="lcars"] .title-studio { color: var(--fg); text-shadow: none; }
 }
 
 .loadout-rows {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px 12px;
+}
+
+@media (max-width: 640px) {
+  .loadout-rows { grid-template-columns: 1fr; }
 }
 
 .loadout-row {
