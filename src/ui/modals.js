@@ -4,6 +4,7 @@
 
 import { linkifyCodex } from './codex.js';
 import { computeScore, loadBestRun, saveBestRun } from '../systems/scoring.js';
+import { CAREER_TIERS, currentTier, nextTier, addCareerScience, loadCareerScience } from '../systems/career.js';
 import pkg from '../../package.json' with { type: 'json' };
 
 const root = () => document.getElementById('modal-root');
@@ -146,12 +147,22 @@ export function showTitleLayer(onStart) {
     ? `<div class="title-best">BEST: RANK ${best.rank} · ${best.points.toLocaleString()} pts · sol ${best.sol} · ${best.won ? 'won' : 'lost'}</div>`
     : '';
 
+  const careerSci = loadCareerScience();
+  const cur = currentTier(careerSci);
+  const next = nextTier(careerSci);
+  const careerLine1 = `<div class="title-career">CAREER: ${careerSci.toLocaleString()} SCI · TIER ${CAREER_TIERS.indexOf(cur)} · ${escapeHtml(cur.name.toUpperCase())}</div>`;
+  const careerLine2 = next
+    ? `<div class="title-career-next">NEXT: ${next.minSci.toLocaleString()} SCI — ${escapeHtml(next.name)} (−${(next.minSci - careerSci).toLocaleString()})</div>`
+    : '';
+  const careerCaption = careerLine1 + careerLine2;
+
   layer.innerHTML = `
     <div class="title-screen">
       <div class="title-mars-glyph" aria-hidden="true">◉</div>
       <h1 class="title-heading">MARS TRAIL</h1>
       <p class="title-tagline">The colony is waiting. Earth cannot help you from here.</p>
       ${bestCaption}
+      ${careerCaption}
       <button class="title-start" id="title-start" type="button">START MISSION</button>
       <div class="title-credits">
         <span class="title-credit-line">Created by</span>
@@ -215,6 +226,32 @@ export function showLoadoutModal(initial, budget, partTypes, onConfirm) {
     `;
   }
 
+  const loadoutCareerSci = loadCareerScience();
+  const nonRookieTiers = CAREER_TIERS.filter(t => t.id !== 'rookie');
+  const earnedTiers = nonRookieTiers.filter(t => loadoutCareerSci >= t.minSci);
+  const nextLocked = nonRookieTiers.find(t => loadoutCareerSci < t.minSci);
+
+  const activeBonusesBlock = (earnedTiers.length === 0 && !nextLocked)
+    ? ''
+    : `
+      <div class="loadout-bonuses">
+        <div class="loadout-bonuses-title">ACTIVE BONUSES</div>
+        ${earnedTiers.map(t => `
+          <div class="loadout-bonus earned">
+            <span class="loadout-bonus-check">✓</span>
+            <span class="loadout-bonus-name">${escapeHtml(t.name)}</span>
+            <span class="loadout-bonus-desc">${escapeHtml(t.description)}</span>
+          </div>
+        `).join('')}
+        ${nextLocked ? `
+          <div class="loadout-bonus locked">
+            <span class="loadout-bonus-check">□</span>
+            <span class="loadout-bonus-name">${escapeHtml(nextLocked.name)}</span>
+            <span class="loadout-bonus-desc">Locked — need ${nextLocked.minSci.toLocaleString()} SCI</span>
+          </div>` : ''}
+      </div>
+    `;
+
   r.innerHTML = `
     <div class="modal-backdrop">
       <div class="modal-panel loadout-panel" role="dialog" aria-modal="true" aria-labelledby="loadout-title">
@@ -233,6 +270,8 @@ export function showLoadoutModal(initial, budget, partTypes, onConfirm) {
           <span class="loadout-summary-max">${budget}</span>
           <span class="loadout-summary-lbs"><span id="loadout-lbs">${totalLbs()}</span> LB · <span id="loadout-kg">${Math.round(totalLbs() * 0.4536)}</span> KG</span>
         </div>
+
+        ${activeBonusesBlock}
 
         <div class="loadout-actions">
           <button type="button" class="btn-secondary" id="loadout-reset">RESET DEFAULT</button>
@@ -283,9 +322,13 @@ export function showLoadoutModal(initial, budget, partTypes, onConfirm) {
 
 // Mission-briefing modal shown after loadout. Narrative-only with an
 // acknowledge button.
-export function showBriefingModal(onBegin) {
+export function showBriefingModal(state, onBegin) {
   const r = root();
   if (!r) return;
+
+  const previewLine = state?.eventPreview && state.careerBonuses?.eventPreview
+    ? `<p class="briefing-intel"><em>ORBITAL ANALYSIS FLAGS: ${escapeHtml(state.eventPreview.modal.title)} likely in the coming sols.</em></p>`
+    : '';
 
   r.innerHTML = `
     <div class="modal-backdrop">
@@ -310,13 +353,14 @@ export function showBriefingModal(onBegin) {
           <p>${linkifyCodex('Systems nominal. RTG providing steady trickle charge; solar array supplementing when panels are clean. Spare parts and consumables loaded for an estimated thirty-sol traverse at standard burn.')}</p>
           <p class="briefing-stakes">Resupply is not possible. Earth cannot save us from here. We save ourselves.</p>
           <p class="briefing-signoff">Good luck, Commander.<br>— Mission Director, Ares Program</p>
+          ${previewLine}
         </div>
         <button class="modal-continue primary" id="briefing-begin" type="button">BEGIN LOADOUT →</button>
       </div>
     </div>
   `;
 
-  r.querySelector('#briefing-begin').addEventListener('click', onBegin);
+  r.querySelector('#briefing-begin').addEventListener('click', () => onBegin());
 }
 
 // End-of-run modal: summary of the mission, facts learned, new-mission button.
@@ -361,6 +405,17 @@ export function showEndOfRunModal(state, onNewMission) {
   const score = computeScore(state);
   saveBestRun(score, state);
 
+  // Persist career SCI — credits full on win, random 20-60% on loss.
+  const careerResult = addCareerScience(state);
+  let careerCreditLine;
+  if (state.sciencePoints === 0) {
+    careerCreditLine = `<div class="eor-career">No career credit this mission. Career total ${careerResult.total.toLocaleString()}.</div>`;
+  } else if (state.status === 'won') {
+    careerCreditLine = `<div class="eor-career">+${careerResult.credit.toLocaleString()} SCI earned this mission → career total ${careerResult.total.toLocaleString()}.</div>`;
+  } else {
+    careerCreditLine = `<div class="eor-career">Lost run: +${careerResult.credit.toLocaleString()} SCI credited (random 20–60% of earned) → career total ${careerResult.total.toLocaleString()}.</div>`;
+  }
+
   const rankClass =
     score.rank === 'S' || score.rank === 'A' ? 'rank-gold'
     : score.rank === 'B' || score.rank === 'C' ? 'rank-neutral'
@@ -391,7 +446,7 @@ export function showEndOfRunModal(state, onNewMission) {
         ${reasonBlock}
 
         ${rankBlock}
-
+        ${careerCreditLine}
         <div class="eor-stats">
           <div class="eor-stat"><span class="eor-stat-label">SOLS</span><span class="eor-stat-value">${state.sol}</span></div>
           <div class="eor-stat"><span class="eor-stat-label">KM TRAVELED</span><span class="eor-stat-value">${km.toLocaleString()}</span></div>
@@ -417,9 +472,14 @@ export function closeModal() {
 
 // ---- Waypoint offer modal (issue #7 part 1) ----
 
-export function showWaypointOfferModal(waypoint, { onAccept, onDecline }) {
+export function showWaypointOfferModal(waypoint, state, { onAccept, onDecline }) {
   const r = root();
   if (!r) return;
+
+  const showExact = state?.careerBonuses?.exactWaypointReward;
+  const rewardText = showExact
+    ? `${waypoint.sciencePoints} SCI + advanced data`
+    : `~${waypoint.sciencePoints} SCI + advanced data`;
 
   const imgBlock = waypoint.image
     ? `<img class="modal-image" src="${waypoint.image}" alt="" />`
@@ -434,7 +494,7 @@ export function showWaypointOfferModal(waypoint, { onAccept, onDecline }) {
         <p class="modal-description">${escapeHtml(waypoint.briefing)}</p>
         <div class="waypoint-costs">
           <div class="waypoint-cost"><span class="wp-label">COST</span><span class="wp-value">~${waypoint.detourSols} sols · +${waypoint.detourKm} km</span></div>
-          <div class="waypoint-cost"><span class="wp-label">REWARD</span><span class="wp-value">~${waypoint.sciencePoints} SCI + advanced data</span></div>
+          <div class="waypoint-cost"><span class="wp-label">REWARD</span><span class="wp-value">${rewardText}</span></div>
         </div>
         <div class="modal-choices">
           <button class="modal-choice primary" id="wp-accept" type="button">DIVERT →</button>

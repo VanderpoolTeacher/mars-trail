@@ -91,7 +91,7 @@ function renderAll() {
   }
 
   if (modal.type === 'briefing') {
-    showBriefingModal(() => {
+    showBriefingModal(state, () => {
       state = { ...state, activeModal: { type: 'loadout' } };
       renderAll();
     });
@@ -159,7 +159,7 @@ function renderAll() {
 
   if (modal.type === 'waypoint_offer') {
     const { waypoint, segmentIdx } = modal.payload;
-    showWaypointOfferModal(waypoint, {
+    showWaypointOfferModal(waypoint, state, {
       onAccept: () => {
         state = acceptWaypoint(state, segmentIdx);
         // Chain: proceed to the landmark encounter for the CURRENT arrival.
