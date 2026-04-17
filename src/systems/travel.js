@@ -113,7 +113,8 @@ export function advanceSol(state, mode = 'travel') {
     const pilotMult  = pilotAlive ? 1 + PILOT_KM_BONUS : 1;
     const lbs        = cargoPounds(s.resources);
     const weightMult = Math.max(0.5, 1 - lbs * CARGO_WEIGHT_SPEED);
-    const km         = Math.max(0, baseKm * pilotMult * weightMult * (1 + jitter));
+    const kmMult     = state.careerBonuses?.kmMult || 1;
+    const km         = Math.max(0, baseKm * pilotMult * weightMult * kmMult * (1 + jitter));
     usableKm         = Math.min(km, s.kmToNextLandmark);
 
     s.totalKmTraveled += usableKm;
@@ -121,7 +122,8 @@ export function advanceSol(state, mode = 'travel') {
   }
 
   // ---- Resource consumption (life support always; travel power only when moving) ----
-  const lifeSupportMult = LIFE_SUPPORT_MULT_BY_PACE[s.pace];
+  const careerLifeMult  = state.careerBonuses?.lifeSupportMult || 1;
+  const lifeSupportMult = LIFE_SUPPORT_MULT_BY_PACE[s.pace] * careerLifeMult;
   s.resources.oxygen = Math.max(0, s.resources.oxygen - O2_PER_SOL  * lifeSupportMult);
   s.resources.water  = Math.max(0, s.resources.water  - H2O_PER_SOL * lifeSupportMult);
   s.resources.food   = Math.max(0, s.resources.food   - FOOD_PER_SOL[s.rations]);
