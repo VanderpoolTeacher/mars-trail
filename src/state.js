@@ -112,25 +112,25 @@ export const CARGO_MAX_LBS = 600;  // full hold — 100% weight on display
 export const PART_TYPES = [
   { key: 'rations', label: 'FOOD', default: 3, lbs: 8,
     name:  'Ration Packs',
-    desc:  'Lightweight vacuum-packed food. 8 LB / 3.6 KG each, +8% starting food.',
+    desc:  'Vacuum-packed rations. 8 LB each.',
     supply: { resource: 'food', perUnit: 8 } },
   { key: 'h2o', label: 'H₂O', default: 3, lbs: 40,
     name:  'Water Tanks',
-    desc:  'Pressurized H₂O containers. 40 LB / 18 KG each, +8% starting water.',
+    desc:  'Pressurized H₂O. 40 LB each.',
     supply: { resource: 'water', perUnit: 8 } },
   { key: 'o2', label: 'O₂', default: 3, lbs: 20,
     name:  'Oxygen Canisters',
-    desc:  'Compressed O₂ bottles. 20 LB / 9 KG each, +8% starting oxygen.',
+    desc:  'Compressed O₂. 20 LB each.',
     supply: { resource: 'oxygen', perUnit: 8 } },
   { key: 'mech', label: 'MECH', default: 4, lbs: 30,
     name:  'Mechanical Parts',
-    desc:  'Bearings, gears, drill bits. 30 LB / 14 KG each. Rover repair and mining.' },
+    desc:  'Bearings, gears, drill bits. 30 LB each.' },
   { key: 'eva',  label: 'EVA', default: 4, lbs: 12,
     name:  'EVA Supplies',
-    desc:  'Patches, tethers, O₂ lines. 12 LB / 5.4 KG each. External work, climbs.' },
+    desc:  'Patches, tethers, O₂ lines. 12 LB each.' },
   { key: 'cell', label: 'CELL', default: 3, lbs: 80,
     name:  'Power Cells',
-    desc:  'Lithium-ion battery modules. 80 LB / 36 KG each. Consumed by REPAIR for +25% PWR.' }
+    desc:  'Battery modules. 80 LB each. REPAIR consumes one.' }
 ];
 
 export function landmarkName(id) {
