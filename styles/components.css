@@ -468,3 +468,94 @@ body[data-theme="lcars"] .crew-bubble::before { display: none; }
   border-color: var(--fg);
   color: var(--fg);
 }
+
+/* ---- Waypoint markers on minimap (issue #7 part 1) ---- */
+
+.waypoint-marker {
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #cc88ff;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+.waypoint-marker.pending {
+  animation: waypoint-pulse 2s ease-in-out infinite;
+}
+
+.waypoint-marker.accepted {
+  background: #ee99ff;
+  width: 8px;
+  height: 8px;
+  box-shadow: 0 0 8px #ee99ff;
+}
+
+.waypoint-marker.fired {
+  background: var(--fg-dim, #cc99cc);
+  opacity: 0.3;
+}
+
+@keyframes waypoint-pulse {
+  0%, 100% { opacity: 0.5; transform: translate(-50%, -50%) scale(1); }
+  50%      { opacity: 1;   transform: translate(-50%, -50%) scale(1.4); }
+}
+
+/* ---- Waypoint modal content (issue #7 part 1) ---- */
+
+.modal-severity.severity-waypoint {
+  color: #cc88ff;
+  border-color: #cc88ff;
+}
+
+.modal-waypoint-offer .waypoint-costs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+  margin: 0.75rem 0 1rem;
+}
+
+.waypoint-cost {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.35rem;
+  background: rgba(204, 136, 255, 0.06);
+  border: 1px solid rgba(204, 136, 255, 0.2);
+}
+
+.waypoint-cost .wp-label {
+  font-size: 0.7rem;
+  letter-spacing: 0.15em;
+  opacity: 0.75;
+}
+
+.waypoint-cost .wp-value {
+  font-size: 0.95rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.modal-waypoint-reward .waypoint-sci {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #cc88ff;
+  text-align: center;
+  margin: 0.75rem 0;
+}
+
+.waypoint-fact {
+  margin: 0.75rem 0;
+  padding: 0.75rem 1rem;
+  border-radius: 0.35rem;
+  background: rgba(204, 136, 255, 0.06);
+  border-left: 3px solid #cc88ff;
+}
+
+.waypoint-fact-label {
+  font-size: 0.7rem;
+  letter-spacing: 0.15em;
+  opacity: 0.8;
+  margin-bottom: 0.35rem;
+}

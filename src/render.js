@@ -3,6 +3,7 @@
 
 import { landmarkName, ROLE_CODE, RESOURCE_LABELS, PART_TYPES, CARGO_MAX_LBS } from './state.js';
 import { LANDMARKS } from './content/landmarks.js';
+import { WAYPOINTS } from './content/waypoints.js';
 
 // Cache DOM lookups once on init.
 const $ = {};
@@ -122,6 +123,42 @@ function renderMinimap(state) {
       if (i < state.routeKm.length) cumKm += state.routeKm[i];
     }
     $.minimapLands.innerHTML = dots.join('');
+
+    // ---- Waypoint markers (issue #7 part 1) ----
+    // Remove stale waypoint marker elements from a prior render.
+    $.minimapLands.querySelectorAll('.waypoint-marker').forEach(el => el.remove());
+    for (const entry of state.waypoints) {
+      const waypoint = WAYPOINTS.find(w => w.id === entry.waypointId);
+      if (!waypoint) continue;
+      // Compute cumulative km at the segment start and end to get path fractions.
+      const segStart = state.routeKm.slice(0, entry.segmentIdx).reduce((a, b) => a + b, 0);
+      const segEnd   = segStart + (state.routeKm[entry.segmentIdx] ?? 0);
+      const midFrac  = totalKm > 0 ? (segStart + segEnd) / 2 / totalKm : 0;
+      const mid      = pathEl.getPointAtLength(pathLen * Math.min(1, midFrac));
+      // Perpendicular offset: sample two nearby points to get the tangent direction.
+      const delta    = pathLen * 0.005;
+      const pA       = pathEl.getPointAtLength(Math.max(0, pathLen * midFrac - delta));
+      const pB       = pathEl.getPointAtLength(Math.min(pathLen, pathLen * midFrac + delta));
+      const dx = pB.x - pA.x;
+      const dy = pB.y - pA.y;
+      const len = Math.max(1, Math.sqrt(dx * dx + dy * dy));
+      // Perpendicular (rotate 90°): (-dy, dx). Offset 6px off the path.
+      const ox = (-dy / len) * 6;
+      const oy = (dx / len) * 6;
+      const stateClass = state.firedWaypoints.includes(waypoint.id) ? 'fired'
+        : state.pendingWaypoint?.id === waypoint.id ? 'accepted'
+        : 'pending';
+      const r = stateClass === 'accepted' ? 3.5 : 2.8;
+      const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+      circle.setAttribute('class', `waypoint-marker ${stateClass}`);
+      circle.setAttribute('cx', (mid.x + ox).toFixed(1));
+      circle.setAttribute('cy', (mid.y + oy).toFixed(1));
+      circle.setAttribute('r', r);
+      const titleEl = document.createElementNS('http://www.w3.org/2000/svg', 'title');
+      titleEl.textContent = waypoint.name;
+      circle.appendChild(titleEl);
+      $.minimapLands.appendChild(circle);
+    }
   }
 }
 
