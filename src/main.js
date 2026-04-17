@@ -5,7 +5,10 @@ import { createInitialState, CARGO_BUDGET, PART_TYPES } from './state.js';
 import { render } from './render.js';
 import { advanceSol, setPace, setRations, repairBattery, cleanPanels } from './systems/travel.js';
 import { applyEventChoice } from './systems/events.js';
-import { showEventModal, showOutcomeModal, showBriefingModal, showLoadoutModal, showTitleLayer, dimTitleStart, hideTitleLayer, showEndOfRunModal, closeModal } from './ui/modals.js';
+import { showEventModal, showOutcomeModal, showBriefingModal, showLoadoutModal, showTitleLayer, dimTitleStart, hideTitleLayer, showEndOfRunModal, closeModal, showWaypointOfferModal, showWaypointRewardModal } from './ui/modals.js';
+import { acceptWaypoint, declineWaypoint } from './systems/waypoints.js';
+import { WAYPOINTS } from './content/waypoints.js';
+import { makeLandmarkEncounter } from './content/landmarks.js';
 import './ui/codex.js';   // registers global click handler for codex terms
 import { GAMEPLAY_TRACKS, getSelectedTrackId, isMuted, playTitle, playGameplay, selectTrack, toggleMute, fadeOut, fadeInGameplay, cycleTrack } from './audio.js';
 
@@ -149,6 +152,42 @@ function renderAll() {
     showEndOfRunModal(state, () => {
       state = createInitialState();
       closeModal();
+      renderAll();
+    });
+    return;
+  }
+
+  if (modal.type === 'waypoint_offer') {
+    const { waypoint, segmentIdx } = modal.payload;
+    showWaypointOfferModal(waypoint, {
+      onAccept: () => {
+        state = acceptWaypoint(state, segmentIdx);
+        // Chain: proceed to the landmark encounter for the CURRENT arrival.
+        const arrivedId = state.route[state.currentLandmarkIndex];
+        state = { ...state, activeModal: { type: 'event', payload: makeLandmarkEncounter(arrivedId) } };
+        renderAll();
+      },
+      onDecline: () => {
+        state = declineWaypoint(state, waypoint.id);
+        const arrivedId = state.route[state.currentLandmarkIndex];
+        state = { ...state, activeModal: { type: 'event', payload: makeLandmarkEncounter(arrivedId) } };
+        renderAll();
+      }
+    });
+    return;
+  }
+
+  if (modal.type === 'waypoint_reward') {
+    showWaypointRewardModal(modal.payload, () => {
+      // Chain: if the next segment also has a waypoint offer, fire it; else landmark encounter.
+      const segmentWp = state.waypoints.find(w => w.segmentIdx === state.currentLandmarkIndex);
+      if (segmentWp && !state.firedWaypoints.includes(segmentWp.waypointId)) {
+        const nextWaypoint = WAYPOINTS.find(w => w.id === segmentWp.waypointId);
+        state = { ...state, activeModal: { type: 'waypoint_offer', payload: { waypoint: nextWaypoint, segmentIdx: state.currentLandmarkIndex } } };
+      } else {
+        const arrivedId = state.route[state.currentLandmarkIndex];
+        state = { ...state, activeModal: { type: 'event', payload: makeLandmarkEncounter(arrivedId) } };
+      }
       renderAll();
     });
     return;
