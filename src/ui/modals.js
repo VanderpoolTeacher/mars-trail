@@ -518,7 +518,7 @@ export function showWaypointRewardModal(payload, onContinue) {
   const r = root();
   if (!r) return;
 
-  const { waypoint, sciencePointsGained, fact } = payload;
+  const { waypoint, sciencePointsGained, fact, success, role, specialistAlive } = payload;
   const imgBlock = waypoint.image
     ? `<img class="modal-image" src="${waypoint.image}" alt="" />`
     : '';
@@ -530,14 +530,22 @@ export function showWaypointRewardModal(payload, onContinue) {
       </div>`
     : '';
 
+  const severityLabel = success ? '⎋ DATA RECOVERED' : '⚠ PARTIAL DATA';
+  const roleLabel = role ? role.toUpperCase() : '';
+  const specialistNote = role && !specialistAlive ? ` (no ${role} aboard — improvised).` : '';
+  const description = success
+    ? `${roleLabel} analysis conclusive.${specialistNote} Sample archived.`
+    : `${roleLabel} analysis inconclusive.${specialistNote} Only partial data recovered.`;
+  const sciLabel = success ? `+${sciencePointsGained} SCI` : `+${sciencePointsGained} SCI (partial)`;
+
   r.innerHTML = `
     <div class="modal-backdrop">
-      <div class="modal-panel modal-waypoint-reward" role="dialog" aria-modal="true">
-        <div class="modal-severity severity-waypoint">⎋ DATA RECOVERED</div>
+      <div class="modal-panel modal-waypoint-reward ${success ? 'wp-success' : 'wp-partial'}" role="dialog" aria-modal="true">
+        <div class="modal-severity severity-waypoint">${severityLabel}</div>
         <h2 class="modal-title">${escapeHtml(waypoint.name)}</h2>
         ${imgBlock}
-        <p class="modal-description">Sample returned. Crew back aboard, data logged.</p>
-        <div class="waypoint-sci">+${sciencePointsGained} SCI</div>
+        <p class="modal-description">${escapeHtml(description)}</p>
+        <div class="waypoint-sci">${sciLabel}</div>
         ${factBlock}
         <button class="modal-continue primary" id="wp-continue" type="button">CONTINUE →</button>
       </div>
