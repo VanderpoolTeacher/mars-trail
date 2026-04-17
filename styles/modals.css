@@ -266,6 +266,7 @@ body[data-theme="lcars"] .modal-severity.severity-away-team {
 }
 
 .title-start {
+  margin-top: 1.25rem;
   font-family: var(--font-mono);
   font-size: 16px;
   letter-spacing: 0.3em;
