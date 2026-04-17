@@ -218,10 +218,8 @@ export function showLoadoutModal(initial, budget, partTypes, onConfirm) {
   function rowHtml(t) {
     return `
       <div class="loadout-row">
-        <div class="loadout-row-main">
-          <div class="loadout-row-title">${t.label} · ${t.name}</div>
-          <div class="loadout-row-desc">${t.desc}</div>
-        </div>
+        <div class="loadout-row-title">${t.label} · ${t.name}</div>
+        <div class="loadout-row-desc">${t.desc}</div>
         <div class="loadout-stepper">
           <button type="button" class="loadout-step" data-key="${t.key}" data-delta="-1">−</button>
           <span class="loadout-count" id="loadout-count-${t.key}">${picked[t.key]}</span>
