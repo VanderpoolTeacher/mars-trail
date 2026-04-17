@@ -57,7 +57,9 @@ export function applyEventChoice(state, event, choiceIdx) {
   if (choice.skillCheck) {
     const { role, successP } = choice.skillCheck;
     const specialistAlive = state.crew.some(c => c.role === role && c.alive);
-    const effectiveP = specialistAlive ? successP : Math.max(0.2, successP - 0.4);
+    const baseP = specialistAlive ? successP : Math.max(0.2, successP - 0.4);
+    const bonus = state.careerBonuses?.skillBonus || 0;
+    const effectiveP = Math.min(0.95, baseP + bonus);
     const success = Math.random() < effectiveP;
     outcome = success ? choice.successOutcome : choice.failOutcome;
     skillResult = { role, success, specialistAlive, effectiveP };

@@ -2,6 +2,8 @@
 // Pure data + factory. Mutations live in src/systems/.
 
 import { rollWaypoints } from './systems/waypoints.js';
+import { loadCareerScience, computeActiveBonuses } from './systems/career.js';
+import { EVENTS } from './content/events.js';
 
 const LANDMARK_NAMES = {
   jezero:       'Jezero Crater',
@@ -25,6 +27,18 @@ function uuid() {
 }
 
 export function createInitialState() {
+  const careerSci = loadCareerScience();
+  const careerBonuses = computeActiveBonuses(careerSci);
+
+  // If tier 5 is active, sample one non-one-shot event for briefing preview.
+  let eventPreview = null;
+  if (careerBonuses.eventPreview) {
+    const pool = EVENTS.filter(e => !e.oneShot);
+    if (pool.length) {
+      eventPreview = pool[Math.floor(Math.random() * pool.length)];
+    }
+  }
+
   const baseState = {
     schemaVersion: 1,
     runId: uuid(),
@@ -77,6 +91,11 @@ export function createInitialState() {
     log: [
       { sol: 1, text: 'Mission begins. Crew nominal. Departing Jezero Crater.' }
     ],
+
+    // Career science (cross-run progression).
+    careerSci,
+    careerBonuses,
+    eventPreview,
 
     // UI ephemeral — open with the title screen, then briefing, then loadout.
     activeModal: { type: 'title' }
