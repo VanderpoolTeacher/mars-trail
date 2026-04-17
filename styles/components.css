@@ -469,16 +469,14 @@ body[data-theme="lcars"] .crew-bubble::before { display: none; }
   color: var(--fg);
 }
 
-/* ---- Waypoint markers on minimap (issue #7 part 1) ---- */
+/* ---- Waypoint markers on minimap (SVG circles, issue #7 part 1) ---- */
 
 .waypoint-marker {
-  position: absolute;
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: #cc88ff;
-  transform: translate(-50%, -50%);
+  fill: #cc88ff;
+  stroke: none;
   pointer-events: none;
+  transform-box: fill-box;
+  transform-origin: center;
 }
 
 .waypoint-marker.pending {
@@ -486,20 +484,18 @@ body[data-theme="lcars"] .crew-bubble::before { display: none; }
 }
 
 .waypoint-marker.accepted {
-  background: #ee99ff;
-  width: 8px;
-  height: 8px;
-  box-shadow: 0 0 8px #ee99ff;
+  fill: #ee99ff;
+  filter: drop-shadow(0 0 3px #ee99ff);
 }
 
 .waypoint-marker.fired {
-  background: var(--fg-dim, #cc99cc);
+  fill: var(--fg-dim, #cc99cc);
   opacity: 0.3;
 }
 
 @keyframes waypoint-pulse {
-  0%, 100% { opacity: 0.5; transform: translate(-50%, -50%) scale(1); }
-  50%      { opacity: 1;   transform: translate(-50%, -50%) scale(1.4); }
+  0%, 100% { opacity: 0.5; transform: scale(1); }
+  50%      { opacity: 1;   transform: scale(1.4); }
 }
 
 /* ---- Waypoint modal content (issue #7 part 1) ---- */
