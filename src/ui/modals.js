@@ -147,14 +147,19 @@ export function showTitleLayer(onStart) {
     ? `<div class="title-best">BEST: RANK ${best.rank} · ${best.points.toLocaleString()} pts · sol ${best.sol} · ${best.won ? 'won' : 'lost'}</div>`
     : '';
 
+  // Career caption only appears once the player has earned SCI.
+  // First-run title stays clean.
   const careerSci = loadCareerScience();
-  const cur = currentTier(careerSci);
-  const next = nextTier(careerSci);
-  const careerLine1 = `<div class="title-career">CAREER: ${careerSci.toLocaleString()} SCI · TIER ${CAREER_TIERS.indexOf(cur)} · ${escapeHtml(cur.name.toUpperCase())}</div>`;
-  const careerLine2 = next
-    ? `<div class="title-career-next">NEXT: ${next.minSci.toLocaleString()} SCI — ${escapeHtml(next.name)} (−${(next.minSci - careerSci).toLocaleString()})</div>`
-    : '';
-  const careerCaption = careerLine1 + careerLine2;
+  let careerCaption = '';
+  if (careerSci > 0) {
+    const cur = currentTier(careerSci);
+    const next = nextTier(careerSci);
+    const careerLine1 = `<div class="title-career">CAREER: ${careerSci.toLocaleString()} SCI · TIER ${CAREER_TIERS.indexOf(cur)} · ${escapeHtml(cur.name.toUpperCase())}</div>`;
+    const careerLine2 = next
+      ? `<div class="title-career-next">NEXT: ${next.minSci.toLocaleString()} SCI — ${escapeHtml(next.name)} (−${(next.minSci - careerSci).toLocaleString()})</div>`
+      : '';
+    careerCaption = careerLine1 + careerLine2;
+  }
 
   layer.innerHTML = `
     <div class="title-screen">
