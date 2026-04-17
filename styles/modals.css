@@ -802,7 +802,11 @@ body[data-theme="lcars"] .outcome-fact-label { color: var(--warn); text-shadow: 
 
 /* ---- End-of-run modal ---- */
 
-.eor-panel { max-width: 620px; }
+.eor-panel {
+  max-width: 620px;
+  max-height: 90vh;
+  overflow-y: auto;
+}
 
 .eor-title {
   font-size: 26px;
