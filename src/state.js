@@ -1,6 +1,8 @@
 // Mars Trail — game state shape
 // Pure data + factory. Mutations live in src/systems/.
 
+import { rollWaypoints } from './systems/waypoints.js';
+
 const LANDMARK_NAMES = {
   jezero:       'Jezero Crater',
   syrtis:       'Syrtis Major',
@@ -23,7 +25,7 @@ function uuid() {
 }
 
 export function createInitialState() {
-  return {
+  const baseState = {
     schemaVersion: 1,
     runId: uuid(),
     scenario: 'trek',
@@ -69,6 +71,9 @@ export function createInitialState() {
     sciencePoints: 0,
     factsLearned: [],
     firedEvents: [],   // IDs of one-shot events already triggered this run
+    waypoints:       [],    // [{ waypointId, segmentIdx }] — rolled at run start
+    pendingWaypoint: null,  // full waypoint object while detour is in progress
+    firedWaypoints:  [],    // ids already resolved or declined
     log: [
       { sol: 1, text: 'Mission begins. Crew nominal. Departing Jezero Crater.' }
     ],
@@ -76,6 +81,7 @@ export function createInitialState() {
     // UI ephemeral — open with the title screen, then briefing, then loadout.
     activeModal: { type: 'title' }
   };
+  return rollWaypoints(baseState);
 }
 
 // Cargo budget / loadout constants shared between state and UI.
