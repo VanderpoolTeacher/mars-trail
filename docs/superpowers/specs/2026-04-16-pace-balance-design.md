@@ -127,6 +127,16 @@ Once the harness is in place:
 - **Manual browser check:** Play one game at each pace, confirm the feel matches intent (cautious feels grinding but safe; push feels tense).
 - **Regression check:** Confirm resource consumption (O2/H2O/food per sol) and event modal behavior are unchanged outside of the two tuned levers. Grep for `EVENT_BASE_RATE` and `BACKGROUND_DAMAGE` to ensure no stray references.
 
+## Amendment — 2026-04-16 (mid-implementation)
+
+**Added a third lever** after Task 5 revealed a structural problem. The two-lever design (background damage + event rate) cannot move cautious off 0% win rate because cautious's ~38-sol trip runs O₂ below the 25% critical threshold in the last ~4 sols regardless of attrition tuning. The critical-resource damage (hypoxia 12 hp/crew/sol) alone is enough to kill the crew.
+
+**Third lever:** `LIFE_SUPPORT_MULT_BY_PACE = { cautious: 0.75, steady: 1.0, push: 1.35 }` — multiplies the base `O2_PER_SOL` and `H2O_PER_SOL` rates in `src/systems/travel.js`. Thematic: slower rover draws less life-support power, faster rover works harder. Does not touch `FOOD_PER_SOL` (already indexed by rations, not pace).
+
+**Starting guesses at cautious × 0.75 multiplier:** 1.65% O₂/sol × 38 sols = 62.7% burned; ends at 37%, above the 25% crit threshold. Cautious becomes survivable on supplies, then the two-lever levers handle crew attrition.
+
+Scope cost: one new constant, two modified call sites in `travel.js`. No new state, no UI, no new mechanics.
+
 ## Scope boundary
 
 This spec covers **only** pace balance (issue #2) and the sim harness (issue #4). The related meager-rations trap (issue #3) is explicitly out of scope — it can be tuned independently in a follow-up using the same harness.
