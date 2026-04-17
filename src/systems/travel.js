@@ -40,7 +40,7 @@ const POWER_PER_SOL = {
 };
 
 const FOOD_PER_SOL = {
-  meager:   1.2,
+  meager:   1.0,
   standard: 2.2,
   full:     3.2
 };
@@ -68,7 +68,6 @@ const BACKGROUND_DAMAGE_BY_PACE = {
 const LOW_RESOURCE_THRESHOLD = 25;
 
 // Health drain when a resource is critical (< threshold), per crew per sol.
-const STARVATION_DAMAGE = 4;
 const HYPOXIA_DAMAGE    = 12;
 const DEHYDRATION_DAMAGE = 6;
 const LOW_FOOD_DAMAGE   = 4;
@@ -154,9 +153,6 @@ export function advanceSol(state, mode = 'travel') {
   const bgDamage = BACKGROUND_DAMAGE_BY_PACE[s.pace];
   for (const id of aliveIds) s = applyDamage(s, id, bgDamage, 'fatigue').state;
 
-  if (s.rations === 'meager') {
-    for (const id of aliveIds) s = applyDamage(s, id, STARVATION_DAMAGE,  'starvation').state;
-  }
   if (s.resources.oxygen < LOW_RESOURCE_THRESHOLD) {
     for (const id of aliveIds) s = applyDamage(s, id, HYPOXIA_DAMAGE,     'hypoxia').state;
   }
