@@ -3,6 +3,7 @@
 // On choice, calls onChoose(choiceIdx) which the caller wires to apply outcomes.
 
 import { linkifyCodex } from './codex.js';
+import { computeScore, saveBestRun } from '../systems/scoring.js';
 
 const root = () => document.getElementById('modal-root');
 
@@ -349,12 +350,39 @@ export function showEndOfRunModal(state, onNewMission) {
       </ul>
     </div>` : `<p class="eor-no-facts">No science data recorded.</p>`;
 
+  const score = computeScore(state);
+  saveBestRun(score, state);
+
+  const rankClass =
+    score.rank === 'S' || score.rank === 'A' ? 'rank-gold'
+    : score.rank === 'B' || score.rank === 'C' ? 'rank-neutral'
+    : 'rank-red';
+
+  const rankBlock = `
+    <div class="eor-rank">
+      <div class="eor-rank-label">MISSION RANK</div>
+      <div class="eor-rank-letter ${rankClass}">${score.rank}</div>
+      <div class="eor-rank-points">${score.points.toLocaleString()} points</div>
+      <table class="eor-rank-breakdown">
+        ${score.breakdown.map(b => `
+          <tr>
+            <td class="eor-rank-bd-label">${b.label}</td>
+            <td class="eor-rank-bd-value">${escapeHtml(String(b.value))}</td>
+            <td class="eor-rank-bd-points">${b.points}</td>
+          </tr>
+        `).join('')}
+      </table>
+    </div>
+  `;
+
   r.innerHTML = `
     <div class="modal-backdrop">
       <div class="modal-panel eor-panel ${won ? 'eor-won' : 'eor-lost'}" role="dialog" aria-modal="true">
         <div class="modal-severity severity-${won ? 'landmark' : 'major'}">${won ? 'END OF MISSION' : 'MISSION TERMINATED'}</div>
         <h2 class="modal-title eor-title">${outcomeTitle}</h2>
         ${reasonBlock}
+
+        ${rankBlock}
 
         <div class="eor-stats">
           <div class="eor-stat"><span class="eor-stat-label">SOLS</span><span class="eor-stat-value">${state.sol}</span></div>
