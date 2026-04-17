@@ -101,6 +101,16 @@ function playGame({ pace, rations, pickChoice }) {
       s = next;
       continue;
     }
+    // Waypoints: sim always declines (sim treats them as overhead, not strategy).
+    // A future sim iteration could add an AcceptAll strategy; not in scope here.
+    if (s.activeModal && s.activeModal.type === 'waypoint_offer') {
+      s = { ...s, firedWaypoints: [...s.firedWaypoints, s.activeModal.payload.waypoint.id], activeModal: null };
+      continue;
+    }
+    if (s.activeModal && s.activeModal.type === 'waypoint_reward') {
+      s = { ...s, activeModal: null };
+      continue;
+    }
     const m = shouldMaintain(s);
     if (m === 'repair') { s = repairBattery(s); continue; }
     if (m === 'clean')  { s = cleanPanels(s);   continue; }
