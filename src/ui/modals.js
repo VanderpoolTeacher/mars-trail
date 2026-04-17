@@ -4,6 +4,7 @@
 
 import { linkifyCodex } from './codex.js';
 import { computeScore, loadBestRun, saveBestRun } from '../systems/scoring.js';
+import pkg from '../../package.json' with { type: 'json' };
 
 const root = () => document.getElementById('modal-root');
 
@@ -158,7 +159,7 @@ export function showTitleLayer(onStart) {
         <span class="title-ampersand">&amp;</span>
         <span class="title-studio">Infinite Monkeys</span>
       </div>
-      <div class="title-version">v0.1 · 2026</div>
+      <div class="title-version">v${pkg.version} · 2026</div>
     </div>
   `;
 
