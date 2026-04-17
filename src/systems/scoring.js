@@ -8,12 +8,22 @@ function totalRouteKm(state) {
   return (state.routeKm || []).reduce((sum, km) => sum + km, 0);
 }
 
-function rankFor(points, won) {
-  const table = won ? RANK_THRESHOLDS_WON : RANK_THRESHOLDS_LOST;
-  for (const [rank, min] of table) {
-    if (points >= min) return rank;
+// Top ranks gate on minimum science — the mission is a SCIENCE mission, so
+// S and A require real scientific output, not just survival + speed.
+const SCI_FLOOR_S = 200;
+const SCI_FLOOR_A = 100;
+
+function rankFor(points, won, sciencePoints) {
+  if (!won) {
+    for (const [rank, min] of RANK_THRESHOLDS_LOST) {
+      if (points >= min) return rank;
+    }
+    return 'F';
   }
-  return won ? 'C' : 'F';
+  if (points >= 1500 && sciencePoints >= SCI_FLOOR_S) return 'S';
+  if (points >= 1200 && sciencePoints >= SCI_FLOOR_A) return 'A';
+  if (points >= 900) return 'B';
+  return 'C';
 }
 
 export function computeScore(state) {
@@ -43,7 +53,7 @@ export function computeScore(state) {
   breakdown.push({ label: 'Landmark stops', value: stops, points: stops * 20 });
 
   const points = breakdown.reduce((sum, b) => sum + b.points, 0);
-  return { points, breakdown, rank: rankFor(points, won) };
+  return { points, breakdown, rank: rankFor(points, won, state.sciencePoints) };
 }
 
 // ---- Best-run persistence ----

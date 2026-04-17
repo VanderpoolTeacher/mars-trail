@@ -116,6 +116,43 @@ test('won run with very low score still at least C', () => {
   assert.equal(rank, 'C');
 });
 
+// ---- SCI floor tests (issue #15) ----
+
+test('A-qualifying points with <100 SCI falls back to B', () => {
+  // Same fixture as the A-rank test (1391 pts) but with 91 SCI instead of 240.
+  // A requires 1200 pts AND 100 SCI; 91 SCI → B.
+  const s = makeState({ sciencePoints: 91 });
+  const { points, rank } = computeScore(s);
+  // Points drop by 149 (240 sci capped at 240 → 91 sci → 91). 1391 - 149 = 1242.
+  assert.equal(points, 1242);
+  assert.equal(rank, 'B');
+});
+
+test('A-qualifying points with exactly 100 SCI still earns A', () => {
+  const s = makeState({ sciencePoints: 100 });
+  const { points, rank } = computeScore(s);
+  // 500 + 400 + 100 + 51 + 60 + 140 = 1251
+  assert.equal(points, 1251);
+  assert.equal(rank, 'A');
+});
+
+test('S-qualifying points with 150 SCI downgrades to A', () => {
+  // Fixture same as "perfect won run" but with 150 SCI instead of 500.
+  const s = makeState({
+    sol: 12,
+    sciencePoints: 150,
+    resources: { oxygen: 90, water: 90, food: 90, power: 90, panels: 100, mech: 1, eva: 1, cell: 1 },
+    crew: [
+      { id:'c1', alive:true }, { id:'c2', alive:true }, { id:'c3', alive:true },
+      { id:'c4', alive:true }, { id:'c5', alive:true }
+    ]
+  });
+  const { points, rank } = computeScore(s);
+  // 500 + 500 + 150 + 90 + 180 + 140 = 1560 ≥ 1500, but SCI < 200 → A.
+  assert.equal(points, 1560);
+  assert.equal(rank, 'A');
+});
+
 // ---- Persistence tests: stub localStorage before each test ----
 
 import { loadBestRun, saveBestRun } from '../src/systems/scoring.js';
