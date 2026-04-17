@@ -20,12 +20,18 @@ const FACT_POOLS = {
   ASTRONOMY:         ASTRONOMY_FROM_MARS_FACTS
 };
 
-const EVENT_BASE_RATE = 0.65;   // P(event per sol). Will move to scenarios.js later.
+// P(event per sol) by pace. Careful driving = fewer incidents.
+const EVENT_BASE_RATE_BY_PACE = {
+  cautious: 0.20,
+  steady:   0.25,
+  push:     0.78
+};
 
 // Pick a random event using weighted selection. One-shot events that have
 // already fired this run are filtered out. Returns an event object or null.
 export function rollEvent(state) {
-  if (Math.random() > EVENT_BASE_RATE) return null;
+  const rate = EVENT_BASE_RATE_BY_PACE[state.pace];
+  if (Math.random() > rate) return null;
   const fired = state.firedEvents || [];
   const eligible = EVENTS.filter(e => !(e.oneShot && fired.includes(e.id)));
   if (eligible.length === 0) return null;

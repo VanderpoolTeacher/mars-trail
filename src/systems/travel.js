@@ -46,8 +46,21 @@ const FOOD_PER_SOL = {
 const O2_PER_SOL  = 2.2;
 const H2O_PER_SOL = 2.2;
 
-// Background per-sol health drain (radiation, fatigue). Always present.
-const BACKGROUND_DAMAGE = 2;
+// Life-support draw multiplier by pace. Slower rover = less energy used
+// = less O₂/H₂O consumption per sol. Does not touch food (rations lever).
+const LIFE_SUPPORT_MULT_BY_PACE = {
+  cautious: 0.56,
+  steady:   0.80,
+  push:     1.15
+};
+
+// Per-sol health drain (radiation, fatigue). Scales with pace:
+// careful driving = less crew fatigue.
+const BACKGROUND_DAMAGE_BY_PACE = {
+  cautious: 0,
+  steady:   1,
+  push:     3
+};
 
 // Critical resource threshold — damage kicks in when resource < this value.
 const LOW_RESOURCE_THRESHOLD = 25;
@@ -106,8 +119,9 @@ export function advanceSol(state, mode = 'travel') {
   }
 
   // ---- Resource consumption (life support always; travel power only when moving) ----
-  s.resources.oxygen = Math.max(0, s.resources.oxygen - O2_PER_SOL);
-  s.resources.water  = Math.max(0, s.resources.water  - H2O_PER_SOL);
+  const lifeSupportMult = LIFE_SUPPORT_MULT_BY_PACE[s.pace];
+  s.resources.oxygen = Math.max(0, s.resources.oxygen - O2_PER_SOL  * lifeSupportMult);
+  s.resources.water  = Math.max(0, s.resources.water  - H2O_PER_SOL * lifeSupportMult);
   s.resources.food   = Math.max(0, s.resources.food   - FOOD_PER_SOL[s.rations]);
 
   // Net power: RTG baseline + solar bonus (×panel efficiency) − travel − cargo weight.
@@ -133,7 +147,8 @@ export function advanceSol(state, mode = 'travel') {
   const aliveIds = s.crew.filter(c => c.alive).map(c => c.id);
 
   // Background wear: always present. Medic mitigates 30% via applyDamage.
-  for (const id of aliveIds) s = applyDamage(s, id, BACKGROUND_DAMAGE, 'fatigue').state;
+  const bgDamage = BACKGROUND_DAMAGE_BY_PACE[s.pace];
+  for (const id of aliveIds) s = applyDamage(s, id, bgDamage, 'fatigue').state;
 
   if (s.rations === 'meager') {
     for (const id of aliveIds) s = applyDamage(s, id, STARVATION_DAMAGE,  'starvation').state;
