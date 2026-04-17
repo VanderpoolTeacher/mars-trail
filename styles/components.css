@@ -555,3 +555,96 @@ body[data-theme="lcars"] .crew-bubble::before { display: none; }
   opacity: 0.8;
   margin-bottom: 0.35rem;
 }
+
+/* ---- Career-SCI title caption (issue #13) ---- */
+
+.title-career {
+  margin-top: 0.35rem;
+  font-size: 0.8rem;
+  letter-spacing: 0.12em;
+  color: var(--fg-dim, #cc99cc);
+  opacity: 0.8;
+  text-align: center;
+}
+
+.title-career-next {
+  font-size: 0.72rem;
+  letter-spacing: 0.1em;
+  color: var(--fg-dim, #cc99cc);
+  opacity: 0.55;
+  text-align: center;
+  margin-top: 0.15rem;
+}
+
+/* ---- Loadout active-bonuses block (issue #13) ---- */
+
+.loadout-bonuses {
+  margin-top: 1rem;
+  padding: 0.75rem 1rem;
+  border-radius: 0.35rem;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.loadout-bonuses-title {
+  font-size: 0.72rem;
+  letter-spacing: 0.15em;
+  color: var(--fg-dim, #cc99cc);
+  opacity: 0.85;
+  margin-bottom: 0.5rem;
+}
+
+.loadout-bonus {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.35rem 0.5rem;
+  padding: 0.3rem 0;
+  font-size: 0.8rem;
+}
+
+.loadout-bonus + .loadout-bonus {
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.loadout-bonus-check {
+  grid-row: span 2;
+  align-self: center;
+  font-size: 1.1rem;
+}
+
+.loadout-bonus.earned .loadout-bonus-check {
+  color: var(--warn, #ffcc00);
+}
+
+.loadout-bonus.locked {
+  opacity: 0.5;
+}
+
+.loadout-bonus-name {
+  color: var(--fg, #ff9900);
+}
+
+.loadout-bonus-desc {
+  grid-column: 2;
+  font-size: 0.72rem;
+  opacity: 0.7;
+}
+
+/* ---- End-of-run career credit line (issue #13) ---- */
+
+.eor-career {
+  margin: 0.75rem 0 1rem;
+  font-size: 0.9rem;
+  text-align: center;
+  color: var(--fg-dim, #cc99cc);
+  letter-spacing: 0.05em;
+}
+
+/* ---- Briefing tier-5 intel line (issue #13) ---- */
+
+.briefing-intel {
+  margin-top: 0.75rem;
+  font-size: 0.85rem;
+  color: var(--fg-dim, #cc99cc);
+  opacity: 0.85;
+}
