@@ -3,7 +3,7 @@
 // On choice, calls onChoose(choiceIdx) which the caller wires to apply outcomes.
 
 import { linkifyCodex } from './codex.js';
-import { computeScore, saveBestRun } from '../systems/scoring.js';
+import { computeScore, loadBestRun, saveBestRun } from '../systems/scoring.js';
 
 const root = () => document.getElementById('modal-root');
 
@@ -139,11 +139,18 @@ export function showTitleLayer(onStart) {
 
   layer.classList.remove('started');
   layer.classList.add('active');
+
+  const best = loadBestRun();
+  const bestCaption = best
+    ? `<div class="title-best">BEST: RANK ${best.rank} · ${best.points.toLocaleString()} pts · sol ${best.sol} · ${best.won ? 'won' : 'lost'}</div>`
+    : '';
+
   layer.innerHTML = `
     <div class="title-screen">
       <div class="title-mars-glyph" aria-hidden="true">◉</div>
       <h1 class="title-heading">MARS TRAIL</h1>
       <p class="title-tagline">The colony is waiting. Earth cannot help you from here.</p>
+      ${bestCaption}
       <button class="title-start" id="title-start" type="button">START MISSION</button>
       <div class="title-credits">
         <span class="title-credit-line">Created by</span>
