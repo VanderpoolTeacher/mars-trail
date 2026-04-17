@@ -94,24 +94,92 @@ test('declineWaypoint pushes the waypoint id to firedWaypoints', () => {
 
 // --- resolveWaypoint ---
 
-test('resolveWaypoint grants SCI, adds fact, and queues a reward modal', () => {
+// Helper: stub Math.random with a sequence of values (auto-cycles).
+function withRandom(values, fn) {
+  const original = Math.random;
+  let i = 0;
+  Math.random = () => values[i++ % values.length];
+  try { return fn(); }
+  finally { Math.random = original; }
+}
+
+test('resolveWaypoint on SUCCESS: full SCI + advanced fact + success flag', () => {
   const olivine = WAYPOINTS.find(w => w.id === 'olivine_outcrop');
   const s0 = makeState({
     pendingWaypoint: { ...olivine },
     sciencePoints: 10,
-    factsLearned: []
+    factsLearned: [],
+    crew: [
+      { id: 'c1', role: 'engineer', alive: true },   // GEOLOGY waypoint → engineer
+      { id: 'c2', role: 'biologist', alive: true },
+      { id: 'c3', role: 'medic', alive: true },
+      { id: 'c4', role: 'pilot', alive: true },
+      { id: 'c5', role: 'security', alive: true }
+    ]
   });
-  const s1 = resolveWaypoint(s0);
-  assert.ok(s1.sciencePoints > 10, 'sciencePoints should increase');
-  assert.ok(s1.sciencePoints <= 10 + Math.ceil(olivine.sciencePoints * 1.15 + 0.5),
-    'sciencePoints within jittered bound');
-  assert.equal(s1.factsLearned.length, 1, 'one advanced fact learned');
+  // Math.random sequence: [skill-check, jitter, fact-pick]. 0.01 < 0.75 → success.
+  const s1 = withRandom([0.01, 0.5, 0.3], () => resolveWaypoint(s0));
+  assert.equal(s1.activeModal.payload.success, true);
+  assert.equal(s1.factsLearned.length, 1, 'advanced fact added on success');
+  assert.ok(s1.sciencePoints > 10, 'SCI increased');
   assert.ok(s1.firedWaypoints.includes('olivine_outcrop'));
   assert.equal(s1.pendingWaypoint, null);
-  assert.equal(s1.activeModal?.type, 'waypoint_reward');
-  assert.ok(s1.activeModal.payload.waypoint);
-  assert.ok(typeof s1.activeModal.payload.fact === 'string');
-  assert.ok(typeof s1.activeModal.payload.sciencePointsGained === 'number');
+  assert.equal(s1.activeModal.payload.role, 'engineer');
+  assert.equal(s1.activeModal.payload.specialistAlive, true);
+});
+
+test('resolveWaypoint on FAILURE: partial SCI + no advanced fact + success=false', () => {
+  const olivine = WAYPOINTS.find(w => w.id === 'olivine_outcrop');
+  const s0 = makeState({
+    pendingWaypoint: { ...olivine },
+    sciencePoints: 10,
+    factsLearned: [],
+    crew: [
+      { id: 'c1', role: 'engineer', alive: true },
+      { id: 'c2', role: 'biologist', alive: true },
+      { id: 'c3', role: 'medic', alive: true },
+      { id: 'c4', role: 'pilot', alive: true },
+      { id: 'c5', role: 'security', alive: true }
+    ]
+  });
+  // Math.random: [0.99 (skill fail), 0.5 (jitter)]. 0.99 > 0.75 → fail.
+  const s1 = withRandom([0.99, 0.5], () => resolveWaypoint(s0));
+  assert.equal(s1.activeModal.payload.success, false);
+  assert.equal(s1.factsLearned.length, 0, 'no advanced fact on failure');
+  assert.ok(s1.sciencePoints > 10, 'partial SCI credited');
+  assert.equal(s1.activeModal.payload.fact, '');
+});
+
+test('resolveWaypoint with dead specialist uses lower base P', () => {
+  const olivine = WAYPOINTS.find(w => w.id === 'olivine_outcrop');
+  const s0 = makeState({
+    pendingWaypoint: { ...olivine },
+    crew: [
+      { id: 'c1', role: 'engineer', alive: false },  // specialist dead
+      { id: 'c2', role: 'biologist', alive: true }
+    ]
+  });
+  // 0.40 is > 0.35 (fail threshold with dead specialist), so fail.
+  const s1 = withRandom([0.40, 0.5], () => resolveWaypoint(s0));
+  assert.equal(s1.activeModal.payload.specialistAlive, false);
+  assert.equal(s1.activeModal.payload.success, false);
+  // 0.20 is < 0.35, so success.
+  const s2 = withRandom([0.20, 0.5, 0.3], () => resolveWaypoint(s0));
+  assert.equal(s2.activeModal.payload.success, true);
+});
+
+test('resolveWaypoint applies career skillBonus to effective P', () => {
+  const olivine = WAYPOINTS.find(w => w.id === 'olivine_outcrop');
+  const s0 = makeState({
+    pendingWaypoint: { ...olivine },
+    careerBonuses: { skillBonus: 0.10 },             // tier 3 methodology
+    crew: [
+      { id: 'c1', role: 'engineer', alive: false }   // dead: baseP = 0.35
+    ]
+  });
+  // With bonus: effectiveP = 0.45. A roll of 0.40 should succeed (would fail without bonus).
+  const s1 = withRandom([0.40, 0.5, 0.3], () => resolveWaypoint(s0));
+  assert.equal(s1.activeModal.payload.success, true);
 });
 
 test('resolveWaypoint is a no-op when no pendingWaypoint', () => {
