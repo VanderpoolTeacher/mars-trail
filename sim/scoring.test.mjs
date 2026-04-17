@@ -115,3 +115,58 @@ test('won run with very low score still at least C', () => {
   assert.equal(points, 740);
   assert.equal(rank, 'C');
 });
+
+// ---- Persistence tests: stub localStorage before each test ----
+
+import { loadBestRun, saveBestRun } from '../src/systems/scoring.js';
+
+function installLocalStorage() {
+  const store = {};
+  globalThis.localStorage = {
+    getItem: (k) => (k in store ? store[k] : null),
+    setItem: (k, v) => { store[k] = String(v); },
+    removeItem: (k) => { delete store[k]; },
+    clear: () => { for (const k of Object.keys(store)) delete store[k]; }
+  };
+}
+
+test('loadBestRun returns null when nothing is stored', () => {
+  installLocalStorage();
+  assert.equal(loadBestRun(), null);
+});
+
+test('loadBestRun returns null on malformed JSON (no throw)', () => {
+  installLocalStorage();
+  localStorage.setItem('marsTrail.bestRun', '{not json');
+  assert.equal(loadBestRun(), null);
+});
+
+test('saveBestRun writes on first save', () => {
+  installLocalStorage();
+  const score = { points: 1200, rank: 'A' };
+  const state = { sol: 24, status: 'won' };
+  saveBestRun(score, state);
+  const loaded = loadBestRun();
+  assert.equal(loaded.points, 1200);
+  assert.equal(loaded.rank, 'A');
+  assert.equal(loaded.sol, 24);
+  assert.equal(loaded.won, true);
+  assert.match(loaded.date, /^\d{4}-\d{2}-\d{2}$/);
+});
+
+test('saveBestRun skips when new score is not higher', () => {
+  installLocalStorage();
+  saveBestRun({ points: 1500, rank: 'S' }, { sol: 12, status: 'won' });
+  saveBestRun({ points: 1200, rank: 'A' }, { sol: 24, status: 'won' });
+  const loaded = loadBestRun();
+  assert.equal(loaded.points, 1500);
+  assert.equal(loaded.rank, 'S');
+});
+
+test('saveBestRun overwrites when new score is higher', () => {
+  installLocalStorage();
+  saveBestRun({ points: 900, rank: 'B' }, { sol: 35, status: 'won' });
+  saveBestRun({ points: 1400, rank: 'A' }, { sol: 20, status: 'won' });
+  const loaded = loadBestRun();
+  assert.equal(loaded.points, 1400);
+});

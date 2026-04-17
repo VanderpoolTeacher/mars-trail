@@ -45,3 +45,34 @@ export function computeScore(state) {
   const points = breakdown.reduce((sum, b) => sum + b.points, 0);
   return { points, breakdown, rank: rankFor(points, won) };
 }
+
+// ---- Best-run persistence ----
+
+const BEST_RUN_KEY = 'marsTrail.bestRun';
+
+export function loadBestRun() {
+  try {
+    const raw = localStorage.getItem(BEST_RUN_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
+}
+
+export function saveBestRun(score, state) {
+  const existing = loadBestRun();
+  if (existing && existing.points >= score.points) return;
+  const record = {
+    points: score.points,
+    rank:   score.rank,
+    sol:    state.sol,
+    won:    state.status === 'won',
+    date:   new Date().toISOString().slice(0, 10)
+  };
+  try {
+    localStorage.setItem(BEST_RUN_KEY, JSON.stringify(record));
+  } catch {
+    // Quota full, disabled localStorage, etc. — silently skip.
+  }
+}
