@@ -146,7 +146,7 @@ function renderMinimap(state) {
       const ox = (-dy / len) * 6;
       const oy = (dx / len) * 6;
       const stateClass = state.firedWaypoints.includes(waypoint.id) ? 'fired'
-        : state.pendingWaypoint?.id === waypoint.id ? 'accepted'
+        : state.awayTeam?.waypointId === waypoint.id ? 'accepted'
         : 'pending';
       const r = stateClass === 'accepted' ? 3.5 : 2.8;
       const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');

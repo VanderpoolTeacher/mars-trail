@@ -6,8 +6,10 @@ import { render } from './render.js';
 import { advanceSol, setPace, setRations, repairBattery, cleanPanels } from './systems/travel.js';
 import { applyEventChoice } from './systems/events.js';
 import { showEventModal, showOutcomeModal, showBriefingModal, showLoadoutModal, showTitleLayer, dimTitleStart, hideTitleLayer, showEndOfRunModal, closeModal, showWaypointOfferModal, showWaypointRewardModal, showMultiStageModal } from './ui/modals.js';
-import { acceptWaypoint, declineWaypoint } from './systems/waypoints.js';
+import { declineWaypoint } from './systems/waypoints.js';
 import { applyStageChoice } from './systems/multiStage.js';
+import { resolveAwayTeamStage } from './systems/awayTeam.js';
+import { resolveMedicalStage } from './systems/medicalEmergency.js';
 import { WAYPOINTS } from './content/waypoints.js';
 import { makeLandmarkEncounter } from './content/landmarks.js';
 import './ui/codex.js';   // registers global click handler for codex terms
@@ -159,13 +161,11 @@ function renderAll() {
   }
 
   if (modal.type === 'waypoint_offer') {
-    const { waypoint, segmentIdx } = modal.payload;
+    const { waypoint } = modal.payload;
     showWaypointOfferModal(waypoint, state, {
       onAccept: () => {
-        state = acceptWaypoint(state, segmentIdx);
-        // Chain: proceed to the landmark encounter for the CURRENT arrival.
-        const arrivedId = state.route[state.currentLandmarkIndex];
-        state = { ...state, activeModal: { type: 'event', payload: makeLandmarkEncounter(arrivedId) } };
+        // Open the away-team picker (UI renderer lands in Task 5).
+        state = { ...state, activeModal: { type: 'away_team_picker', payload: { waypoint } } };
         renderAll();
       },
       onDecline: () => {
@@ -178,24 +178,30 @@ function renderAll() {
     return;
   }
 
-  if (modal.type === 'waypoint_reward') {
-    showWaypointRewardModal(modal.payload, () => {
-      // Chain: if the next segment also has a waypoint offer, fire it; else landmark encounter.
-      const segmentWp = state.waypoints.find(w => w.segmentIdx === state.currentLandmarkIndex);
-      if (segmentWp && !state.firedWaypoints.includes(segmentWp.waypointId)) {
-        const nextWaypoint = WAYPOINTS.find(w => w.id === segmentWp.waypointId);
-        state = { ...state, activeModal: { type: 'waypoint_offer', payload: { waypoint: nextWaypoint, segmentIdx: state.currentLandmarkIndex } } };
-      } else {
-        const arrivedId = state.route[state.currentLandmarkIndex];
-        state = { ...state, activeModal: { type: 'event', payload: makeLandmarkEncounter(arrivedId) } };
-      }
-      renderAll();
-    });
-    return;
-  }
-
   if (modal.type === 'multi_stage') {
-    const { event, stageId } = modal.payload;
+    const { event, stageId, source } = modal.payload;
+
+    // Medical emergency uses a custom resolver (patient-targeted damage,
+    // conditional Stage 3, addCorpse). No generic outcome modal — the
+    // resolver emits log lines directly.
+    if (source === 'medical') {
+      showMultiStageModal(event, stageId, (choiceIdx) => {
+        state = resolveMedicalStage(state, choiceIdx);
+        renderAll();
+      });
+      return;
+    }
+
+    // Away-team chain uses its own resolver so rewards accumulate on
+    // state.awayTeam.accumulated until reunion. No mid-chain outcome modal.
+    if (source === 'awayTeam') {
+      showMultiStageModal(event, stageId, (choiceIdx) => {
+        state = resolveAwayTeamStage(state, choiceIdx);
+        renderAll();
+      });
+      return;
+    }
+
     showMultiStageModal(event, stageId, (choiceIdx) => {
       const { state: next, nextStage, skillResult, damageTarget, applied } = applyStageChoice(state, event, stageId, choiceIdx);
       state = next;
