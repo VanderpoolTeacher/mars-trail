@@ -857,18 +857,49 @@ body[data-theme="lcars"] .crew-bubble::before { display: none; }
   display: grid;
   grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
   gap: 1.25rem;
-  align-items: start;
+  align-items: stretch;       /* columns match heights */
   margin: 0.5rem 0 1rem;
 }
 .eor-col {
-  min-width: 0;   /* allow children to shrink inside the grid cell */
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+/* Facts column gets a panel frame so it reads as intentional even with a
+   short list. Inner facts block flexes to fill the remaining column height. */
+.eor-col-facts {
+  padding: 0.75rem 0.9rem;
+  border: 1px solid var(--fg-faint);
+  background: rgba(0, 255, 100, 0.03);
+  border-radius: 3px;
 }
 .eor-col-facts .eor-facts {
-  margin-top: 0;  /* facts block provides its own spacing in single-col mode */
+  margin-top: 0;
+  flex: 1;
+  max-height: none;           /* column governs height in two-col mode */
+  overflow-y: auto;
+}
+.eor-col-facts .eor-no-facts {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  font-style: italic;
+  color: var(--fg-dim);
+}
+
+body[data-theme="lcars"] .eor-col-facts {
+  background: rgba(255, 153, 0, 0.06);
+  border-color: rgba(255, 153, 0, 0.35);
+  border-radius: 10px;
 }
 
 @media (max-width: 720px) {
   .eor-columns {
     grid-template-columns: 1fr;
+  }
+  .eor-col-facts .eor-facts {
+    max-height: 240px;        /* restore scroll cap for stacked layout */
   }
 }
