@@ -11,13 +11,14 @@ import { WAYPOINTS } from '../content/waypoints.js';
 export const WAYPOINT_ROLL_PROB = 0.4;   // per non-final segment
 
 // ---- Run-start roll ----
-// Picks at most one waypoint per eligible segment (every segment except the
-// final one, which lands at the destination and has no landmark encounter).
+// Picks at most one waypoint per eligible segment. segmentIdx matches the
+// currentLandmarkIndex at which the offer fires (arrival at landmark N →
+// offer segment N waypoint). Skip 0 (origin — never "arrived at") and the
+// final landmark (mission complete — no encounter). Issue #22.
 export function rollWaypoints(state) {
-  const eligibleSegments = state.route.length - 2;  // e.g. 8 landmarks → 6 eligible
   const used = new Set();
   const waypoints = [];
-  for (let segmentIdx = 0; segmentIdx < eligibleSegments; segmentIdx++) {
+  for (let segmentIdx = 1; segmentIdx < state.route.length - 1; segmentIdx++) {
     if (Math.random() >= WAYPOINT_ROLL_PROB) continue;
     const candidates = WAYPOINTS.filter(w => !used.has(w.id));
     if (candidates.length === 0) break;

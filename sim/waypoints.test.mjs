@@ -42,21 +42,23 @@ test('rollWaypoints produces 0–6 waypoints on a standard route', () => {
     const ids = s.waypoints.map(w => w.waypointId);
     assert.equal(new Set(ids).size, ids.length, 'duplicate waypoint id');
     for (const entry of s.waypoints) {
-      assert.ok(entry.segmentIdx < s.route.length - 2,
-        `segmentIdx ${entry.segmentIdx} should be < ${s.route.length - 2}`);
+      assert.ok(entry.segmentIdx >= 1 && entry.segmentIdx < s.route.length - 1,
+        `segmentIdx ${entry.segmentIdx} out of range [1, ${s.route.length - 1})`);
     }
   }
 });
 
-test('rollWaypoints gives every segment a fair chance over many runs', () => {
-  const counts = Array(6).fill(0);
+test('rollWaypoints gives every eligible landmark a fair chance over many runs', () => {
+  // Eligible landmarks for offers: 1..(route.length - 2), inclusive.
+  const counts = {};
   for (let i = 0; i < 200; i++) {
     const s = rollWaypoints(makeState());
-    for (const w of s.waypoints) counts[w.segmentIdx]++;
+    for (const w of s.waypoints) counts[w.segmentIdx] = (counts[w.segmentIdx] || 0) + 1;
   }
-  for (let idx = 0; idx < 6; idx++) {
-    assert.ok(counts[idx] > 10, `segment ${idx} rarely rolled (count=${counts[idx]})`);
+  for (let idx = 1; idx <= 6; idx++) {
+    assert.ok((counts[idx] || 0) > 10, `segmentIdx ${idx} rarely rolled (count=${counts[idx] || 0})`);
   }
+  assert.equal(counts[0] || 0, 0, 'segmentIdx 0 should never be rolled (issue #22)');
 });
 
 test('rollWaypoints respects WAYPOINT_ROLL_PROB exported constant', () => {
