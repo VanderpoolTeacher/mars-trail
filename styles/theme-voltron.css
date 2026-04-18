@@ -221,3 +221,13 @@ body[data-theme="voltron"] .landmark-dot.current    { fill: var(--fg); stroke: #
 body[data-theme="voltron"] .landmark-dot.dest       { stroke: var(--fg); }
 body[data-theme="voltron"] .waypoint-marker         { fill: var(--fg-dim); }
 body[data-theme="voltron"] .waypoint-marker.accepted { fill: var(--fg); filter: drop-shadow(0 0 6px var(--fg-dim)); }
+
+body[data-theme="voltron"] .theme-select {
+  color: var(--fg-dim);
+  background: rgba(8, 24, 40, 0.5);
+  border-color: rgba(75, 216, 255, 0.35);
+}
+body[data-theme="voltron"] .theme-select option {
+  background: var(--bg);
+  color: var(--fg);
+}
