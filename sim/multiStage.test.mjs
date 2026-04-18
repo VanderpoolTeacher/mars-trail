@@ -49,6 +49,9 @@ const drill = MULTI_STAGE_EVENTS.find(e => e.id === 'drill_bit_seized');
 
 test('demo event shape: startStage exists; every nextStage resolves or is null', () => {
   for (const event of MULTI_STAGE_EVENTS) {
+    // Events with a customResolver use their own dispatcher; shape rules for
+    // applyStageChoice don't apply.
+    if (event.customResolver) continue;
     assert.ok(event.stages[event.startStage], `${event.id}: startStage "${event.startStage}" missing from stages`);
     for (const [stageId, stage] of Object.entries(event.stages)) {
       for (const choice of stage.choices) {
@@ -148,7 +151,8 @@ test('rollMultiStageEvent: returns null when random is above base rate', () => {
 });
 
 test('rollMultiStageEvent: respects firedEvents for oneShot', () => {
-  const s = makeState({ firedEvents: ['drill_bit_seized'] });
+  const firedAllOneShot = MULTI_STAGE_EVENTS.filter(e => e.oneShot).map(e => e.id);
+  const s = makeState({ firedEvents: firedAllOneShot });
   const event = withRandom([0.01, 0.5], () => rollMultiStageEvent(s));
   assert.equal(event, null);
 });
