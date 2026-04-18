@@ -47,7 +47,7 @@ export const LANDMARKS = {
   },
   olympus_base: {
     name: 'Olympus Base',
-    image: 'assets/images/tharsis.jpg',
+    image: 'assets/images/olympus_base.jpg',
     flavor: 'Mission destination. Prefabricated habitats wait in low-power mode on the flank of Olympus Mons.',
     fact:   'Olympus Mons has a footprint the size of Arizona. Its shield-volcano slopes are so gentle (~5°) that a climber at its base would not see the summit, which is hidden by the planet\'s curvature.'
   }
