@@ -139,7 +139,7 @@ function jitter(value) {
 // Apply a single outcome object (resource deltas, science, crew damage).
 // Returns { state, damageTarget, applied } — `applied` holds the actual
 // jittered values so callers can show real numbers in the outcome modal.
-function applyOutcome(state, outcome) {
+export function applyOutcome(state, outcome) {
   if (!outcome) return { state, damageTarget: null, applied: {} };
   let s = {
     ...state,
