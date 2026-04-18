@@ -165,7 +165,7 @@ export function showTitleLayer(onStart) {
   layer.innerHTML = `
     <div class="title-screen">
       <div class="title-mars-glyph" aria-hidden="true">◉</div>
-      <h1 class="title-heading">MARS TRAIL</h1>
+      <h1 class="title-heading">TRACTUS MARTIS</h1>
       <p class="title-tagline">The colony is waiting. Earth cannot help you from here.</p>
       ${bestCaption}
       ${careerCaption}
