@@ -109,3 +109,23 @@ button:disabled:hover {
   background: transparent;
   box-shadow: none;
 }
+
+.theme-select {
+  font-family: inherit;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  background: transparent;
+  color: var(--fg);
+  border: 1px solid var(--fg-faint);
+  padding: 3px 8px;
+  margin-left: 12px;
+  cursor: pointer;
+}
+.theme-select:focus-visible {
+  outline: 1px solid var(--fg);
+  outline-offset: 2px;
+}
+.theme-select option {
+  background: var(--bg);
+  color: var(--fg);
+}

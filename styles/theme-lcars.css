@@ -278,3 +278,13 @@ body[data-theme="lcars"] .cursor { color: var(--warn); }
   padding: 3px 10px;
   margin-left: 12px;
 }
+
+body[data-theme="lcars"] .theme-select {
+  color: #000;
+  background: rgba(0, 0, 0, 0.06);
+  border-color: rgba(0, 0, 0, 0.35);
+}
+body[data-theme="lcars"] .theme-select option {
+  color: var(--fg);
+  background: #000;
+}

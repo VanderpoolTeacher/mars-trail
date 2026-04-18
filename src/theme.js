@@ -37,17 +37,30 @@ function apply(theme) {
   if (select && select.value !== theme) select.value = theme;
 }
 
+function populate(select) {
+  select.innerHTML = '';
+  for (const t of THEMES) {
+    const opt = document.createElement('option');
+    opt.value = t.id;
+    opt.textContent = t.label;
+    select.appendChild(opt);
+  }
+}
+
 export function initTheme() {
   if (typeof document === 'undefined') return;
-  apply(load());
+  const current = load();
   const select = document.getElementById('theme-select');
   if (select) {
+    populate(select);
+    select.value = current;
     select.addEventListener('change', (e) => {
       const next = resolveTheme(e.target.value);
       save(next);
       apply(next);
     });
   }
+  apply(current);
 }
 
 if (typeof document !== 'undefined') {
