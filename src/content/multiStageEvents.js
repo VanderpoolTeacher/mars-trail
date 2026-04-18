@@ -15,7 +15,6 @@ export const MULTI_STAGE_EVENTS = [
         description: 'Regolith drill bound up mid-sample. Motor housing climbing toward thermal cutoff. Clock is live.',
         choices: [
           { label:     'Attempt hot-swap (engineer on station)',
-            outcome:   {},
             nextStage: 'swap_attempt' },
           { label:     'Bypass the drill, limp on',
             outcome:   { power: -10, mech: -1 },
