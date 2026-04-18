@@ -184,3 +184,20 @@ body {
 .panel-crew {
   overflow-y: auto;
 }
+
+/* Hide the visible scrollbar gutter on internal panel scroll — content
+   still scrolls via wheel / trackpad / keyboard, but the HUD stays clean
+   across themes (Voltron + Starfighter add slight borders that nudge
+   content past the cell, producing an inner scrollbar that read as noise). */
+.panel-route,
+.panel-telemetry,
+.panel-crew,
+.panel-log .log {
+  scrollbar-width: none;             /* Firefox */
+}
+.panel-route::-webkit-scrollbar,
+.panel-telemetry::-webkit-scrollbar,
+.panel-crew::-webkit-scrollbar,
+.panel-log .log::-webkit-scrollbar {
+  display: none;                     /* Chrome / Safari */
+}
