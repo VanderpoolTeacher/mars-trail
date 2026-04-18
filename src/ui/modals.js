@@ -3,7 +3,7 @@
 // On choice, calls onChoose(choiceIdx) which the caller wires to apply outcomes.
 
 import { linkifyCodex } from './codex.js';
-import { computeScore, loadBestRun, saveBestRun } from '../systems/scoring.js';
+import { computeScore, nextRankGap, loadBestRun, saveBestRun } from '../systems/scoring.js';
 import { CAREER_TIERS, currentTier, nextTier, addCareerScience, loadCareerScience } from '../systems/career.js';
 import pkg from '../../package.json' with { type: 'json' };
 
@@ -396,11 +396,23 @@ export function showEndOfRunModal(state, onNewMission) {
     : score.rank === 'B' || score.rank === 'C' ? 'rank-neutral'
     : 'rank-red';
 
+  const gap = nextRankGap(state);
+  const gapBlock = gap
+    ? `<div class="eor-rank-gap">
+         To earn <strong>${gap.nextRank}</strong>:
+         ${gap.needs.map(n => {
+            const hardTag = n.hard ? ' <span class="eor-gap-hard">(next run)</span>' : '';
+            return `<span class="eor-gap-need">${n.delta} more ${escapeHtml(n.label)}${hardTag}</span>`;
+          }).join(' · ')}
+       </div>`
+    : (won ? '<div class="eor-rank-gap eor-rank-max">Maximum rank achieved.</div>' : '');
+
   const rankBlock = `
     <div class="eor-rank">
       <div class="eor-rank-label">MISSION RANK</div>
       <div class="eor-rank-letter ${rankClass}">${score.rank}</div>
       <div class="eor-rank-points">${score.points.toLocaleString()} points</div>
+      ${gapBlock}
       <table class="eor-rank-breakdown">
         ${score.breakdown.map(b => `
           <tr>
