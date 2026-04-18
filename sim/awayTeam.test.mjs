@@ -12,6 +12,7 @@ import {
   finalizeReunion,
   MIN_CREW_FOR_DIVERT
 } from '../src/systems/awayTeam.js';
+import { advanceSol } from '../src/systems/travel.js';
 
 function makeState(overrides = {}) {
   return {
@@ -290,4 +291,80 @@ test('if all away-team crew die mid-chain, stage resolution jumps straight to re
   const s1 = withRandom([0.99], () => resolveAwayTeamStage(s, 0));
   assert.equal(s1.activeModal?.type, 'away_team_reunion');
   assert.ok(s1.awayTeam.deaths.includes('c1'));
+});
+
+// --- Camp-mode supply scaling (issue #25) ---
+
+// advanceSol-ready state shaped for drain comparison tests. Adds fields
+// advanceSol reads (firedEvents/firedWaypoints/pace/rations/activeModal)
+// that the core makeState omits.
+function makeDrainState(overrides = {}) {
+  const patched = {
+    pace: 'steady',
+    rations: 'standard',
+    firedEvents: [],
+    firedWaypoints: [],
+    waypoints: [],
+    totalKmTraveled: 0,
+    activeModal: null,
+    ...overrides
+  };
+  return makeState(patched);
+}
+
+test('camp mode scales life-support drain to rover-side crew share', () => {
+  const baseline = makeDrainState();
+  const afterTravel = advanceSol(baseline, 'travel');
+  const travelO2Drain   = 100 - afterTravel.resources.oxygen;
+  const travelFoodDrain = 100 - afterTravel.resources.food;
+
+  // Camp sol with 2 of 5 away — drain should be 3/5 of baseline.
+  let camp = acceptAwayTeam(baseline, 'olivine_outcrop', ['c1', 'c2']);
+  camp = { ...camp, activeModal: null };
+  const afterCamp = advanceSol(camp);
+  const campO2Drain   = 100 - afterCamp.resources.oxygen;
+  const campFoodDrain = 100 - afterCamp.resources.food;
+
+  const expectedShare = 3 / 5;
+  assert.ok(Math.abs(campO2Drain / travelO2Drain - expectedShare) < 0.01,
+    `O2 drain ratio ${(campO2Drain / travelO2Drain).toFixed(3)} ≠ ${expectedShare}`);
+  assert.ok(Math.abs(campFoodDrain / travelFoodDrain - expectedShare) < 0.01,
+    `food drain ratio ${(campFoodDrain / travelFoodDrain).toFixed(3)} ≠ ${expectedShare}`);
+});
+
+test('camp mode with 3 of 5 away drains life support to 2/5', () => {
+  const baseline = makeDrainState();
+  const afterTravel = advanceSol(baseline, 'travel');
+  const travelO2Drain = 100 - afterTravel.resources.oxygen;
+
+  let camp = acceptAwayTeam(baseline, 'olivine_outcrop', ['c1', 'c2', 'c3']);
+  camp = { ...camp, activeModal: null };
+  const afterCamp = advanceSol(camp);
+  const campO2Drain = 100 - afterCamp.resources.oxygen;
+
+  assert.ok(Math.abs(campO2Drain / travelO2Drain - 2/5) < 0.01);
+});
+
+test('camp supply scaling uses max crew count, not alive count (permanent deaths do not reduce drain)', () => {
+  // With max-crew-count denominator: (5 - 2 away) / 5 = 3/5 regardless of deaths.
+  // With alive-count denominator this would be (3 alive - 2 away) / 3 = 1/3.
+  const dead = makeDrainState({
+    crew: [
+      { id: 'c1', name: 'A', role: 'engineer',  health: 100, status: 'healthy', alive: true  },
+      { id: 'c2', name: 'B', role: 'biologist', health: 100, status: 'healthy', alive: true  },
+      { id: 'c3', name: 'C', role: 'medic',     health: 100, status: 'healthy', alive: true  },
+      { id: 'c4', name: 'D', role: 'pilot',     health: 0,   status: 'dead',    alive: false },
+      { id: 'c5', name: 'E', role: 'security',  health: 0,   status: 'dead',    alive: false }
+    ]
+  });
+  const afterTravel = advanceSol(dead, 'travel');
+  const travelO2Drain = 100 - afterTravel.resources.oxygen;
+
+  let camp = acceptAwayTeam(dead, 'olivine_outcrop', ['c1', 'c2']);
+  camp = { ...camp, activeModal: null };
+  const afterCamp = advanceSol(camp);
+  const campO2Drain = 100 - afterCamp.resources.oxygen;
+
+  assert.ok(Math.abs(campO2Drain / travelO2Drain - 3/5) < 0.01,
+    `expected 3/5 (max-crew), got ${(campO2Drain / travelO2Drain).toFixed(3)}`);
 });
