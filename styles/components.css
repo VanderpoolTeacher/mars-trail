@@ -965,3 +965,11 @@ body[data-theme="lcars"] .eor-col-facts {
   font-size: 1.1em;
   font-weight: 700;
 }
+
+/* ---- New Mission button directly under rank (end-of-run) ---- */
+
+.eor-new-rank {
+  display: block;
+  width: 100%;
+  margin: 0.75rem 0 1rem;
+}

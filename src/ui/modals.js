@@ -436,6 +436,7 @@ export function showEndOfRunModal(state, onNewMission) {
         <div class="eor-columns">
           <div class="eor-col eor-col-stats">
             ${rankBlock}
+            <button class="modal-continue primary eor-new-rank" id="eor-new" type="button">NEW MISSION →</button>
             ${careerCreditLine}
             <div class="eor-stats">
               <div class="eor-stat"><span class="eor-stat-label">SOLS</span><span class="eor-stat-value">${state.sol}</span></div>
@@ -449,8 +450,6 @@ export function showEndOfRunModal(state, onNewMission) {
             ${factsBlock}
           </div>
         </div>
-
-        <button class="modal-continue primary" id="eor-new" type="button">NEW MISSION →</button>
       </div>
     </div>
   `;
