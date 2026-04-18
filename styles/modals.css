@@ -348,6 +348,8 @@ body[data-theme="lcars"] .title-heading {
   color: var(--warn);
   text-shadow: none;
   font-weight: 700;
+  /* LCARS/TNG font centers itself — skip the letter-spacing shift. */
+  transform: none;
 }
 body[data-theme="lcars"] .title-start {
   background: var(--warn);
