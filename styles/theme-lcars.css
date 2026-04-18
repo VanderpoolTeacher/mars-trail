@@ -74,6 +74,30 @@ body[data-theme="lcars"] .topbar .clock {
   text-shadow: none;
 }
 
+/* Topbar accessories on the tan strip — sci counter and music controls
+   were inheriting --fg (orange) and went invisible against the --fg
+   background. Force black + dark borders so they read cleanly. */
+body[data-theme="lcars"] .topbar .sci-counter {
+  color: #000;
+  background: rgba(0, 0, 0, 0.08);
+  border-color: rgba(0, 0, 0, 0.35);
+  text-shadow: none;
+}
+body[data-theme="lcars"] .topbar #music-select {
+  color: #000;
+  background: rgba(0, 0, 0, 0.06);
+  border-color: rgba(0, 0, 0, 0.35);
+}
+body[data-theme="lcars"] .topbar #music-select option {
+  color: var(--fg);
+  background: #000;
+}
+body[data-theme="lcars"] .topbar #music-mute {
+  color: #000;
+  background: rgba(0, 0, 0, 0.06);
+  border-color: rgba(0, 0, 0, 0.35);
+}
+
 /* Telemetry bars: pill-shaped */
 body[data-theme="lcars"] .bar {
   border: none;
