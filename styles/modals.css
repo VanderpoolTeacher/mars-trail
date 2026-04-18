@@ -503,6 +503,13 @@ body[data-theme="lcars"] .loadout-stepper {
 body[data-theme="lcars"] .loadout-step {
   color: #000;
   background: var(--fg-dim);
+  /* Force geometric centering of the +/- glyph inside the rounded cap —
+     the default inline-block baseline alignment shows as off-center in
+     the pill-shaped stepper. */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
 }
 body[data-theme="lcars"] .loadout-step:hover {
   background: var(--warn);
