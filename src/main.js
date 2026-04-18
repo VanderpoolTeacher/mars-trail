@@ -5,8 +5,9 @@ import { createInitialState, CARGO_BUDGET, PART_TYPES } from './state.js';
 import { render } from './render.js';
 import { advanceSol, setPace, setRations, repairBattery, cleanPanels } from './systems/travel.js';
 import { applyEventChoice } from './systems/events.js';
-import { showEventModal, showOutcomeModal, showBriefingModal, showLoadoutModal, showTitleLayer, dimTitleStart, hideTitleLayer, showEndOfRunModal, closeModal, showWaypointOfferModal, showWaypointRewardModal } from './ui/modals.js';
+import { showEventModal, showOutcomeModal, showBriefingModal, showLoadoutModal, showTitleLayer, dimTitleStart, hideTitleLayer, showEndOfRunModal, closeModal, showWaypointOfferModal, showWaypointRewardModal, showMultiStageModal } from './ui/modals.js';
 import { acceptWaypoint, declineWaypoint } from './systems/waypoints.js';
+import { applyStageChoice } from './systems/multiStage.js';
 import { WAYPOINTS } from './content/waypoints.js';
 import { makeLandmarkEncounter } from './content/landmarks.js';
 import './ui/codex.js';   // registers global click handler for codex terms
@@ -189,6 +190,29 @@ function renderAll() {
         state = { ...state, activeModal: { type: 'event', payload: makeLandmarkEncounter(arrivedId) } };
       }
       renderAll();
+    });
+    return;
+  }
+
+  if (modal.type === 'multi_stage') {
+    const { event, stageId } = modal.payload;
+    showMultiStageModal(event, stageId, (choiceIdx) => {
+      const { state: next, nextStage, skillResult, damageTarget, applied } = applyStageChoice(state, event, stageId, choiceIdx);
+      state = next;
+      render(state);
+
+      if (nextStage !== null) {
+        state = { ...state, activeModal: { type: 'multi_stage', payload: { event, stageId: nextStage } } };
+        renderAll();
+      } else {
+        const choice = event.stages[stageId].choices[choiceIdx];
+        const outcome = choice.outcome || (skillResult?.success ? choice.successOutcome : choice.failOutcome);
+        const resolution = {
+          event: { ...event, modal: event.stages[stageId] },
+          choice, outcome, applied, skillResult, damageTarget
+        };
+        showOutcomeModal(resolution, () => { closeModal(); renderAll(); });
+      }
     });
     return;
   }
