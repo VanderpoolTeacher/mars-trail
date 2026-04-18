@@ -485,7 +485,13 @@ body[data-theme="lcars"] .crew-bubble::before { display: none; }
 
 .waypoint-marker.accepted {
   fill: #ee99ff;
-  filter: drop-shadow(0 0 3px #ee99ff);
+  filter: drop-shadow(0 0 4px #ee99ff);
+  animation: waypoint-away-pulse 1.3s ease-in-out infinite;
+}
+
+@keyframes waypoint-away-pulse {
+  0%, 100% { opacity: 1;   transform: scale(1);    filter: drop-shadow(0 0 4px #ee99ff); }
+  50%      { opacity: 0.7; transform: scale(1.35); filter: drop-shadow(0 0 7px #ffccff); }
 }
 
 .waypoint-marker.fired {
@@ -647,4 +653,169 @@ body[data-theme="lcars"] .crew-bubble::before { display: none; }
   font-size: 0.85rem;
   color: var(--fg-dim, #cc99cc);
   opacity: 0.85;
+}
+
+/* ---- Away-team DUE BACK chip (issue #17) ---- */
+
+.away-due-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.15rem 0.55rem;
+  margin-right: 0.65rem;
+  font-family: var(--mono-font, monospace);
+  font-size: 0.78rem;
+  letter-spacing: 0.08em;
+  color: #ee99ff;
+  border: 1px solid #cc88ff;
+  border-radius: 3px;
+  background: rgba(140, 80, 180, 0.12);
+  animation: waypoint-away-pulse 1.3s ease-in-out infinite;
+}
+
+/* ---- Away-team picker modal (issue #17) ---- */
+
+.modal-away-picker .away-meta {
+  display: flex;
+  gap: 1rem;
+  margin: 0.75rem 0;
+}
+.modal-away-picker .away-meta-row {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  padding: 0.4rem 0.6rem;
+  border: 1px solid var(--accent-dim, #4d3a5c);
+  border-radius: 3px;
+  background: rgba(80, 60, 100, 0.15);
+}
+.modal-away-picker .away-meta-row span:first-child {
+  font-size: 0.7rem;
+  letter-spacing: 0.1em;
+  color: var(--fg-dim, #cc99cc);
+  margin-bottom: 0.15rem;
+}
+.modal-away-picker .away-meta-row span:last-child {
+  font-size: 0.95rem;
+  color: var(--fg, #fff);
+}
+.modal-away-picker .away-hint {
+  font-size: 0.82rem;
+  color: var(--fg-dim, #cc99cc);
+  margin: 0.5rem 0;
+}
+.modal-away-picker .away-crew-list {
+  margin: 0.75rem 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+.modal-away-picker .away-crew-row {
+  display: grid;
+  grid-template-columns: auto 1fr auto auto;
+  gap: 0.6rem;
+  align-items: center;
+  padding: 0.4rem 0.6rem;
+  border: 1px solid var(--accent-dim, #4d3a5c);
+  border-radius: 3px;
+  cursor: pointer;
+  background: rgba(60, 45, 80, 0.18);
+}
+.modal-away-picker .away-crew-row:hover {
+  background: rgba(90, 65, 120, 0.25);
+}
+.modal-away-picker .away-crew-check:disabled + .away-crew-name {
+  opacity: 0.5;
+}
+.modal-away-picker .away-crew-name { color: var(--fg, #fff); }
+.modal-away-picker .away-crew-role {
+  font-family: var(--mono-font, monospace);
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  color: var(--fg-dim, #cc99cc);
+}
+.modal-away-picker .away-specialist {
+  display: inline-block;
+  margin-left: 0.35rem;
+  padding: 0.05rem 0.4rem;
+  font-size: 0.65rem;
+  color: #ffeecc;
+  background: rgba(200, 140, 60, 0.35);
+  border-radius: 2px;
+  letter-spacing: 0.08em;
+}
+.modal-away-picker .away-crew-hp {
+  font-family: var(--mono-font, monospace);
+  font-size: 0.75rem;
+  color: var(--fg-dim, #cc99cc);
+}
+.modal-away-picker .away-picker-status {
+  font-size: 0.78rem;
+  color: var(--fg-dim, #cc99cc);
+  margin-bottom: 0.6rem;
+  text-align: center;
+}
+
+/* ---- Away-team reunion modal (issue #17) ---- */
+
+.modal-away-reunion .away-reunion-sci {
+  text-align: center;
+  font-size: 1.4rem;
+  color: #ee99ff;
+  letter-spacing: 0.08em;
+  margin: 0.6rem 0;
+}
+.modal-away-reunion .away-reunion-list {
+  list-style: none;
+  margin: 0.5rem 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+.modal-away-reunion .away-reunion-list li {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 0.6rem;
+  align-items: center;
+  padding: 0.35rem 0.55rem;
+  border: 1px solid var(--accent-dim, #4d3a5c);
+  border-radius: 3px;
+}
+.modal-away-reunion .away-deaths {
+  margin: 0.8rem 0 0.5rem;
+  padding-top: 0.6rem;
+  border-top: 1px solid var(--accent-dim, #4d3a5c);
+}
+.modal-away-reunion .away-deaths-header {
+  font-size: 0.78rem;
+  letter-spacing: 0.12em;
+  color: #ff9999;
+  margin-bottom: 0.35rem;
+}
+.modal-away-reunion .away-deceased {
+  border-color: #66444a;
+  background: rgba(100, 50, 60, 0.12);
+}
+.modal-away-reunion .away-corpse-choice {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  font-size: 0.78rem;
+  color: var(--fg-dim, #cc99cc);
+}
+.modal-away-reunion .away-corpse-choice label {
+  cursor: pointer;
+}
+.modal-away-reunion .away-facts {
+  margin: 0.6rem 0;
+  padding: 0.6rem;
+  border: 1px solid var(--accent-dim, #4d3a5c);
+  border-radius: 3px;
+  background: rgba(60, 45, 80, 0.2);
+}
+.modal-away-reunion .away-facts-label {
+  font-size: 0.72rem;
+  letter-spacing: 0.1em;
+  color: #ee99ff;
+  margin-bottom: 0.3rem;
 }

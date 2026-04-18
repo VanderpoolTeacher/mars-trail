@@ -37,6 +37,21 @@ function renderTopbar(state) {
 
   const sci = document.getElementById('sci-counter');
   if (sci) sci.textContent = `SCI ${state.sciencePoints || 0}`;
+
+  // DUE BACK chip — visible only while an away team is out.
+  let chip = document.getElementById('away-due-chip');
+  if (state.awayTeam) {
+    if (!chip) {
+      chip = document.createElement('span');
+      chip.id = 'away-due-chip';
+      chip.className = 'away-due-chip';
+      chip.title = 'Away team return sol';
+      $.clock.parentNode.insertBefore(chip, $.clock);
+    }
+    chip.textContent = `AWAY · DUE ${state.awayTeam.returnSol}`;
+  } else if (chip) {
+    chip.remove();
+  }
 }
 
 // ---------- Route ----------

@@ -482,48 +482,6 @@ export function showWaypointOfferModal(waypoint, state, { onAccept, onDecline })
   r.querySelector('#wp-decline').addEventListener('click', onDecline);
 }
 
-// ---- Waypoint reward modal (issue #7 part 1) ----
-
-export function showWaypointRewardModal(payload, onContinue) {
-  const r = root();
-  if (!r) return;
-
-  const { waypoint, sciencePointsGained, fact, success, role, specialistAlive } = payload;
-  const imgBlock = waypoint.image
-    ? `<img class="modal-image" src="${waypoint.image}" alt="" />`
-    : '';
-  const factBlock = fact
-    ? `
-      <div class="waypoint-fact">
-        <div class="waypoint-fact-label">⎋ ADVANCED DATA</div>
-        <p>${linkifyCodex(escapeHtml(fact))}</p>
-      </div>`
-    : '';
-
-  const severityLabel = success ? '⎋ DATA RECOVERED' : '⚠ PARTIAL DATA';
-  const roleLabel = role ? role.toUpperCase() : '';
-  const specialistNote = role && !specialistAlive ? ` (no ${role} aboard — improvised).` : '';
-  const description = success
-    ? `${roleLabel} analysis conclusive.${specialistNote} Sample archived.`
-    : `${roleLabel} analysis inconclusive.${specialistNote} Only partial data recovered.`;
-  const sciLabel = success ? `+${sciencePointsGained} SCI` : `+${sciencePointsGained} SCI (partial)`;
-
-  r.innerHTML = `
-    <div class="modal-backdrop">
-      <div class="modal-panel modal-waypoint-reward ${success ? 'wp-success' : 'wp-partial'}" role="dialog" aria-modal="true">
-        <div class="modal-severity severity-waypoint">${severityLabel}</div>
-        <h2 class="modal-title">${escapeHtml(waypoint.name)}</h2>
-        ${imgBlock}
-        <p class="modal-description">${escapeHtml(description)}</p>
-        <div class="waypoint-sci">${sciLabel}</div>
-        ${factBlock}
-        <button class="modal-continue primary" id="wp-continue" type="button">CONTINUE →</button>
-      </div>
-    </div>
-  `;
-  r.querySelector('#wp-continue').addEventListener('click', onContinue);
-}
-
 // ---- Multi-stage event modal (issue #17 prerequisite) ----
 
 export function showMultiStageModal(event, stageId, onChoose) {
@@ -559,6 +517,146 @@ export function showMultiStageModal(event, stageId, onChoose) {
 
   r.querySelectorAll('[data-idx]').forEach(btn => {
     btn.addEventListener('click', () => onChoose(Number(btn.dataset.idx)));
+  });
+}
+
+// ---- Away-team picker modal (issue #17) ----
+
+const POOL_SPECIALIST = {
+  GEOLOGY:      'engineer',
+  WATER:        'biologist',
+  ATMOSPHERE:   'pilot',
+  ASTROBIOLOGY: 'biologist'
+};
+
+export function showAwayTeamPickerModal(state, waypoint, { onConfirm, onCancel }) {
+  const r = root();
+  if (!r) return;
+
+  const specialistRole = POOL_SPECIALIST[waypoint.factPool] || null;
+  const aliveCrew = state.crew.filter(c => c.alive);
+  const maxSelectable = Math.min(3, aliveCrew.length - 1);   // must leave ≥1 on rover
+
+  const crewRowsHtml = aliveCrew.map(c => {
+    const roleCode = (c.role || '').toUpperCase();
+    const specialistTag = c.role === specialistRole ? ' <span class="away-specialist">SPECIALIST</span>' : '';
+    return `
+      <label class="away-crew-row" data-crew-id="${c.id}">
+        <input type="checkbox" class="away-crew-check" value="${c.id}" />
+        <span class="away-crew-name">${escapeHtml(c.name)}</span>
+        <span class="away-crew-role">${roleCode}${specialistTag}</span>
+        <span class="away-crew-hp">HP ${c.health}</span>
+      </label>
+    `;
+  }).join('');
+
+  const specialistHint = specialistRole
+    ? `Specialist for this site: <strong>${specialistRole.toUpperCase()}</strong>. No specialist → harder checks, no advanced fact.`
+    : '';
+
+  r.innerHTML = `
+    <div class="modal-backdrop">
+      <div class="modal-panel modal-away-picker" role="dialog" aria-modal="true">
+        <div class="modal-severity severity-waypoint">⎋ AWAY-TEAM DISPATCH</div>
+        <h2 class="modal-title">${escapeHtml(waypoint.name)}</h2>
+        <p class="modal-description">${escapeHtml(waypoint.briefing)}</p>
+        <div class="away-meta">
+          <div class="away-meta-row"><span>DUE BACK</span><span>~${waypoint.detourSols} sols</span></div>
+          <div class="away-meta-row"><span>SEND</span><span>1–${maxSelectable} crew</span></div>
+        </div>
+        ${specialistHint ? `<p class="away-hint">${specialistHint}</p>` : ''}
+        <div class="away-crew-list">${crewRowsHtml}</div>
+        <div class="away-picker-status" id="away-picker-status">Select 1–${maxSelectable} crew.</div>
+        <div class="modal-choices">
+          <button class="modal-choice primary" id="away-confirm" type="button" disabled>DISPATCH →</button>
+          <button class="modal-choice" id="away-cancel" type="button">CANCEL</button>
+        </div>
+      </div>
+    </div>
+  `;
+
+  const confirmBtn = r.querySelector('#away-confirm');
+  const statusEl   = r.querySelector('#away-picker-status');
+  const checks     = Array.from(r.querySelectorAll('.away-crew-check'));
+
+  function update() {
+    const picked = checks.filter(c => c.checked).map(c => c.value);
+    const valid  = picked.length >= 1 && picked.length <= maxSelectable;
+    confirmBtn.disabled = !valid;
+    statusEl.textContent = valid
+      ? `${picked.length} crew dispatched — ${aliveCrew.length - picked.length} stays on rover.`
+      : `Select 1–${maxSelectable} crew.`;
+    // Soft-cap: if picked too many, block further.
+    const overCap = picked.length >= maxSelectable;
+    checks.forEach(c => { if (!c.checked) c.disabled = overCap; });
+  }
+  checks.forEach(c => c.addEventListener('change', update));
+  update();
+
+  confirmBtn.addEventListener('click', () => {
+    const crewIds = checks.filter(c => c.checked).map(c => c.value);
+    onConfirm(crewIds);
+  });
+  r.querySelector('#away-cancel').addEventListener('click', () => onCancel && onCancel());
+}
+
+// ---- Away-team reunion modal (issue #17) ----
+
+export function showAwayTeamReunionModal(payload, onConfirm) {
+  const r = root();
+  if (!r) return;
+
+  const { waypoint, survivors, deaths, sciencePoints, facts } = payload;
+
+  const survivorsHtml = survivors.length
+    ? `<ul class="away-reunion-list">${survivors.map(s => `
+        <li>${escapeHtml(s.name)} <span class="away-crew-role">${s.role.toUpperCase()}</span>
+            <span class="away-crew-hp">HP ${s.health}</span></li>`).join('')}</ul>`
+    : '<p class="away-reunion-empty">No survivors.</p>';
+
+  const deathsHtml = deaths.length
+    ? `<div class="away-deaths">
+         <div class="away-deaths-header">LOST</div>
+         <ul class="away-reunion-list">${deaths.map(d => `
+           <li class="away-deceased">
+             <span class="away-crew-name">${escapeHtml(d.name)}</span>
+             <span class="away-crew-role">${d.role.toUpperCase()}</span>
+             <span class="away-corpse-choice">
+               <label><input type="radio" name="corpse-${d.id}" value="bring" checked /> bring body (+180 LB)</label>
+               <label><input type="radio" name="corpse-${d.id}" value="leave" /> leave behind</label>
+             </span>
+           </li>`).join('')}</ul>
+       </div>`
+    : '';
+
+  const factsHtml = facts.length
+    ? `<div class="away-facts">
+         <div class="away-facts-label">⎋ ADVANCED DATA</div>
+         ${facts.map(f => `<p>${linkifyCodex(escapeHtml(f))}</p>`).join('')}
+       </div>`
+    : '';
+
+  r.innerHTML = `
+    <div class="modal-backdrop">
+      <div class="modal-panel modal-away-reunion" role="dialog" aria-modal="true">
+        <div class="modal-severity severity-waypoint">⎋ AWAY TEAM REUNITED</div>
+        <h2 class="modal-title">${escapeHtml(waypoint.name)}</h2>
+        <div class="away-reunion-sci">+${sciencePoints} SCI</div>
+        ${factsHtml}
+        ${survivorsHtml}
+        ${deathsHtml}
+        <button class="modal-continue primary" id="away-reunion-confirm" type="button">RESUME TREK →</button>
+      </div>
+    </div>
+  `;
+
+  r.querySelector('#away-reunion-confirm').addEventListener('click', () => {
+    const corpseChoices = {};
+    for (const d of deaths) {
+      const radio = r.querySelector(`input[name="corpse-${d.id}"]:checked`);
+      corpseChoices[d.id] = radio ? radio.value : 'bring';
+    }
+    onConfirm(corpseChoices);
   });
 }
 

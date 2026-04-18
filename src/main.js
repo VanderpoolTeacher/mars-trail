@@ -5,10 +5,10 @@ import { createInitialState, CARGO_BUDGET, PART_TYPES } from './state.js';
 import { render } from './render.js';
 import { advanceSol, setPace, setRations, repairBattery, cleanPanels } from './systems/travel.js';
 import { applyEventChoice } from './systems/events.js';
-import { showEventModal, showOutcomeModal, showBriefingModal, showLoadoutModal, showTitleLayer, dimTitleStart, hideTitleLayer, showEndOfRunModal, closeModal, showWaypointOfferModal, showWaypointRewardModal, showMultiStageModal } from './ui/modals.js';
+import { showEventModal, showOutcomeModal, showBriefingModal, showLoadoutModal, showTitleLayer, dimTitleStart, hideTitleLayer, showEndOfRunModal, closeModal, showWaypointOfferModal, showMultiStageModal, showAwayTeamPickerModal, showAwayTeamReunionModal } from './ui/modals.js';
 import { declineWaypoint } from './systems/waypoints.js';
 import { applyStageChoice } from './systems/multiStage.js';
-import { resolveAwayTeamStage } from './systems/awayTeam.js';
+import { acceptAwayTeam, resolveAwayTeamStage, finalizeReunion } from './systems/awayTeam.js';
 import { resolveMedicalStage } from './systems/medicalEmergency.js';
 import { WAYPOINTS } from './content/waypoints.js';
 import { makeLandmarkEncounter } from './content/landmarks.js';
@@ -164,7 +164,6 @@ function renderAll() {
     const { waypoint } = modal.payload;
     showWaypointOfferModal(waypoint, state, {
       onAccept: () => {
-        // Open the away-team picker (UI renderer lands in Task 5).
         state = { ...state, activeModal: { type: 'away_team_picker', payload: { waypoint } } };
         renderAll();
       },
@@ -174,6 +173,36 @@ function renderAll() {
         state = { ...state, activeModal: { type: 'event', payload: makeLandmarkEncounter(arrivedId) } };
         renderAll();
       }
+    });
+    return;
+  }
+
+  if (modal.type === 'away_team_picker') {
+    const { waypoint } = modal.payload;
+    showAwayTeamPickerModal(state, waypoint, {
+      onConfirm: (crewIds) => {
+        state = acceptAwayTeam(state, waypoint.id, crewIds);
+        state = { ...state, firedWaypoints: [...state.firedWaypoints, waypoint.id] };
+        // Fire the landmark encounter for the turn-off. The rover is parked
+        // at this landmark while the away team is out.
+        const arrivedId = state.route[state.currentLandmarkIndex];
+        state = { ...state, activeModal: { type: 'event', payload: makeLandmarkEncounter(arrivedId) } };
+        renderAll();
+      },
+      onCancel: () => {
+        state = declineWaypoint(state, waypoint.id);
+        const arrivedId = state.route[state.currentLandmarkIndex];
+        state = { ...state, activeModal: { type: 'event', payload: makeLandmarkEncounter(arrivedId) } };
+        renderAll();
+      }
+    });
+    return;
+  }
+
+  if (modal.type === 'away_team_reunion') {
+    showAwayTeamReunionModal(modal.payload, (corpseChoices) => {
+      state = finalizeReunion(state, corpseChoices);
+      renderAll();
     });
     return;
   }
