@@ -1085,6 +1085,9 @@ body[data-theme="lcars"] .modal-choice {
   background: var(--fg-dim);
   color: #000;
   border: none;
+  /* Pill caps push the left edge inward visually — bump padding so
+     the label clears the rounded corner. */
+  padding-left: 28px;
   padding: 10px 18px;
 }
 
