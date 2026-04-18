@@ -9,14 +9,15 @@ export const MULTI_STAGE_BASE_RATE = 0.08;
 
 // ---- Resolve a chosen option on a given stage ----
 //
-// Returns { state, nextStage, skillResult, damageTarget, applied }.
-// state:       new state after outcome application.
-// nextStage:   key of the next stage, or null to end the chain.
-// skillResult: present when the choice had a skillCheck.
+// Returns { state, nextStage, skillResult, damageTarget, applied, returnSolDelta }.
+// state:          new state after outcome application.
+// nextStage:      key of the next stage, or null to end the chain.
+// skillResult:    present when the choice had a skillCheck.
+// returnSolDelta: number to shift an away-team return sol by; 0 for non-away contexts.
 export function applyStageChoice(state, event, stageId, choiceIdx) {
   const stage  = event.stages[stageId];
   const choice = stage?.choices[choiceIdx];
-  if (!choice) return { state, nextStage: null, skillResult: null, damageTarget: null, applied: {} };
+  if (!choice) return { state, nextStage: null, skillResult: null, damageTarget: null, applied: {}, returnSolDelta: 0 };
 
   let outcome = choice.outcome;
   let skillResult = null;
@@ -38,7 +39,8 @@ export function applyStageChoice(state, event, stageId, choiceIdx) {
     nextStage: choice.nextStage ?? null,
     skillResult,
     damageTarget,
-    applied
+    applied,
+    returnSolDelta: choice.returnSolDelta ?? 0
   };
 }
 
