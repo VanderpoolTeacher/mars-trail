@@ -951,3 +951,17 @@ body[data-theme="lcars"] .eor-col-facts {
   background: rgba(255, 170, 102, 0.08);
   border-radius: 2px;
 }
+
+/* ---- Medical emergency severity (issue #32) ---- */
+
+.modal-severity.severity-medical {
+  color: #ff99aa;
+  background: rgba(255, 153, 170, 0.12);
+  letter-spacing: 0.2em;
+}
+.modal-severity.severity-medical::before {
+  content: '⚕';
+  margin-right: 0.5em;
+  font-size: 1.1em;
+  font-weight: 700;
+}

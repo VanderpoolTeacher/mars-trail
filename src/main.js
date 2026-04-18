@@ -9,7 +9,7 @@ import { showEventModal, showOutcomeModal, showBriefingModal, showLoadoutModal, 
 import { declineWaypoint } from './systems/waypoints.js';
 import { applyStageChoice } from './systems/multiStage.js';
 import { acceptAwayTeam, resolveAwayTeamStage, finalizeReunion } from './systems/awayTeam.js';
-import { resolveMedicalStage } from './systems/medicalEmergency.js';
+import { resolveMedicalStage, getMedicalStageView } from './systems/medicalEmergency.js';
 import { WAYPOINTS } from './content/waypoints.js';
 import { makeLandmarkEncounter } from './content/landmarks.js';
 import './ui/codex.js';   // registers global click handler for codex terms
@@ -223,10 +223,14 @@ function renderAll() {
     const { event, stageId, source } = modal.payload;
 
     // Medical emergency uses a custom resolver (patient-targeted damage,
-    // conditional Stage 3, addCorpse). No generic outcome modal — the
-    // resolver emits log lines directly.
+    // conditional Stage 3, addCorpse). Stage view is built per-run from
+    // the payload context (patient + ailment + selfTreat), so we
+    // synthesize an event shape for the modal renderer.
     if (source === 'medical') {
-      showMultiStageModal(event, stageId, (choiceIdx) => {
+      const view = getMedicalStageView(state, stageId, modal.payload.context);
+      if (!view) { state = { ...state, activeModal: null }; renderAll(); return; }
+      const stageEvent = { id: 'medical_emergency', severity: 'medical', stages: { [stageId]: view } };
+      showMultiStageModal(stageEvent, stageId, (choiceIdx) => {
         state = resolveMedicalStage(state, choiceIdx);
         renderAll();
       });
