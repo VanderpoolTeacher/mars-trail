@@ -5,6 +5,7 @@
 import { createInitialState } from '../src/state.js';
 import { advanceSol, repairBattery, cleanPanels, canRepair, canClean } from '../src/systems/travel.js';
 import { applyEventChoice } from '../src/systems/events.js';
+import { applyStageChoice } from '../src/systems/multiStage.js';
 
 // Simplest strategy: always pick the first option.
 function strategyFirst(_state, _event) { return 0; }
@@ -109,6 +110,19 @@ function playGame({ pace, rations, pickChoice }) {
     }
     if (s.activeModal && s.activeModal.type === 'waypoint_reward') {
       s = { ...s, activeModal: null };
+      continue;
+    }
+    // Multi-stage events: sim picks choice 0 on every stage. Keeps the
+    // game loop from stalling on the new modal type. Not a strategy-rich
+    // runner; any future multi-stage strategy would replace this.
+    if (s.activeModal && s.activeModal.type === 'multi_stage') {
+      const { event, stageId } = s.activeModal.payload;
+      const { state: next, nextStage } = applyStageChoice(s, event, stageId, 0);
+      if (nextStage !== null) {
+        s = { ...next, activeModal: { type: 'multi_stage', payload: { event, stageId: nextStage } } };
+      } else {
+        s = { ...next, activeModal: null };
+      }
       continue;
     }
     const m = shouldMaintain(s);

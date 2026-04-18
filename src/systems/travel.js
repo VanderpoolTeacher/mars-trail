@@ -3,6 +3,7 @@
 
 import { landmarkName, PART_TYPES } from '../state.js';
 import { rollEvent } from './events.js';
+import { rollMultiStageEvent } from './multiStage.js';
 import { applyDamage, checkAllDead } from './crew.js';
 import { makeLandmarkEncounter } from '../content/landmarks.js';
 import { WAYPOINTS } from '../content/waypoints.js';
@@ -239,6 +240,12 @@ export function advanceSol(state, mode = 'travel') {
     if (event) {
       s.activeModal = { type: 'event', payload: event };
       if (event.oneShot) s.firedEvents = [...s.firedEvents, event.id];
+    } else {
+      const msEvent = rollMultiStageEvent(s);
+      if (msEvent) {
+        s.activeModal = { type: 'multi_stage', payload: { event: msEvent, stageId: msEvent.startStage } };
+        if (msEvent.oneShot) s.firedEvents = [...s.firedEvents, msEvent.id];
+      }
     }
   }
 

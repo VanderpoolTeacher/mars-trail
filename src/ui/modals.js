@@ -524,6 +524,44 @@ export function showWaypointRewardModal(payload, onContinue) {
   r.querySelector('#wp-continue').addEventListener('click', onContinue);
 }
 
+// ---- Multi-stage event modal (issue #17 prerequisite) ----
+
+export function showMultiStageModal(event, stageId, onChoose) {
+  const r = root();
+  if (!r) return;
+
+  const stage = event.stages[stageId];
+  const imgBlock = stage.image
+    ? `<img class="modal-image" src="${stage.image}" alt="" />`
+    : '';
+  const sev = event.severity || 'moderate';
+  const eventLabel = (event.id || '').replace(/_/g, ' ').toUpperCase();
+
+  const choicesHtml = stage.choices.map((c, i) => `
+    <button type="button" class="modal-choice" data-idx="${i}">
+      ${escapeHtml(c.label)}${c.skillCheck ? ` <span class="skill-check-badge">${c.skillCheck.role}</span>` : ''}
+    </button>
+  `).join('');
+
+  r.innerHTML = `
+    <div class="modal-backdrop">
+      <div class="modal-panel modal-multistage" role="dialog" aria-modal="true">
+        <div class="modal-severity severity-${sev}">${escapeHtml(eventLabel)}</div>
+        <h2 class="modal-title">${escapeHtml(stage.title)}</h2>
+        ${imgBlock}
+        <p class="modal-description">${escapeHtml(stage.description)}</p>
+        <div class="modal-choices">
+          ${choicesHtml}
+        </div>
+      </div>
+    </div>
+  `;
+
+  r.querySelectorAll('[data-idx]').forEach(btn => {
+    btn.addEventListener('click', () => onChoose(Number(btn.dataset.idx)));
+  });
+}
+
 // ---- helpers ----
 
 const FIELD_LABELS = {
