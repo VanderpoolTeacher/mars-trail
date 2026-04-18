@@ -1,0 +1,223 @@
+/* Mars Trail — Voltron: Legendary Defender HUD skin (#51).
+   Holographic cyan glow on near-black. Panels read as floating
+   projections with angular corner brackets and strong outer glow. */
+
+body[data-theme="voltron"] {
+  --bg:        #02060b;
+  --bg-panel:  rgba(10, 30, 50, 0.38);
+  --grid:      rgba(75, 216, 255, 0.03);
+
+  --fg:        #cdf5ff;         /* pale cyan-white headline text */
+  --fg-dim:    #4bd8ff;         /* electric cyan body text */
+  --fg-faint:  #245f8c;         /* muted cyan for borders */
+
+  --warn:      #ffd45a;         /* amber warning (kept warm for contrast) */
+  --crit:      #ff4d6d;
+  --healthy:   #4bd8ff;
+
+  --glow:         0 0 6px rgba(75, 216, 255, 0.55);
+  --glow-strong:  0 0 14px rgba(75, 216, 255, 0.9),
+                  0 0 28px rgba(75, 216, 255, 0.4);
+
+  --font-mono: 'JetBrains Mono', 'Fira Code', ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  background: var(--bg);
+  color: var(--fg-dim);
+}
+
+/* Radial/diagonal guide lines crossing the whole interface — the
+   holographic "light cone" pattern. Sits behind everything. */
+body[data-theme="voltron"]::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background:
+    linear-gradient(115deg, transparent 48%, rgba(75, 216, 255, 0.05) 49%, rgba(75, 216, 255, 0.05) 51%, transparent 52%),
+    linear-gradient(65deg,  transparent 48%, rgba(75, 216, 255, 0.04) 49%, rgba(75, 216, 255, 0.04) 51%, transparent 52%);
+}
+
+/* ---- Topbar ---- */
+
+body[data-theme="voltron"] .topbar {
+  background: rgba(8, 24, 40, 0.75);
+  color: var(--fg);
+  border-bottom: 1px solid rgba(75, 216, 255, 0.35);
+  box-shadow: 0 0 22px rgba(75, 216, 255, 0.18);
+  letter-spacing: 0.2em;
+  font-weight: 600;
+}
+body[data-theme="voltron"] .topbar .brand {
+  color: var(--fg);
+  text-shadow: var(--glow-strong);
+}
+body[data-theme="voltron"] .topbar .clock,
+body[data-theme="voltron"] .topbar .sci-counter {
+  color: var(--fg);
+  text-shadow: var(--glow);
+}
+body[data-theme="voltron"] .topbar .sci-counter {
+  background: rgba(75, 216, 255, 0.08);
+  border-color: rgba(75, 216, 255, 0.45);
+}
+body[data-theme="voltron"] .topbar #music-select,
+body[data-theme="voltron"] .topbar #music-mute {
+  color: var(--fg-dim);
+  background: rgba(8, 24, 40, 0.5);
+  border-color: rgba(75, 216, 255, 0.35);
+}
+body[data-theme="voltron"] .topbar #music-select option {
+  background: var(--bg);
+  color: var(--fg);
+}
+
+/* ---- Panels: angular cyan-glow holograms ---- */
+
+body[data-theme="voltron"] .panel {
+  position: relative;
+  background: var(--bg-panel);
+  border: 1px solid rgba(75, 216, 255, 0.55);
+  border-radius: 2px;
+  box-shadow:
+    0 0 22px rgba(75, 216, 255, 0.18),
+    inset 0 0 40px rgba(75, 216, 255, 0.06);
+  backdrop-filter: blur(2px);
+}
+
+/* Corner brackets — two thicker cyan segments on each corner so the
+   panel reads as a holographic frame rather than a plain box. */
+body[data-theme="voltron"] .panel::before,
+body[data-theme="voltron"] .panel::after {
+  content: '';
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  pointer-events: none;
+  filter: drop-shadow(0 0 4px rgba(75, 216, 255, 0.9));
+}
+body[data-theme="voltron"] .panel::before {
+  top: -1px;
+  left: -1px;
+  border-top: 3px solid var(--fg-dim);
+  border-left: 3px solid var(--fg-dim);
+}
+body[data-theme="voltron"] .panel::after {
+  bottom: -1px;
+  right: -1px;
+  border-bottom: 3px solid var(--fg-dim);
+  border-right: 3px solid var(--fg-dim);
+}
+
+body[data-theme="voltron"] .panel-title {
+  color: var(--fg);
+  text-shadow: var(--glow);
+  border-bottom: 1px solid rgba(75, 216, 255, 0.35);
+  letter-spacing: 0.3em;
+  font-weight: 600;
+}
+
+/* ---- Telemetry bars ---- */
+
+body[data-theme="voltron"] .bar {
+  background: rgba(75, 216, 255, 0.08);
+  border: 1px solid rgba(75, 216, 255, 0.3);
+  box-shadow: inset 0 0 6px rgba(75, 216, 255, 0.15);
+}
+body[data-theme="voltron"] .bar-fill {
+  background: var(--fg-dim);
+  box-shadow: 0 0 6px rgba(75, 216, 255, 0.7);
+}
+body[data-theme="voltron"] .readout.warn .bar-fill { background: var(--warn); box-shadow: 0 0 6px rgba(255, 212, 90, 0.7); }
+body[data-theme="voltron"] .readout.crit .bar-fill { background: var(--crit); box-shadow: 0 0 6px rgba(255, 77, 109, 0.7); }
+body[data-theme="voltron"] .readout-label { color: var(--fg-faint); letter-spacing: 0.12em; }
+body[data-theme="voltron"] .readout-value { color: var(--fg); text-shadow: var(--glow); }
+
+/* ---- Buttons ---- */
+
+body[data-theme="voltron"] button {
+  background: rgba(75, 216, 255, 0.08);
+  color: var(--fg);
+  border: 1px solid rgba(75, 216, 255, 0.5);
+  border-radius: 2px;
+  padding: 6px 14px;
+  font-family: var(--font-mono);
+  letter-spacing: 0.15em;
+  text-shadow: var(--glow);
+  transition: all 120ms ease;
+}
+body[data-theme="voltron"] button:hover:not(:disabled) {
+  background: rgba(75, 216, 255, 0.2);
+  border-color: var(--fg-dim);
+  box-shadow: var(--glow-strong);
+}
+body[data-theme="voltron"] button:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+body[data-theme="voltron"] .btn-primary {
+  background: rgba(75, 216, 255, 0.22);
+  border-color: var(--fg);
+  box-shadow: var(--glow-strong);
+}
+
+/* ---- Modal ---- */
+
+body[data-theme="voltron"] .modal-backdrop {
+  background: rgba(2, 6, 11, 0.85);
+}
+body[data-theme="voltron"] .modal-panel {
+  background: rgba(10, 30, 50, 0.92);
+  border: 1px solid rgba(75, 216, 255, 0.55);
+  border-radius: 2px;
+  box-shadow:
+    0 0 32px rgba(75, 216, 255, 0.25),
+    inset 0 0 60px rgba(75, 216, 255, 0.05);
+  color: var(--fg-dim);
+}
+body[data-theme="voltron"] .modal-title { color: var(--fg); text-shadow: var(--glow-strong); }
+body[data-theme="voltron"] .modal-description { color: var(--fg-dim); }
+
+body[data-theme="voltron"] .modal-choice {
+  background: rgba(75, 216, 255, 0.06);
+  border: 1px solid rgba(75, 216, 255, 0.35);
+  color: var(--fg-dim);
+  border-radius: 2px;
+}
+body[data-theme="voltron"] .modal-choice:hover {
+  background: rgba(75, 216, 255, 0.18);
+  border-color: var(--fg-dim);
+  box-shadow: var(--glow);
+}
+body[data-theme="voltron"] .modal-choice.primary {
+  background: rgba(75, 216, 255, 0.22);
+  border-color: var(--fg);
+  box-shadow: var(--glow-strong);
+}
+
+/* ---- Log ---- */
+
+body[data-theme="voltron"] .log { color: var(--fg-dim); }
+body[data-theme="voltron"] .log li { border-left: 2px solid rgba(75, 216, 255, 0.35); padding-left: 6px; }
+
+/* ---- Crew ---- */
+
+body[data-theme="voltron"] .crew-row { color: var(--fg-dim); }
+body[data-theme="voltron"] .crew-name { color: var(--fg); text-shadow: var(--glow); }
+body[data-theme="voltron"] .crew-role {
+  background: rgba(75, 216, 255, 0.08);
+  border-color: rgba(75, 216, 255, 0.35);
+  color: var(--fg-dim);
+}
+
+/* ---- Minimap accents (route + waypoints inherit from base, layered glow) ---- */
+
+body[data-theme="voltron"] .minimap {
+  filter: drop-shadow(0 0 5px rgba(75, 216, 255, 0.55));
+}
+body[data-theme="voltron"] .landmark-dot            { stroke: var(--fg-dim); }
+body[data-theme="voltron"] .landmark-dot.visited    { stroke: var(--fg); }
+body[data-theme="voltron"] .landmark-dot.current    { fill: var(--fg); stroke: #02060b; }
+body[data-theme="voltron"] .landmark-dot.dest       { stroke: var(--fg); }
+body[data-theme="voltron"] .waypoint-marker         { fill: var(--fg-dim); }
+body[data-theme="voltron"] .waypoint-marker.accepted { fill: var(--fg); filter: drop-shadow(0 0 6px var(--fg-dim)); }
