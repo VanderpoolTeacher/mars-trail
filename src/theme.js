@@ -1,11 +1,18 @@
-// Mars Trail — theme switcher (mission control ↔ LCARS)
+// Tractus Martis — theme switcher (Mission Control / LCARS / Voltron).
 // Persists choice to localStorage. Toggled via button in topbar.
 
 const STORAGE_KEY = 'marsTrail.theme';
-const THEMES = ['mc', 'lcars'];   // 'mc' = mission control (default), 'lcars' = TNG
+const THEMES = ['mc', 'lcars', 'voltron'];
+
+const NEXT_LABEL = {
+  mc:      'TNG SKIN',
+  lcars:   'VLD SKIN',
+  voltron: 'MC SKIN'
+};
 
 function load() {
-  return localStorage.getItem(STORAGE_KEY) || 'mc';
+  const raw = localStorage.getItem(STORAGE_KEY) || 'mc';
+  return THEMES.includes(raw) ? raw : 'mc';
 }
 
 function save(theme) {
@@ -19,12 +26,13 @@ function apply(theme) {
     document.body.setAttribute('data-theme', theme);
   }
   const btn = document.getElementById('theme-toggle-btn');
-  if (btn) btn.textContent = theme === 'mc' ? 'TNG SKIN' : 'MC SKIN';
+  if (btn) btn.textContent = NEXT_LABEL[theme] || 'MC SKIN';
 }
 
-function toggle() {
+function cycle() {
   const current = load();
-  const next = current === 'mc' ? 'lcars' : 'mc';
+  const idx = THEMES.indexOf(current);
+  const next = THEMES[(idx + 1) % THEMES.length];
   save(next);
   apply(next);
 }
@@ -32,7 +40,7 @@ function toggle() {
 export function initTheme() {
   apply(load());
   const btn = document.getElementById('theme-toggle-btn');
-  if (btn) btn.addEventListener('click', toggle);
+  if (btn) btn.addEventListener('click', cycle);
 }
 
 initTheme();
