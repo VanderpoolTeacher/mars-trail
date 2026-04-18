@@ -60,8 +60,40 @@ test('every AWAY_TEAM_CHAINS entry has valid stage graph', () => {
           assert.ok(chain.stages[choice.nextStage],
             `${waypointId}.${stageId}: nextStage "${choice.nextStage}" missing`);
         }
+        // Terminal choices must carry a cost (outcome, or skill-check pair).
+        // Non-terminal choices can be pure branches (just nextStage).
+        const isTerminal = (choice.nextStage ?? null) === null;
+        if (isTerminal) {
+          const hasPlain = 'outcome' in choice;
+          const hasSkill = 'skillCheck' in choice
+            && 'successOutcome' in choice
+            && 'failOutcome' in choice;
+          assert.ok(hasPlain || hasSkill,
+            `${waypointId}.${stageId}: terminal choice needs outcome or skill-check pair`);
+        }
       }
     }
+  }
+});
+
+test('every waypoint in WAYPOINTS has a matching chain', () => {
+  for (const wp of WAYPOINTS) {
+    assert.ok(AWAY_TEAM_CHAINS[wp.id],
+      `no away-team chain authored for waypoint "${wp.id}"`);
+  }
+});
+
+test('every chain can be driven to a terminal stage by always picking choice 0', () => {
+  const base = makeState();
+  for (const waypointId of Object.keys(AWAY_TEAM_CHAINS)) {
+    // Force all skill-check successes for smoke drive (skip awayTeamDamage).
+    let s = acceptAwayTeam(base, waypointId, ['c1', 'c2']);
+    assert.ok(s.awayTeam, `${waypointId}: acceptAwayTeam failed`);
+    let guard = 10;
+    while (s.awayTeam && s.awayTeam.currentStage && guard-- > 0) {
+      s = withRandom([0.01, 0.5, 0.3, 0.5], () => resolveAwayTeamStage(s, 0));
+    }
+    assert.ok(guard >= 0, `${waypointId}: stage loop exceeded guard (possible cycle)`);
   }
 });
 
