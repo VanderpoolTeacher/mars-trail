@@ -1,7 +1,13 @@
 // Mars Trail — multi-stage event pool (issue #17 prerequisite).
 // Events with branching stages. Engine in src/systems/multiStage.js.
+//
+// NOTE: Some entries (e.g. medical_emergency) use custom resolvers
+// instead of applyStageChoice — routed via activeModal.payload.source.
+
+import { MEDICAL_EMERGENCY } from './medicalEmergency.js';
 
 export const MULTI_STAGE_EVENTS = [
+  MEDICAL_EMERGENCY,
   {
     id:         'drill_bit_seized',
     multiStage: true,
