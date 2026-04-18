@@ -98,6 +98,20 @@ body[data-theme="lcars"] .topbar #music-mute {
   border-color: rgba(0, 0, 0, 0.35);
 }
 
+/* AWAY-TEAM chip: readable on the tan LCARS topbar strip */
+body[data-theme="lcars"] .away-due-chip {
+  color: #000;
+  border-color: rgba(0, 0, 0, 0.5);
+  background: rgba(0, 0, 0, 0.1);
+  /* suppress the default purple pulse — swap to a subtler amber blink */
+  animation: lcars-away-pulse 1.3s ease-in-out infinite;
+}
+
+@keyframes lcars-away-pulse {
+  0%, 100% { background: rgba(0, 0, 0, 0.1);  border-color: rgba(0, 0, 0, 0.5); }
+  50%      { background: rgba(0, 0, 0, 0.22); border-color: #000; }
+}
+
 /* Telemetry bars: pill-shaped */
 body[data-theme="lcars"] .bar {
   border: none;
