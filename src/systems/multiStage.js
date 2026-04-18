@@ -1,52 +1,11 @@
 // Mars Trail — multi-stage event resolution + rolling (issue #17 prerequisite).
-// Pure module. Reuses applyOutcome from events.js for skill-check branches.
+// Pure module. Reuses applyOutcome from events.js so simple and skill-check
+// outcomes share the same jitter + damage-routing behaviour as regular events.
 
 import { MULTI_STAGE_EVENTS } from '../content/multiStageEvents.js';
 import { applyOutcome } from './events.js';
 
 export const MULTI_STAGE_BASE_RATE = 0.08;
-
-// ---- Apply a simple (non-jittered) outcome directly ----
-//
-// Multi-stage scripted events state their costs exactly ("sit 2 sols = -3 each").
-// Jitter is reserved for skill-check success/fail branches which go through
-// applyOutcome. Simple-choice outcomes are applied without variance so that
-// authored values are honoured precisely.
-function applyOutcomeExact(state, outcome) {
-  if (!outcome) return { state, damageTarget: null, applied: {} };
-
-  const applied = {};
-  let s = {
-    ...state,
-    resources: { ...state.resources },
-    log: [...state.log]
-  };
-
-  const CLAMP = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
-  const res = (key) => {
-    if (typeof outcome[key] === 'number') {
-      applied[key] = outcome[key];
-      s.resources[key] = CLAMP(s.resources[key] + outcome[key], 0, 100);
-    }
-  };
-
-  res('oxygen'); res('water'); res('power'); res('food'); res('panels');
-
-  // Discrete parts (no jitter, no clamp at 100).
-  ['mech', 'eva', 'cell'].forEach(k => {
-    if (typeof outcome[k] === 'number') {
-      applied[k] = outcome[k];
-      s.resources[k] = Math.max(0, s.resources[k] + outcome[k]);
-    }
-  });
-
-  if (typeof outcome.sciencePoints === 'number') {
-    applied.sciencePoints = outcome.sciencePoints;
-    s.sciencePoints = Math.max(0, s.sciencePoints + outcome.sciencePoints);
-  }
-
-  return { state: s, damageTarget: null, applied };
-}
 
 // ---- Resolve a chosen option on a given stage ----
 //
@@ -71,20 +30,9 @@ export function applyStageChoice(state, event, stageId, choiceIdx) {
     const success = Math.random() < effectiveP;
     outcome = success ? choice.successOutcome : choice.failOutcome;
     skillResult = { role, success, specialistAlive };
-
-    // Skill-check branches go through applyOutcome (jitter + crewDamage support).
-    const { state: s, damageTarget, applied } = applyOutcome(state, outcome);
-    return {
-      state: s,
-      nextStage: choice.nextStage ?? null,
-      skillResult,
-      damageTarget,
-      applied
-    };
   }
 
-  // Simple (scripted) choices apply exact values — no jitter.
-  const { state: s, damageTarget, applied } = applyOutcomeExact(state, outcome);
+  const { state: s, damageTarget, applied } = applyOutcome(state, outcome);
   return {
     state: s,
     nextStage: choice.nextStage ?? null,

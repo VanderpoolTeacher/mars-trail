@@ -56,9 +56,12 @@ test('demo event shape: startStage exists; every nextStage resolves or is null',
           assert.ok(event.stages[choice.nextStage],
             `${event.id}.${stageId}: nextStage "${choice.nextStage}" missing from stages`);
         }
-        const hasOutcome = 'outcome' in choice || ('successOutcome' in choice && 'failOutcome' in choice);
-        assert.ok(hasOutcome,
-          `${event.id}.${stageId}: choice must have outcome OR skillCheck with success/fail outcomes`);
+        // Choices must EITHER carry a cost (outcome or skill-check pair) OR be
+        // a pure branch (no cost, just routes to another stage).
+        const hasOutcome   = 'outcome' in choice || ('successOutcome' in choice && 'failOutcome' in choice);
+        const pureBranch   = !hasOutcome && !('skillCheck' in choice) && choice.nextStage !== null;
+        assert.ok(hasOutcome || pureBranch,
+          `${event.id}.${stageId}: choice must have outcome, skill-check pair, OR be a pure branch`);
       }
     }
   }
@@ -68,7 +71,9 @@ test('demo event shape: startStage exists; every nextStage resolves or is null',
 
 test('applyStageChoice: simple outcome applies and returns nextStage', () => {
   const s0 = makeState();
-  const r = applyStageChoice(s0, drill, 'discover', 1);
+  // Math.random sequence: [power-jitter=0.5 → 0 jitter, catastrophe=0.5 → no amp].
+  // mech is discrete and never jittered.
+  const r = withRandom([0.5, 0.5], () => applyStageChoice(s0, drill, 'discover', 1));
   assert.equal(r.nextStage, null);
   assert.equal(r.state.resources.power, 100 - 10);
   assert.equal(r.state.resources.mech, 4 - 1);
@@ -85,17 +90,19 @@ test('applyStageChoice: branching choice returns nextStage key', () => {
 
 test('applyStageChoice: skill-check success applies successOutcome', () => {
   const s0 = makeState();
-  const r = withRandom([0.01], () => applyStageChoice(s0, drill, 'swap_attempt', 0));
+  // Sequence: [skill check 0.01 → pass, sciencePoints jitter 0.5 → 0 jitter].
+  // mech and sciencePoints are positive so no catastrophe path.
+  const r = withRandom([0.01, 0.5], () => applyStageChoice(s0, drill, 'swap_attempt', 0));
   assert.equal(r.skillResult.success, true);
   assert.equal(r.skillResult.role, 'engineer');
   assert.equal(r.state.resources.mech, 4 - 1);
-  assert.equal(r.state.sciencePoints >= 8 && r.state.sciencePoints <= 12, true,
-    'sciencePoints ~10 after jitter');
+  assert.equal(r.state.sciencePoints, 10);
 });
 
 test('applyStageChoice: skill-check failure applies failOutcome', () => {
   const s0 = makeState();
-  const r = withRandom([0.99], () => applyStageChoice(s0, drill, 'swap_attempt', 0));
+  // Sequence: [skill check 0.99 → fail, damage jitter 0.5 → 0, catastrophe 0.5 → no amp].
+  const r = withRandom([0.99, 0.5, 0.5], () => applyStageChoice(s0, drill, 'swap_attempt', 0));
   assert.equal(r.skillResult.success, false);
   assert.equal(r.state.resources.mech, 4 - 2);
   const engineer = r.state.crew.find(c => c.role === 'engineer');
@@ -118,10 +125,14 @@ test('applyStageChoice: invalid choiceIdx is a defensive no-op', () => {
 
 test('applyStageChoice: chain traversal (discover → swap_attempt → null)', () => {
   let s = makeState();
+  // Stage 1: pure branch, no Math.random calls at all.
   let r1 = applyStageChoice(s, drill, 'discover', 0);
   assert.equal(r1.nextStage, 'swap_attempt');
   s = r1.state;
-  let r2 = applyStageChoice(s, drill, 'swap_attempt', 1);
+  // Stage 2: outcome applies -3 to oxygen, water, food. Each is jittered
+  // (1 random) + catastrophe-checked (1 random). 6 random calls total.
+  let r2 = withRandom([0.5, 0.5, 0.5, 0.5, 0.5, 0.5],
+    () => applyStageChoice(s, drill, 'swap_attempt', 1));
   assert.equal(r2.nextStage, null);
   assert.equal(r2.state.resources.oxygen, 100 - 3);
   assert.equal(r2.state.resources.water,  100 - 3);
