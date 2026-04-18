@@ -819,3 +819,34 @@ body[data-theme="lcars"] .crew-bubble::before { display: none; }
   color: #ee99ff;
   margin-bottom: 0.3rem;
 }
+
+/* ---- End-of-run "next rank gap" (issue #24) ---- */
+
+.eor-rank-gap {
+  margin: 0.5rem 0 0.75rem;
+  padding: 0.5rem 0.65rem;
+  font-size: 0.85rem;
+  line-height: 1.4;
+  text-align: center;
+  color: var(--fg-dim, #cc99cc);
+  border: 1px dashed var(--accent-dim, #4d3a5c);
+  border-radius: 3px;
+  background: rgba(80, 60, 100, 0.08);
+}
+.eor-rank-gap strong {
+  color: #ee99ff;
+}
+.eor-rank-gap .eor-gap-need {
+  display: inline-block;
+  margin: 0 0.25rem;
+}
+.eor-rank-gap .eor-gap-hard {
+  font-size: 0.75rem;
+  color: #ff9999;
+  letter-spacing: 0.08em;
+}
+.eor-rank-gap.eor-rank-max {
+  color: #ee99ff;
+  border-color: #ee99ff;
+  background: rgba(140, 80, 180, 0.12);
+}
