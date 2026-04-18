@@ -205,6 +205,8 @@ function renderAll() {
         state = { ...state, activeModal: { type: 'multi_stage', payload: { event, stageId: nextStage } } };
         renderAll();
       } else {
+        // Chain ended — clear the modal so renderAll doesn't re-open this stage.
+        state = { ...state, activeModal: null };
         const choice = event.stages[stageId].choices[choiceIdx];
         const outcome = choice.outcome || (skillResult?.success ? choice.successOutcome : choice.failOutcome);
         const resolution = {
