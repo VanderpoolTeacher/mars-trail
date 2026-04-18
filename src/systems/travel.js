@@ -130,11 +130,18 @@ export function advanceSol(state, mode = 'travel') {
   }
 
   // ---- Resource consumption (life support always; travel power only when moving) ----
+  // Camp mode (issue #25): rover life-support scales with rover-side crew share —
+  // the away team runs off EVA-kit supplies, not the shared rover reserve. Uses
+  // crew.length (max) as denominator so permanent deaths don't paradoxically
+  // reduce rover drain.
+  const roverShare = (mode === 'camp' && state.awayTeam)
+    ? (state.crew.length - state.awayTeam.crewIds.length) / state.crew.length
+    : 1;
   const careerLifeMult  = state.careerBonuses?.lifeSupportMult || 1;
-  const lifeSupportMult = LIFE_SUPPORT_MULT_BY_PACE[s.pace] * careerLifeMult;
+  const lifeSupportMult = LIFE_SUPPORT_MULT_BY_PACE[s.pace] * careerLifeMult * roverShare;
   s.resources.oxygen = Math.max(0, s.resources.oxygen - O2_PER_SOL  * lifeSupportMult);
   s.resources.water  = Math.max(0, s.resources.water  - H2O_PER_SOL * lifeSupportMult);
-  s.resources.food   = Math.max(0, s.resources.food   - FOOD_PER_SOL[s.rations]);
+  s.resources.food   = Math.max(0, s.resources.food   - FOOD_PER_SOL[s.rations] * roverShare);
 
   // Net power: RTG baseline + solar bonus (×panel efficiency) − travel − cargo weight.
   const panelMult   = s.resources.panels / 100;
