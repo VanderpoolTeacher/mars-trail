@@ -88,6 +88,7 @@ export function createInitialState() {
     waypoints:       [],    // [{ waypointId, segmentIdx }] — rolled at run start
     pendingWaypoint: null,  // full waypoint object while detour is in progress
     firedWaypoints:  [],    // ids already resolved or declined
+    corpses:         [],    // [{ crewId, weightLbs }] — bodies carried, count toward cargoPounds
     log: [
       { sol: 1, text: 'Mission begins. Crew nominal. Departing Jezero Crater.' }
     ],

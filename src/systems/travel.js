@@ -9,13 +9,14 @@ import { makeLandmarkEncounter } from '../content/landmarks.js';
 import { WAYPOINTS } from '../content/waypoints.js';
 import { resolveWaypoint } from './waypoints.js';
 
-// Total carried weight in pounds. Only persistent parts (MECH/EVA/CELL)
-// count — supplies are consumed at mission start.
-function cargoPounds(resources) {
+// Total carried weight in pounds. Persistent parts (MECH/EVA/CELL) plus any
+// corpses the crew is carrying back (180 LB each by default).
+function cargoPounds(state) {
   let lbs = 0;
   for (const t of PART_TYPES) {
-    if (!t.supply) lbs += (resources[t.key] || 0) * t.lbs;
+    if (!t.supply) lbs += (state.resources[t.key] || 0) * t.lbs;
   }
+  for (const c of state.corpses) lbs += c.weightLbs;
   return lbs;
 }
 
@@ -111,7 +112,7 @@ export function advanceSol(state, mode = 'travel') {
     const variance   = KM_VARIANCE[s.pace] * (pilotAlive ? 1 : NO_PILOT_VARIANCE_MULT);
     const jitter     = (Math.random() * 2 - 1) * variance;
     const pilotMult  = pilotAlive ? 1 + PILOT_KM_BONUS : 1;
-    const lbs        = cargoPounds(s.resources);
+    const lbs        = cargoPounds(s);
     const weightMult = Math.max(0.5, 1 - lbs * CARGO_WEIGHT_SPEED);
     const kmMult     = state.careerBonuses?.kmMult || 1;
     const km         = Math.max(0, baseKm * pilotMult * weightMult * kmMult * (1 + jitter));
@@ -130,7 +131,7 @@ export function advanceSol(state, mode = 'travel') {
 
   // Net power: RTG baseline + solar bonus (×panel efficiency) − travel − cargo weight.
   const panelMult   = s.resources.panels / 100;
-  const cargoWeight = cargoPounds(s.resources) * CARGO_WEIGHT_POWER;
+  const cargoWeight = cargoPounds(s) * CARGO_WEIGHT_POWER;
   let powerDelta    = RTG_RECHARGE_PER_SOL + (SOLAR_RECHARGE_PER_SOL * panelMult) - cargoWeight;
   if (mode === 'travel' && !powerDead) powerDelta -= POWER_PER_SOL[s.pace];
   if (mode === 'repair') {
