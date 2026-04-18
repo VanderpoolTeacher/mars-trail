@@ -79,11 +79,10 @@ body {
   flex: 1;
   display: grid;
   grid-template-columns: 1fr 1fr 1fr;
-  grid-template-rows: 1fr 1fr auto;
+  grid-template-rows: 1fr 1fr;
   grid-template-areas:
-    "route   telemetry crew"
-    "route   log       log"
-    "action  action    action";
+    "route telemetry crew"
+    "route log       log";
   gap: 12px;
   padding: 16px 24px 24px;
   min-height: 0;
@@ -97,8 +96,23 @@ body {
 .panel-route     { grid-area: route; }
 .panel-telemetry { grid-area: telemetry; }
 .panel-crew      { grid-area: crew; }
-.panel-log       { grid-area: log; }
-.actionbar       { grid-area: action; }
+.panel-log       {
+  grid-area: log;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.panel-log .log {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+.panel-log .actionbar {
+  flex: 0 0 auto;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px dashed var(--fg-faint);
+}
 
 .panel {
   background: var(--bg-panel);
