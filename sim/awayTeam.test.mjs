@@ -368,3 +368,24 @@ test('camp supply scaling uses max crew count, not alive count (permanent deaths
   assert.ok(Math.abs(campO2Drain / travelO2Drain - 3/5) < 0.01,
     `expected 3/5 (max-crew), got ${(campO2Drain / travelO2Drain).toFixed(3)}`);
 });
+
+// --- Death queue (issue #33) ---
+
+import { applyDamage } from '../src/systems/crew.js';
+
+test('applyDamage appends to deathQueue when a crew member dies', () => {
+  const s0 = makeState({ deathQueue: [] });
+  const { state: s1 } = applyDamage(s0, 'c1', 999, 'event injuries');
+  assert.equal(s1.crew.find(c => c.id === 'c1').alive, false);
+  assert.equal(s1.deathQueue.length, 1);
+  assert.equal(s1.deathQueue[0].crewId, 'c1');
+  assert.equal(s1.deathQueue[0].cause, 'event injuries');
+  assert.equal(s1.deathQueue[0].role, 'engineer');
+});
+
+test('applyDamage does NOT append to deathQueue when the victim survives', () => {
+  const s0 = makeState({ deathQueue: [] });
+  const { state: s1 } = applyDamage(s0, 'c1', 10, 'fatigue');
+  assert.ok(s1.crew.find(c => c.id === 'c1').alive);
+  assert.equal((s1.deathQueue || []).length, 0);
+});
