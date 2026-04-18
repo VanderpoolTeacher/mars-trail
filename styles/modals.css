@@ -255,6 +255,7 @@ body[data-theme="lcars"] .modal-severity.severity-away-team {
   text-shadow: var(--glow-strong);
   margin: 0 0 12px 0;
   line-height: 1;
+  white-space: nowrap;
 }
 
 .title-tagline {
