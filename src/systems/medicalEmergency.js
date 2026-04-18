@@ -1,12 +1,14 @@
-// Mars Trail — medical emergency resolver (issue #6).
-// Pure. Custom resolver for the medical_emergency event because the
-// generic applyStageChoice can't target a specific crew member by ID
-// nor conditionally route Stage 3 on the patient's death. Event data
-// lives in src/content/medicalEmergency.js.
+// Mars Trail — medical emergency resolver (issue #6, expanded #32).
+// Pure. Custom resolver because the generic applyStageChoice can't
+// target a specific patient by ID or conditionally route on death.
+// Event data + ailment pool live in src/content/medicalEmergency.js.
 //
-// Flow: pickPatient at fire time → diagnose → treat → (if died) dispose.
+// Flow: pickPatient + pickAilment at fire time → diagnose → treat →
+// (if died) dispose. Stage views are built per-run by
+// getMedicalStageView so text + choices reflect patient, ailment, and
+// whether the medic is themselves the patient (selfTreat path).
 
-import { MEDICAL_EMERGENCY } from '../content/medicalEmergency.js';
+import { MEDICAL_EMERGENCY, AILMENTS } from '../content/medicalEmergency.js';
 import { applyOutcome } from './events.js';
 import { deriveStatus } from './crew.js';
 import { addCorpse } from './corpse.js';
@@ -15,8 +17,6 @@ export const MEDICAL_EMERGENCY_ID = MEDICAL_EMERGENCY.id;
 const MEDIC_FLAVOR_LINE = 'Well, there goes paradise.';
 
 // ---- Patient selection ----
-// First alive non-medic. If only the medic is alive, medic is the patient
-// (selfTreat=true → any subsequent medic skill checks take a -20pp penalty).
 export function pickPatient(state) {
   const alive = state.crew.filter(c => c.alive);
   if (alive.length === 0) return null;
@@ -28,11 +28,16 @@ export function pickPatient(state) {
   return { id: alive[0].id, selfTreat: true };
 }
 
-// ---- Begin the event (called when rolled) ----
-// Sets firedEvents + opens the first stage modal with the patient context.
+// ---- Ailment selection ----
+export function pickAilment() {
+  return AILMENTS[Math.floor(Math.random() * AILMENTS.length)];
+}
+
+// ---- Begin the event ----
 export function beginMedicalEmergency(state) {
   const patient = pickPatient(state);
   if (!patient) return state;
+  const ailment = pickAilment();
   return {
     ...state,
     firedEvents: [...state.firedEvents, MEDICAL_EMERGENCY_ID],
@@ -42,10 +47,73 @@ export function beginMedicalEmergency(state) {
         event:    MEDICAL_EMERGENCY,
         stageId:  MEDICAL_EMERGENCY.startStage,
         source:   'medical',
-        context:  { patientId: patient.id, selfTreat: patient.selfTreat }
+        context:  { patientId: patient.id, selfTreat: patient.selfTreat, ailmentId: ailment.id }
       }
     }
   };
+}
+
+// ---- Stage view (title/description/choices, built per-run) ----
+// Returns { title, description, choices } where each choice has
+// { label, key }. The resolver dispatches on key.
+export function getMedicalStageView(state, stageId, context) {
+  const patient = state.crew.find(c => c.id === context.patientId);
+  const ailment = AILMENTS.find(a => a.id === context.ailmentId) || AILMENTS[0];
+  if (!patient) return null;
+
+  const roleCode = (patient.role || '').toUpperCase();
+  const patientTag = `${patient.name} (${roleCode})`;
+
+  if (stageId === 'diagnose') {
+    const intro = context.selfTreat
+      ? `${patientTag} — your medic — is in trouble. ${ailment.symptom} The crew is on their own.`
+      : `${patientTag} is in trouble. ${ailment.symptom} You have to act.`;
+    const choices = context.selfTreat
+      ? [
+          { label: 'Self-triage (medic impaired)',        key: 'self_triage' },
+          { label: 'Query Earth (comms delay)',           key: 'earth' },
+          { label: 'Dose from med kit and hope',          key: 'hope' }
+        ]
+      : [
+          { label: 'Consult the medic',                    key: 'medic' },
+          { label: 'Query Earth (comms delay)',            key: 'earth' },
+          { label: 'Dose from med kit and hope',           key: 'hope' }
+        ];
+    return { title: `Medical Emergency — ${ailment.label}`, description: intro, choices };
+  }
+
+  if (stageId === 'treat') {
+    const surgeryLabel = context.selfTreat
+      ? 'Crew attempts surgery (no surgeon)'
+      : 'Surgery in the rover';
+    const surgeryKey = context.selfTreat ? 'crew_surgery' : 'surgery';
+    const description = context.selfTreat
+      ? `Treatment has to happen without the medic. ${patient.name} is coaching through the pain — barely.`
+      : `Diagnosis in hand. Choose the treatment plan for ${patient.name}.`;
+    return {
+      title:       'Treatment Window',
+      description,
+      choices: [
+        { label: surgeryLabel,                       key: surgeryKey },
+        { label: 'Stabilize and push to landmark',   key: 'push' },
+        { label: 'Induced coma — buy time',          key: 'coma' }
+      ]
+    };
+  }
+
+  if (stageId === 'dispose') {
+    return {
+      title:       'Body Disposal',
+      description: `${patient.name} did not make it. The body is 180 LB of suited mass. Call it.`,
+      choices: [
+        { label: 'Bury at next landmark',  key: 'bury' },
+        { label: 'Keep the body with us',  key: 'keep' },
+        { label: 'Jettison the suit now',  key: 'jettison' }
+      ]
+    };
+  }
+
+  return null;
 }
 
 // ---- Helpers ----
@@ -72,6 +140,10 @@ function damagePatient(state, patientId, amount, cause) {
       sol: s.sol,
       text: `${after.name} (${after.role.toUpperCase()}) succumbed to ${cause || 'medical complications'}.`
     });
+    s.deathQueue = [...(s.deathQueue || []), {
+      crewId: after.id, name: after.name, role: after.role,
+      cause:  cause || 'medical complications', sol: s.sol
+    }];
   }
   return s;
 }
@@ -80,10 +152,9 @@ function medicAliveExcluding(state, excludeId) {
   return state.crew.some(c => c.role === 'medic' && c.alive && c.id !== excludeId);
 }
 
-function rollSkill(state, successP, selfTreat) {
-  const base = selfTreat ? Math.max(0.2, successP - 0.2) : successP;
+function rollSkill(state, successP) {
   const bonus = state.careerBonuses?.skillBonus || 0;
-  const effP = Math.min(0.95, base + bonus);
+  const effP = Math.min(0.95, successP + bonus);
   return Math.random() < effP;
 }
 
@@ -101,39 +172,43 @@ function nextStage(state, stageId, context) {
   };
 }
 
-// ---- Stage: diagnose ----
+// ---- Stage resolvers ----
 
-function resolveDiagnose(state, choiceKey, context) {
-  const { patientId, selfTreat } = context;
-  const patient = getCrew(state, patientId);
+function resolveDiagnose(state, key, context) {
+  const patient = getCrew(state, context.patientId);
   if (!patient) return closeModal(state);
 
-  if (choiceKey === 'medic') {
-    const success = rollSkill(state, 0.75, selfTreat);
+  if (key === 'medic' || key === 'self_triage') {
+    // medic: 0.75; self_triage: 0.45 (medic impaired by their own symptoms).
+    const successP = key === 'self_triage' ? 0.45 : 0.75;
+    const success = rollSkill(state, successP);
     let s = state;
-    if (!success) {
-      s = damagePatient(s, patientId, 10, 'misdiagnosis');
-    }
-    s = { ...s, log: [...s.log, { sol: s.sol, text: success
-      ? `Medic confident on diagnosis for ${patient.name}.`
-      : `Medic exam inconclusive. ${patient.name} worsens.` }] };
+    if (!success) s = damagePatient(s, context.patientId, 10, 'misdiagnosis');
+    const msg = success
+      ? (key === 'self_triage'
+           ? `${patient.name} self-diagnoses through the haze.`
+           : `Medic confident on diagnosis for ${patient.name}.`)
+      : (key === 'self_triage'
+           ? `${patient.name} can't get a clean read on themselves. Worsens.`
+           : `Medic exam inconclusive. ${patient.name} worsens.`);
+    s = { ...s, log: [...s.log, { sol: s.sol, text: msg }] };
     return nextStage(s, 'treat', context);
   }
 
-  if (choiceKey === 'earth') {
+  if (key === 'earth') {
     let s = applyOutcome(state, { oxygen: -3, water: -3 }).state;
-    s = damagePatient(s, patientId, 20, 'delayed diagnosis');
+    s = damagePatient(s, context.patientId, 20, 'delayed diagnosis');
     s = { ...s, log: [...s.log, { sol: s.sol, text: `Earth comms lag cost 20 minutes. ${patient.name} worsens.` }] };
     return nextStage(s, 'treat', context);
   }
 
-  if (choiceKey === 'hope') {
+  if (key === 'hope') {
     const stabilized = Math.random() < 0.4;
     if (stabilized) {
       const s = { ...state, log: [...state.log, { sol: state.sol, text: `Med-kit dose held. ${patient.name} is stable — for now.` }] };
       return closeModal(s);
     }
-    let s = damagePatient(state, patientId, 30, 'adverse reaction');
+    let s = damagePatient(state, context.patientId, 30, 'adverse reaction');
     s = { ...s, log: [...s.log, { sol: s.sol, text: `Dose went wrong. ${patient.name} is in worse shape.` }] };
     return nextStage(s, 'treat', context);
   }
@@ -141,46 +216,48 @@ function resolveDiagnose(state, choiceKey, context) {
   return closeModal(state);
 }
 
-// ---- Stage: treat ----
-
-function resolveTreat(state, choiceKey, context) {
-  const { patientId, selfTreat } = context;
-  const patient = getCrew(state, patientId);
+function resolveTreat(state, key, context) {
+  const patient = getCrew(state, context.patientId);
   if (!patient) return closeModal(state);
 
-  if (choiceKey === 'surgery') {
+  if (key === 'surgery' || key === 'crew_surgery') {
     let s = applyOutcome(state, { eva: -1, power: -15 }).state;
-    const success = rollSkill(s, 0.65, selfTreat);
+    // surgery: 0.65 (medic). crew_surgery: 0.30 (no surgeon).
+    const successP = key === 'crew_surgery' ? 0.30 : 0.65;
+    const success = rollSkill(s, successP);
     if (success) {
       s = {
         ...s,
-        crew: s.crew.map(c => c.id === patientId
+        crew: s.crew.map(c => c.id === context.patientId
           ? { ...c, health: Math.max(60, c.health), status: deriveStatus(Math.max(60, c.health)) }
           : c),
-        log: [...s.log, { sol: s.sol, text: `Surgery successful. ${patient.name} is stable.` }]
+        log: [...s.log, { sol: s.sol, text: key === 'crew_surgery'
+          ? `Improvised surgery held. ${patient.name} is stable.`
+          : `Surgery successful. ${patient.name} is stable.` }]
       };
       return closeModal(s);
     }
     // Fail → patient dies.
-    const medicCanFlavor = !selfTreat && medicAliveExcluding(s, patientId);
-    s = damagePatient(s, patientId, 999, 'surgical complications');
+    const medicCanFlavor = !context.selfTreat && medicAliveExcluding(s, context.patientId);
+    const cause = key === 'crew_surgery' ? 'surgical complications' : 'surgical complications';
+    s = damagePatient(s, context.patientId, 999, cause);
     if (medicCanFlavor) {
       s = { ...s, log: [...s.log, { sol: s.sol, text: MEDIC_FLAVOR_LINE }] };
     }
     return nextStage(s, 'dispose', context);
   }
 
-  if (choiceKey === 'push') {
+  if (key === 'push') {
     let s = applyOutcome(state, { eva: -1 }).state;
-    s = damagePatient(s, patientId, 15, 'travel stress');
-    const died = !getCrew(s, patientId).alive;
+    s = damagePatient(s, context.patientId, 15, 'travel stress');
+    const died = !getCrew(s, context.patientId).alive;
     s = { ...s, log: [...s.log, { sol: s.sol, text: died
       ? `${patient.name} did not survive the push.`
       : `Stabilized for travel. ${patient.name} is hanging on.` }] };
     return died ? nextStage(s, 'dispose', context) : closeModal(s);
   }
 
-  if (choiceKey === 'coma') {
+  if (key === 'coma') {
     let s = applyOutcome(state, { power: -15, oxygen: -10, eva: -1 }).state;
     s = { ...s, log: [...s.log, { sol: s.sol, text: `${patient.name} placed in induced coma. Vitals held, resources burning.` }] };
     return closeModal(s);
@@ -189,14 +266,11 @@ function resolveTreat(state, choiceKey, context) {
   return closeModal(state);
 }
 
-// ---- Stage: dispose ----
-
-function resolveDispose(state, choiceKey, context) {
-  const { patientId } = context;
-  const patient = state.crew.find(c => c.id === patientId);
+function resolveDispose(state, key, context) {
+  const patient = state.crew.find(c => c.id === context.patientId);
   if (!patient) return closeModal(state);
 
-  if (choiceKey === 'bury') {
+  if (key === 'bury') {
     const s = applyOutcome(state, { sciencePoints: 10 }).state;
     return {
       ...s,
@@ -204,37 +278,32 @@ function resolveDispose(state, choiceKey, context) {
       activeModal: null
     };
   }
-
-  if (choiceKey === 'keep') {
-    const s = addCorpse(state, patientId);
+  if (key === 'keep') {
+    const s = addCorpse(state, context.patientId);
     return {
       ...s,
       log: [...s.log, { sol: s.sol, text: `${patient.name}'s body secured. +180 LB cargo.` }],
       activeModal: null
     };
   }
-
-  if (choiceKey === 'jettison') {
+  if (key === 'jettison') {
     return {
       ...state,
       log: [...state.log, { sol: state.sol, text: `${patient.name}'s suit jettisoned. The crew will remember.` }],
       activeModal: null
     };
   }
-
   return closeModal(state);
 }
 
 // ---- Top-level resolver ----
-// state.activeModal must be { type: 'multi_stage', payload: { source: 'medical', ... } }.
-// choiceIdx is the index into the authored stage's choices.
 export function resolveMedicalStage(state, choiceIdx) {
   const modal = state.activeModal;
   if (modal?.type !== 'multi_stage' || modal.payload?.source !== 'medical') return state;
 
   const { stageId, context } = modal.payload;
-  const stage = MEDICAL_EMERGENCY.stages[stageId];
-  const choice = stage?.choices[choiceIdx];
+  const view = getMedicalStageView(state, stageId, context);
+  const choice = view?.choices[choiceIdx];
   if (!choice) return state;
 
   const key = choice.key;
