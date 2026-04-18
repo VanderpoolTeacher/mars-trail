@@ -256,6 +256,9 @@ body[data-theme="lcars"] .modal-severity.severity-away-team {
   margin: 0 0 12px 0;
   line-height: 1;
   white-space: nowrap;
+  /* Compensate for letter-spacing trailing whitespace that pulls the
+     visible text left of true center. Shift right by 25% of em. */
+  transform: translateX(0.25em);
 }
 
 .title-tagline {
