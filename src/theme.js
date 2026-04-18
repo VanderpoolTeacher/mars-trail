@@ -1,46 +1,55 @@
-// Tractus Martis — theme switcher (Mission Control / LCARS / Voltron).
-// Persists choice to localStorage. Toggled via button in topbar.
+// Tractus Martis — theme switcher.
+// Pure helpers (THEMES, resolveTheme, STORAGE_KEY) are importable in Node
+// for testing. DOM wiring only runs when `document` is defined.
 
-const STORAGE_KEY = 'marsTrail.theme';
-const THEMES = ['mc', 'lcars', 'voltron'];
+export const STORAGE_KEY = 'marsTrail.theme';
 
-const NEXT_LABEL = {
-  mc:      'TNG SKIN',
-  lcars:   'VLD SKIN',
-  voltron: 'MC SKIN'
-};
+export const THEMES = [
+  { id: 'mc',          label: 'Mission Control' },
+  { id: 'lcars',       label: 'LCARS / TNG' },
+  { id: 'voltron',     label: 'Voltron HUD' },
+  { id: 'starfighter', label: 'Last Starfighter' }
+];
+
+export function resolveTheme(raw) {
+  if (typeof raw !== 'string' || raw.length === 0) return 'mc';
+  return THEMES.some(t => t.id === raw) ? raw : 'mc';
+}
 
 function load() {
-  const raw = localStorage.getItem(STORAGE_KEY) || 'mc';
-  return THEMES.includes(raw) ? raw : 'mc';
+  if (typeof localStorage === 'undefined') return 'mc';
+  return resolveTheme(localStorage.getItem(STORAGE_KEY));
 }
 
 function save(theme) {
+  if (typeof localStorage === 'undefined') return;
   localStorage.setItem(STORAGE_KEY, theme);
 }
 
 function apply(theme) {
+  if (typeof document === 'undefined') return;
   if (theme === 'mc') {
     document.body.removeAttribute('data-theme');
   } else {
     document.body.setAttribute('data-theme', theme);
   }
-  const btn = document.getElementById('theme-toggle-btn');
-  if (btn) btn.textContent = NEXT_LABEL[theme] || 'MC SKIN';
-}
-
-function cycle() {
-  const current = load();
-  const idx = THEMES.indexOf(current);
-  const next = THEMES[(idx + 1) % THEMES.length];
-  save(next);
-  apply(next);
+  const select = document.getElementById('theme-select');
+  if (select && select.value !== theme) select.value = theme;
 }
 
 export function initTheme() {
+  if (typeof document === 'undefined') return;
   apply(load());
-  const btn = document.getElementById('theme-toggle-btn');
-  if (btn) btn.addEventListener('click', cycle);
+  const select = document.getElementById('theme-select');
+  if (select) {
+    select.addEventListener('change', (e) => {
+      const next = resolveTheme(e.target.value);
+      save(next);
+      apply(next);
+    });
+  }
 }
 
-initTheme();
+if (typeof document !== 'undefined') {
+  initTheme();
+}
