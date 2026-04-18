@@ -903,3 +903,51 @@ body[data-theme="lcars"] .eor-col-facts {
     max-height: 240px;        /* restore scroll cap for stacked layout */
   }
 }
+
+/* ---- Death dialog (issue #33) ---- */
+
+.modal-panel.modal-death {
+  border-top: 3px solid var(--crit, #ef4444);
+}
+.modal-severity.severity-death {
+  background: rgba(239, 68, 68, 0.15);
+  color: #ff9999;
+  letter-spacing: 0.2em;
+}
+.death-title {
+  color: var(--fg);
+}
+.death-title .death-role {
+  font-size: 0.7em;
+  letter-spacing: 0.15em;
+  color: var(--fg-dim);
+  margin-left: 0.3em;
+}
+.death-cause {
+  margin: 0.5rem 0 0.3rem;
+  font-size: 0.85rem;
+  color: var(--fg-dim);
+}
+.death-cause .death-cause-label {
+  display: inline-block;
+  font-size: 0.7rem;
+  letter-spacing: 0.2em;
+  color: #ff9999;
+  margin-right: 0.5em;
+}
+.death-narrative {
+  margin: 0.5rem 0 0.75rem;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  color: var(--fg);
+  font-style: italic;
+}
+.death-specialist-loss {
+  margin: 0.5rem 0 0.75rem;
+  padding: 0.5rem 0.6rem;
+  font-size: 0.82rem;
+  color: #ffcc99;
+  border-left: 3px solid #ffaa66;
+  background: rgba(255, 170, 102, 0.08);
+  border-radius: 2px;
+}

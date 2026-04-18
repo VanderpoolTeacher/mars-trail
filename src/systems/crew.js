@@ -45,6 +45,14 @@ export function applyDamage(state, targetSpec, rawAmount, cause) {
       sol: s.sol,
       text: `${target.name} (${target.role.toUpperCase()}) succumbed to ${cause || 'injuries'}.`
     });
+    // Queue a death dialog for the UI dispatcher to surface (issue #33).
+    s.deathQueue = [...(s.deathQueue || []), {
+      crewId: target.id,
+      name:   target.name,
+      role:   target.role,
+      cause:  cause || 'injuries',
+      sol:    s.sol
+    }];
   }
   return { state: s, target, died, dealt };
 }

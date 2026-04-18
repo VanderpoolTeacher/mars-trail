@@ -5,6 +5,7 @@
 import { linkifyCodex } from './codex.js';
 import { computeScore, nextRankGap, loadBestRun, saveBestRun } from '../systems/scoring.js';
 import { CAREER_TIERS, currentTier, nextTier, addCareerScience, loadCareerScience } from '../systems/career.js';
+import { deathNarrative, specialistLossNote } from '../content/deathNarratives.js';
 import pkg from '../../package.json' with { type: 'json' };
 
 const root = () => document.getElementById('modal-root');
@@ -460,6 +461,33 @@ export function showEndOfRunModal(state, onNewMission) {
 export function closeModal() {
   const r = root();
   if (r) r.innerHTML = '';
+}
+
+// ---- Death dialog (issue #33) ----
+
+export function showDeathDialog(entry, state, onAcknowledge) {
+  const r = root();
+  if (!r) return;
+
+  const narrative = deathNarrative(entry);
+  const specialistNote = specialistLossNote(entry.role, state);
+  const noteBlock = specialistNote
+    ? `<div class="death-specialist-loss">${escapeHtml(specialistNote)}</div>`
+    : '';
+
+  r.innerHTML = `
+    <div class="modal-backdrop">
+      <div class="modal-panel modal-death" role="dialog" aria-modal="true" aria-labelledby="death-title">
+        <div class="modal-severity severity-death">⚠ CREW LOSS · SOL ${entry.sol}</div>
+        <h2 class="modal-title death-title" id="death-title">${escapeHtml(entry.name)} <span class="death-role">(${entry.role.toUpperCase()})</span> is gone.</h2>
+        <p class="death-cause"><span class="death-cause-label">CAUSE</span> ${escapeHtml(entry.cause)}</p>
+        <p class="death-narrative">${escapeHtml(narrative)}</p>
+        ${noteBlock}
+        <button class="modal-continue primary" id="death-ack" type="button">CONTINUE →</button>
+      </div>
+    </div>
+  `;
+  r.querySelector('#death-ack').addEventListener('click', onAcknowledge);
 }
 
 // ---- Waypoint offer modal (issue #7 part 1) ----

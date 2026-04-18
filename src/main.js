@@ -5,7 +5,7 @@ import { createInitialState, CARGO_BUDGET, PART_TYPES } from './state.js';
 import { render } from './render.js';
 import { advanceSol, setPace, setRations, repairBattery, cleanPanels } from './systems/travel.js';
 import { applyEventChoice } from './systems/events.js';
-import { showEventModal, showOutcomeModal, showBriefingModal, showLoadoutModal, showTitleLayer, dimTitleStart, hideTitleLayer, showEndOfRunModal, closeModal, showWaypointOfferModal, showMultiStageModal, showAwayTeamPickerModal, showAwayTeamReunionModal } from './ui/modals.js';
+import { showEventModal, showOutcomeModal, showBriefingModal, showLoadoutModal, showTitleLayer, dimTitleStart, hideTitleLayer, showEndOfRunModal, closeModal, showWaypointOfferModal, showMultiStageModal, showAwayTeamPickerModal, showAwayTeamReunionModal, showDeathDialog } from './ui/modals.js';
 import { declineWaypoint } from './systems/waypoints.js';
 import { applyStageChoice } from './systems/multiStage.js';
 import { acceptAwayTeam, resolveAwayTeamStage, finalizeReunion } from './systems/awayTeam.js';
@@ -80,6 +80,18 @@ function renderAll() {
   }
 
   const modal = state.activeModal;
+
+  // Death queue drains before any gameplay modal — setup screens unaffected.
+  const isSetup = modal && ['title', 'briefing', 'loadout'].includes(modal.type);
+  if (!isSetup && state.deathQueue && state.deathQueue.length > 0) {
+    const entry = state.deathQueue[0];
+    showDeathDialog(entry, state, () => {
+      state = { ...state, deathQueue: state.deathQueue.slice(1) };
+      renderAll();
+    });
+    return;
+  }
+
   if (!modal) { closeModal(); return; }
 
   if (modal.type === 'title') {

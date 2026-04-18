@@ -85,6 +85,7 @@ export function createInitialState() {
     sciencePoints: 0,
     factsLearned: [],
     firedEvents: [],   // IDs of one-shot events already triggered this run
+    deathQueue:  [],   // [{crewId,name,role,cause,sol}] — drained by UI death dialog (#33)
     waypoints:       [],    // [{ waypointId, segmentIdx }] — rolled at run start
     firedWaypoints:  [],    // ids already resolved or declined
     awayTeam:        null,  // see src/systems/awayTeam.js for shape
