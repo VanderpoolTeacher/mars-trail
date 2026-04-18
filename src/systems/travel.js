@@ -7,7 +7,8 @@ import { rollMultiStageEvent } from './multiStage.js';
 import { applyDamage, checkAllDead } from './crew.js';
 import { makeLandmarkEncounter } from '../content/landmarks.js';
 import { WAYPOINTS } from '../content/waypoints.js';
-import { resolveWaypoint } from './waypoints.js';
+import { advanceAwayTeam, MIN_CREW_FOR_DIVERT } from './awayTeam.js';
+import { beginMedicalEmergency } from './medicalEmergency.js';
 
 // Total carried weight in pounds. Persistent parts (MECH/EVA/CELL) plus any
 // corpses the crew is carrying back (180 LB each by default).
@@ -93,6 +94,12 @@ const NO_PILOT_VARIANCE_MULT = 1.5;   // wider day-to-day swings without a pilot
 export function advanceSol(state, mode = 'travel') {
   if (state.status !== 'active') return state;
 
+  // Camp mode: if an away team is out, the rover stays parked at the
+  // detour turn-off. Resources drain and crew damage accrue as usual,
+  // but km/travel/event-rolling are suppressed — the stage modal IS
+  // the event for that sol.
+  if (state.awayTeam && mode === 'travel') mode = 'camp';
+
   // Shallow clone the branches we'll mutate.
   let s = { ...state,
     resources: { ...state.resources },
@@ -104,7 +111,7 @@ export function advanceSol(state, mode = 'travel') {
   s.sol = state.sol + 1;
   const powerDead = s.resources.power === 0;
 
-  // ---- Travel (skipped on repair sols and when batteries are dead) ----
+  // ---- Travel (skipped on repair/clean/camp sols and when batteries are dead) ----
   let usableKm = 0;
   if (mode === 'travel' && !powerDead) {
     const pilotAlive = s.crew.some(c => c.role === 'pilot' && c.alive);
@@ -193,16 +200,13 @@ export function advanceSol(state, mode = 'travel') {
         // Set up the next segment's base distance.
         s.kmToNextLandmark = s.routeKm[s.currentLandmarkIndex];
 
-        // Step A — If a waypoint detour was in progress, fire the reward modal.
-        // It will chain to the offer (or the landmark encounter) when dismissed.
-        if (s.pendingWaypoint) {
-          s = resolveWaypoint(s);
-          return s;
-        }
-
-        // Step B — If this segment has a rolled waypoint not yet offered, open the offer.
+        // Step A — If this segment has a rolled waypoint not yet offered, open the
+        // offer (only when enough crew are alive to safely dispatch an away team).
+        const aliveCrewCount = s.crew.filter(c => c.alive).length;
         const segmentWp = s.waypoints.find(w => w.segmentIdx === s.currentLandmarkIndex);
-        if (segmentWp && !s.firedWaypoints.includes(segmentWp.waypointId)) {
+        if (segmentWp
+            && !s.firedWaypoints.includes(segmentWp.waypointId)
+            && aliveCrewCount >= MIN_CREW_FOR_DIVERT) {
           const waypoint = WAYPOINTS.find(w => w.id === segmentWp.waypointId);
           if (waypoint) {
             s.activeModal = {
@@ -213,7 +217,7 @@ export function advanceSol(state, mode = 'travel') {
           }
         }
 
-        // Step C — Normal landmark encounter.
+        // Step B — Normal landmark encounter.
         s.activeModal = { type: 'event', payload: makeLandmarkEncounter(arrivedId) };
       }
     } else {
@@ -244,10 +248,19 @@ export function advanceSol(state, mode = 'travel') {
     } else {
       const msEvent = rollMultiStageEvent(s);
       if (msEvent) {
-        s.activeModal = { type: 'multi_stage', payload: { event: msEvent, stageId: msEvent.startStage } };
-        if (msEvent.oneShot) s.firedEvents = [...s.firedEvents, msEvent.id];
+        if (msEvent.customResolver === 'medical') {
+          s = beginMedicalEmergency(s);
+        } else {
+          s.activeModal = { type: 'multi_stage', payload: { event: msEvent, stageId: msEvent.startStage } };
+          if (msEvent.oneShot) s.firedEvents = [...s.firedEvents, msEvent.id];
+        }
       }
     }
+  }
+
+  // ---- Camp-mode tick: advance the away-team lifecycle ----
+  if (mode === 'camp' && s.status === 'active') {
+    s = advanceAwayTeam(s);
   }
 
   return s;

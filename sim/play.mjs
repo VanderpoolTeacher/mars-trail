@@ -6,6 +6,7 @@ import { createInitialState } from '../src/state.js';
 import { advanceSol, repairBattery, cleanPanels, canRepair, canClean } from '../src/systems/travel.js';
 import { applyEventChoice } from '../src/systems/events.js';
 import { applyStageChoice } from '../src/systems/multiStage.js';
+import { resolveMedicalStage } from '../src/systems/medicalEmergency.js';
 
 // Simplest strategy: always pick the first option.
 function strategyFirst(_state, _event) { return 0; }
@@ -108,14 +109,24 @@ function playGame({ pace, rations, pickChoice }) {
       s = { ...s, firedWaypoints: [...s.firedWaypoints, s.activeModal.payload.waypoint.id], activeModal: null };
       continue;
     }
-    if (s.activeModal && s.activeModal.type === 'waypoint_reward') {
+    // Away-team picker: sim doesn't dispatch (waypoints are declined above).
+    // Defensive close if one ever reaches here.
+    if (s.activeModal && s.activeModal.type === 'away_team_picker') {
       s = { ...s, activeModal: null };
+      continue;
+    }
+    if (s.activeModal && s.activeModal.type === 'away_team_reunion') {
+      s = { ...s, activeModal: null, awayTeam: null };
       continue;
     }
     // Multi-stage events: sim picks choice 0 on every stage. Keeps the
     // game loop from stalling on the new modal type. Not a strategy-rich
     // runner; any future multi-stage strategy would replace this.
     if (s.activeModal && s.activeModal.type === 'multi_stage') {
+      if (s.activeModal.payload.source === 'medical') {
+        s = resolveMedicalStage(s, 0);
+        continue;
+      }
       const { event, stageId } = s.activeModal.payload;
       const { state: next, nextStage } = applyStageChoice(s, event, stageId, 0);
       if (nextStage !== null) {
