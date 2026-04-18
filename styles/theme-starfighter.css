@@ -124,34 +124,47 @@ body[data-theme="starfighter"] .panel-title {
   font-weight: 600;
 }
 
-/* ---- Segmented telemetry bars ---- */
-
+/* ---- Segmented telemetry bars (issue #57) ----
+   Each bar reads as 10 discrete cells that switch on/off as the value
+   changes — cells keep a constant width at any fill level. Achieved by
+   layering:
+   1. `.bar` paints a full-width dim 10-cell template (visible at rest).
+   2. `.bar-fill` paints solid lit color; JS sizes its width to the value.
+   3. `.bar::after` overlays black stripes at every cell boundary,
+      anchored to the container's width — so gap positions are fixed
+      regardless of fill, creating the segmented illusion. */
 body[data-theme="starfighter"] .bar {
-  background: transparent;
+  background: repeating-linear-gradient(
+    to right,
+    rgba(59, 255, 122, 0.14) 0 8%,
+    transparent 8% 10%
+  );
   border: 1px solid rgba(59, 255, 122, 0.4);
   border-radius: 0;
   box-shadow: none;
-  /* cells drawn with a 10-segment gradient mask on .bar-fill */
+  position: relative;
+}
+body[data-theme="starfighter"] .bar::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    to right,
+    transparent 0 8%,
+    #000 8% 10%
+  );
 }
 body[data-theme="starfighter"] .bar-fill {
-  background:
-    repeating-linear-gradient(
-      to right,
-      var(--fg-dim) 0,
-      var(--fg-dim) 8%,
-      transparent 8%,
-      transparent 10%
-    );
+  background: var(--fg-dim);
   box-shadow: 0 0 4px rgba(59, 255, 122, 0.6);
 }
 body[data-theme="starfighter"] .readout.warn .bar-fill {
-  background:
-    repeating-linear-gradient(to right, var(--warn) 0, var(--warn) 8%, transparent 8%, transparent 10%);
+  background: var(--warn);
   box-shadow: 0 0 4px rgba(255, 210, 26, 0.6);
 }
 body[data-theme="starfighter"] .readout.crit .bar-fill {
-  background:
-    repeating-linear-gradient(to right, var(--crit) 0, var(--crit) 8%, transparent 8%, transparent 10%);
+  background: var(--crit);
   box-shadow: 0 0 4px rgba(255, 40, 64, 0.7);
 }
 body[data-theme="starfighter"] .readout-label {
