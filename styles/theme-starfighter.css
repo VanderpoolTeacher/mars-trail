@@ -211,3 +211,98 @@ body[data-theme="starfighter"] .btn-secondary:hover:not(:disabled) {
   background: var(--fg);
   color: #000;
 }
+
+/* ---- Minimap re-skinned as polar radar ---- */
+
+body[data-theme="starfighter"] .minimap {
+  /* kill the default dark-green fill rect */
+  background: #000;
+  filter: drop-shadow(0 0 4px rgba(59, 255, 122, 0.6));
+}
+body[data-theme="starfighter"] .minimap > rect:first-child {
+  fill: #000;
+  stroke: var(--sf-red-dim);
+  stroke-width: 0.6;
+}
+body[data-theme="starfighter"] #minimap-path {
+  stroke: var(--sf-red-dim);
+  stroke-dasharray: 2, 2;
+}
+body[data-theme="starfighter"] #minimap-trail {
+  stroke: var(--fg-dim);
+  filter: drop-shadow(0 0 3px rgba(59, 255, 122, 0.8));
+}
+body[data-theme="starfighter"] #minimap-position {
+  fill: var(--fg-dim);
+  stroke: #000;
+}
+body[data-theme="starfighter"] .landmark-dot         { fill: none; stroke: var(--fg); stroke-width: 0.8; }
+body[data-theme="starfighter"] .landmark-dot.visited { stroke: var(--fg-dim); }
+body[data-theme="starfighter"] .landmark-dot.current { fill: var(--fg-dim); stroke: #000; stroke-width: 0.5; }
+body[data-theme="starfighter"] .landmark-dot.dest    { stroke: var(--sf-red); stroke-width: 1.2; }
+
+/* Polar overlay: concentric rings + radial spokes + sweep line.
+   Rendered as a CSS background on the route-section that contains the
+   minimap so it reads as a round radar sitting in a rectangular panel. */
+body[data-theme="starfighter"] .route-section:has(.minimap) {
+  position: relative;
+}
+body[data-theme="starfighter"] .route-section:has(.minimap)::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: min(80%, 180px);
+  aspect-ratio: 1 / 1;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  border-radius: 50%;
+  background:
+    /* outer ring */
+    radial-gradient(circle, transparent 0 48%, rgba(255, 40, 64, 0.35) 48% 49%, transparent 49%),
+    /* middle ring */
+    radial-gradient(circle, transparent 0 32%, rgba(59, 255, 122, 0.25) 32% 33%, transparent 33%),
+    /* inner ring */
+    radial-gradient(circle, transparent 0 16%, rgba(59, 255, 122, 0.25) 16% 17%, transparent 17%),
+    /* vertical crosshair */
+    linear-gradient(to right, transparent 49.7%, rgba(59, 255, 122, 0.2) 49.7% 50.3%, transparent 50.3%),
+    /* horizontal crosshair */
+    linear-gradient(to bottom, transparent 49.7%, rgba(59, 255, 122, 0.2) 49.7% 50.3%, transparent 50.3%);
+}
+
+/* Rotating sweep line */
+body[data-theme="starfighter"] .route-section:has(.minimap)::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: min(80%, 180px);
+  aspect-ratio: 1 / 1;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  border-radius: 50%;
+  background:
+    conic-gradient(
+      from 0deg,
+      rgba(59, 255, 122, 0.45) 0deg,
+      rgba(59, 255, 122, 0.15) 20deg,
+      transparent 60deg,
+      transparent 360deg
+    );
+  mask: radial-gradient(circle, black 48%, transparent 48.5%);
+  -webkit-mask: radial-gradient(circle, black 48%, transparent 48.5%);
+  mix-blend-mode: screen;
+  animation: sf-radar-sweep 4s linear infinite;
+}
+
+@keyframes sf-radar-sweep {
+  from { transform: translate(-50%, -50%) rotate(0deg); }
+  to   { transform: translate(-50%, -50%) rotate(360deg); }
+}
+
+/* Respect reduced-motion preference */
+@media (prefers-reduced-motion: reduce) {
+  body[data-theme="starfighter"] .route-section:has(.minimap)::after {
+    animation: none;
+  }
+}
