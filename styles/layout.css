@@ -158,3 +158,29 @@ body {
       "action";
   }
 }
+
+/* ---------- Viewport containment (issue #56) ----------
+   Desktop/tablet: pin the page to the viewport so content overflow
+   scrolls inside individual panels instead of pushing the window.
+   Mobile (≤ 720px) keeps natural page scroll — the stacked layout
+   can't fit in a phone viewport without shrinking text.
+
+   Uses `100dvh` so mobile browsers' dynamic viewport (address-bar
+   collapse) doesn't cause a layout jump; all target browsers support
+   it. `overflow: hidden` on html AND body prevents either one from
+   producing a scrollbar on the window. */
+@media (min-width: 721px) {
+  html, body {
+    height: 100dvh;
+    min-height: 0;
+    overflow: hidden;
+  }
+}
+
+/* Panels that can outgrow their grid cell: contain overflow internally.
+   `.panel-route` and `.panel-log .log` already have their own scroll
+   containers — this covers the remaining two. */
+.panel-telemetry,
+.panel-crew {
+  overflow-y: auto;
+}
