@@ -850,3 +850,25 @@ body[data-theme="lcars"] .crew-bubble::before { display: none; }
   border-color: #ee99ff;
   background: rgba(140, 80, 180, 0.12);
 }
+
+/* ---- End-of-run two-column layout (issue #27) ---- */
+
+.eor-columns {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+  gap: 1.25rem;
+  align-items: start;
+  margin: 0.5rem 0 1rem;
+}
+.eor-col {
+  min-width: 0;   /* allow children to shrink inside the grid cell */
+}
+.eor-col-facts .eor-facts {
+  margin-top: 0;  /* facts block provides its own spacing in single-col mode */
+}
+
+@media (max-width: 720px) {
+  .eor-columns {
+    grid-template-columns: 1fr;
+  }
+}

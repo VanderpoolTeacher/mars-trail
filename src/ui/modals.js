@@ -432,17 +432,22 @@ export function showEndOfRunModal(state, onNewMission) {
         <h2 class="modal-title eor-title">${outcomeTitle}</h2>
         ${reasonBlock}
 
-        ${rankBlock}
-        ${careerCreditLine}
-        <div class="eor-stats">
-          <div class="eor-stat"><span class="eor-stat-label">SOLS</span><span class="eor-stat-value">${state.sol}</span></div>
-          <div class="eor-stat"><span class="eor-stat-label">KM TRAVELED</span><span class="eor-stat-value">${km.toLocaleString()}</span></div>
-          <div class="eor-stat"><span class="eor-stat-label">CREW SURVIVED</span><span class="eor-stat-value">${survived}/${total}</span></div>
-          <div class="eor-stat eor-stat-science"><span class="eor-stat-label">SCIENCE</span><span class="eor-stat-value">${state.sciencePoints}</span></div>
+        <div class="eor-columns">
+          <div class="eor-col eor-col-stats">
+            ${rankBlock}
+            ${careerCreditLine}
+            <div class="eor-stats">
+              <div class="eor-stat"><span class="eor-stat-label">SOLS</span><span class="eor-stat-value">${state.sol}</span></div>
+              <div class="eor-stat"><span class="eor-stat-label">KM TRAVELED</span><span class="eor-stat-value">${km.toLocaleString()}</span></div>
+              <div class="eor-stat"><span class="eor-stat-label">CREW SURVIVED</span><span class="eor-stat-value">${survived}/${total}</span></div>
+              <div class="eor-stat eor-stat-science"><span class="eor-stat-label">SCIENCE</span><span class="eor-stat-value">${state.sciencePoints}</span></div>
+            </div>
+            ${deadBlock}
+          </div>
+          <div class="eor-col eor-col-facts">
+            ${factsBlock}
+          </div>
         </div>
-
-        ${deadBlock}
-        ${factsBlock}
 
         <button class="modal-continue primary" id="eor-new" type="button">NEW MISSION →</button>
       </div>
