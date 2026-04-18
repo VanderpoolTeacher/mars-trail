@@ -140,7 +140,7 @@ const CONFIGS = [
   { label: 'Sci-chaser / accept',    pickChoice: pickScience, acceptDiverts: true  }
 ];
 
-const N_PER = 125;
+const N_PER = 1250;
 const TOTAL = CONFIGS.length * N_PER;
 const RANKS = ['S', 'A', 'B', 'C', 'D', 'F'];
 
