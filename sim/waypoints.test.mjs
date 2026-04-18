@@ -10,7 +10,8 @@ import assert from 'node:assert/strict';
 import {
   rollWaypoints,
   declineWaypoint,
-  WAYPOINT_ROLL_PROB
+  WAYPOINT_ROLL_PROB,
+  MIN_WAYPOINTS_PER_RUN
 } from '../src/systems/waypoints.js';
 
 function makeState(overrides = {}) {
@@ -32,10 +33,10 @@ function makeState(overrides = {}) {
 
 // --- rollWaypoints ---
 
-test('rollWaypoints produces 0–6 waypoints on a standard route', () => {
+test('rollWaypoints produces between MIN and 6 waypoints on a standard route', () => {
   for (let i = 0; i < 50; i++) {
     const s = rollWaypoints(makeState());
-    assert.ok(s.waypoints.length >= 0 && s.waypoints.length <= 6,
+    assert.ok(s.waypoints.length >= MIN_WAYPOINTS_PER_RUN && s.waypoints.length <= 6,
       `waypoints.length=${s.waypoints.length} out of range`);
     const segs = s.waypoints.map(w => w.segmentIdx);
     assert.equal(new Set(segs).size, segs.length, 'duplicate segmentIdx');
@@ -46,6 +47,16 @@ test('rollWaypoints produces 0–6 waypoints on a standard route', () => {
         `segmentIdx ${entry.segmentIdx} out of range [1, ${s.route.length - 1})`);
     }
   }
+});
+
+test('rollWaypoints enforces the per-run floor across many runs (issue #34)', () => {
+  let minSeen = Infinity;
+  for (let i = 0; i < 500; i++) {
+    const s = rollWaypoints(makeState());
+    if (s.waypoints.length < minSeen) minSeen = s.waypoints.length;
+  }
+  assert.equal(minSeen, MIN_WAYPOINTS_PER_RUN,
+    `min waypoints seen across 500 runs was ${minSeen}; floor was not enforced`);
 });
 
 test('rollWaypoints gives every eligible landmark a fair chance over many runs', () => {
