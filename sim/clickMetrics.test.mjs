@@ -12,6 +12,7 @@ import {
   shouldFireEmergency,
   afterEmergencyFired
 } from '../src/systems/clickMetrics.js';
+import { EMERGENCY_TEMPLATES, materializeEmergency, pickEmergency } from '../src/content/emergencies.js';
 
 test('initialClickMetrics starts at zero', () => {
   const m = initialClickMetrics();
@@ -73,6 +74,63 @@ test('afterEmergencyFired bumps counter and cools down mashScore', () => {
   assert.equal(after.emergenciesFired, 1);
   assert.equal(after.mashScore, 8 + CLICK_METRICS_CONFIG.emergencyCooldownDelta);
   assert.ok(after.mashScore >= 0);
+});
+
+test('every emergency template has valid structure', () => {
+  for (const t of EMERGENCY_TEMPLATES) {
+    assert.ok(t.id, 'id');
+    assert.ok(t.startStage, 'startStage');
+    assert.ok(t.stages[t.startStage], 'startStage exists in stages');
+    for (const [stageId, stage] of Object.entries(t.stages)) {
+      assert.ok(stage.descriptionTemplate, `${t.id}.${stageId}.descriptionTemplate`);
+      assert.ok(Array.isArray(stage.variants) && stage.variants.length >= 2,
+        `${t.id}.${stageId} must have ≥2 variants for anti-memorization`);
+      assert.ok(Array.isArray(stage.choiceTemplates) && stage.choiceTemplates.length === 3,
+        `${t.id}.${stageId} must have exactly 3 choices`);
+      assert.equal(stage.choiceTemplates.filter(c => c.correct).length, 1,
+        `${t.id}.${stageId} must have exactly one correct choice`);
+    }
+  }
+});
+
+test('materializeEmergency fills templates and preserves the correct choice', () => {
+  const template = EMERGENCY_TEMPLATES.find(t => t.id === 'emer_cabin_breach');
+  const concrete = materializeEmergency(template);
+
+  assert.equal(concrete.multiStage, true);
+  assert.equal(concrete.startStage, template.startStage);
+
+  const breach = concrete.stages.breach;
+  assert.ok(!/\{\{/.test(breach.description), 'no unfilled {{slot}} in description');
+  for (const c of breach.choices) {
+    assert.ok(!/\{\{/.test(c.label), 'no unfilled {{slot}} in label');
+  }
+  assert.equal(breach.choices.filter(c => c.correct).length, 1);
+  const correct = breach.choices.find(c => c.correct);
+  assert.equal(correct.nextStage, 'weld');
+});
+
+test('materializeEmergency produces variety across many fires', () => {
+  const template = EMERGENCY_TEMPLATES.find(t => t.id === 'emer_cabin_breach');
+  const correctLabels = new Set();
+  const firstChoiceLabels = new Set();
+  for (let i = 0; i < 200; i++) {
+    const concrete = materializeEmergency(template);
+    const breach = concrete.stages.breach;
+    correctLabels.add(breach.choices.find(c => c.correct).label);
+    firstChoiceLabels.add(breach.choices[0].label);
+  }
+  assert.ok(correctLabels.size >= 2, `correct choice label should vary across runs (got ${correctLabels.size})`);
+  assert.ok(firstChoiceLabels.size >= 2, `position of the correct choice should vary (got ${firstChoiceLabels.size} first-slot labels)`);
+});
+
+test('pickEmergency returns a fully-materialized concrete event', () => {
+  const e = pickEmergency();
+  assert.ok(e.id && e.id.startsWith('emer_'));
+  assert.equal(e.multiStage, true);
+  const start = e.stages[e.startStage];
+  assert.ok(!/\{\{/.test(start.description));
+  assert.equal(start.choices.length, 3);
 });
 
 test('sustained mashing trips emergency, cap stops further fires', () => {
