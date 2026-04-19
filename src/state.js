@@ -4,6 +4,7 @@
 import { rollWaypoints } from './systems/waypoints.js';
 import { loadCareerScience, computeActiveBonuses } from './systems/career.js';
 import { EVENTS } from './content/events.js';
+import { initialClickMetrics } from './systems/clickMetrics.js';
 
 const LANDMARK_NAMES = {
   jezero:       'Jezero Crater',
@@ -93,6 +94,9 @@ export function createInitialState() {
     log: [
       { sol: 1, text: 'Mission begins. Crew nominal. Departing Jezero Crater.' }
     ],
+
+    // Click-through detection (issue #63).
+    clickMetrics: initialClickMetrics(),
 
     // Career science (cross-run progression).
     careerSci,

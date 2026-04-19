@@ -5,6 +5,7 @@ import { createInitialState, CARGO_BUDGET, PART_TYPES } from './state.js';
 import { render } from './render.js';
 import { advanceSol, setPace, setRations, repairBattery, cleanPanels } from './systems/travel.js';
 import { applyEventChoice } from './systems/events.js';
+import { recordDecision } from './systems/clickMetrics.js';
 import { showEventModal, showOutcomeModal, showBriefingModal, showLoadoutModal, showTitleLayer, dimTitleStart, hideTitleLayer, showEndOfRunModal, closeModal, showWaypointOfferModal, showMultiStageModal, showAwayTeamPickerModal, showAwayTeamReunionModal, showDeathDialog } from './ui/modals.js';
 import { declineWaypoint } from './systems/waypoints.js';
 import { applyStageChoice } from './systems/multiStage.js';
@@ -247,7 +248,14 @@ function renderAll() {
       return;
     }
 
+    const stageOpenedAt = performance.now();
     showMultiStageModal(event, stageId, (choiceIdx) => {
+      const elapsed = performance.now() - stageOpenedAt;
+      const stageText = event.stages?.[stageId]?.description || '';
+      state = {
+        ...state,
+        clickMetrics: recordDecision(state.clickMetrics, elapsed, stageText)
+      };
       const { state: next, nextStage, skillResult, damageTarget, applied } = applyStageChoice(state, event, stageId, choiceIdx);
       state = next;
       render(state);
@@ -272,7 +280,13 @@ function renderAll() {
 
   if (modal.type === 'event') {
     const event = modal.payload;
+    const openedAt = performance.now();
     showEventModal(event, (choiceIdx) => {
+      const elapsed = performance.now() - openedAt;
+      state = {
+        ...state,
+        clickMetrics: recordDecision(state.clickMetrics, elapsed, event.modal.description)
+      };
       const { state: next, resolution } = applyEventChoice(state, event, choiceIdx);
       state = next;
       render(state);   // dashboard reflects the change behind the outcome modal
