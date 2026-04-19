@@ -16,6 +16,7 @@ function bindDom() {
   $.rationsSeg   = document.getElementById('rations-seg');
   $.log          = document.getElementById('log');
   $.minimapPos   = document.getElementById('minimap-position');
+  $.minimapWrap  = document.getElementById('minimap-wrap');
   $.routeImage   = document.getElementById('route-image');
   $.routeName    = document.getElementById('route-location-name');
   $.routeDesc    = document.getElementById('route-location-desc');
@@ -106,6 +107,19 @@ function renderMinimap(state) {
   if ($.minimapPos) {
     $.minimapPos.setAttribute('cx', rover.x.toFixed(1));
     $.minimapPos.setAttribute('cy', rover.y.toFixed(1));
+  }
+
+  // Expose player position as CSS vars on the minimap wrap so themed radar
+  // overlays (e.g. Starfighter) can center themselves on the player.
+  if ($.minimapWrap && $.minimapPos) {
+    const wrapRect = $.minimapWrap.getBoundingClientRect();
+    if (wrapRect.width > 0 && wrapRect.height > 0) {
+      const dotRect = $.minimapPos.getBoundingClientRect();
+      const dotCx = dotRect.left + dotRect.width / 2 - wrapRect.left;
+      const dotCy = dotRect.top + dotRect.height / 2 - wrapRect.top;
+      $.minimapWrap.style.setProperty('--player-x', `${(dotCx / wrapRect.width * 100).toFixed(2)}%`);
+      $.minimapWrap.style.setProperty('--player-y', `${(dotCy / wrapRect.height * 100).toFixed(2)}%`);
+    }
   }
 
   // Trail: solid portion overlaying the dashed base
