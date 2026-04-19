@@ -254,7 +254,7 @@ export function advanceSol(state, mode = 'travel') {
     // click-metrics heuristic has flagged sustained click-through behavior.
     if (shouldFireEmergency(s.clickMetrics)) {
       const emergency = pickEmergency();
-      s.activeModal = { type: 'event', payload: emergency };
+      s.activeModal = { type: 'multi_stage', payload: { event: emergency, stageId: emergency.startStage } };
       s.clickMetrics = afterEmergencyFired(s.clickMetrics);
       s.log = [...s.log, { sol: s.sol, text: '⚠ ANOMALY — systems flag inattentive operator. Emergency scenario.' }];
     } else {
