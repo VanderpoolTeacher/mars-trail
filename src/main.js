@@ -13,7 +13,7 @@ import { resolveMedicalStage, getMedicalStageView } from './systems/medicalEmerg
 import { WAYPOINTS } from './content/waypoints.js';
 import { makeLandmarkEncounter } from './content/landmarks.js';
 import './ui/codex.js';   // registers global click handler for codex terms
-import { GAMEPLAY_TRACKS, getSelectedTrackId, isMuted, playTitle, playGameplay, selectTrack, toggleMute, fadeOut, fadeInGameplay, cycleTrack } from './audio.js';
+import { GAMEPLAY_TRACKS, getSelectedTrackId, isMuted, playTitle, playGameplay, selectTrack, toggleMute, fadeOut, fadeInGameplay, cycleTrack, onTrackChange } from './audio.js';
 
 let state = createInitialState();
 renderAll();
@@ -304,6 +304,11 @@ musicMute.classList.toggle('muted', isMuted());
 
 musicSelect.addEventListener('change', () => {
   selectTrack(musicSelect.value);
+});
+
+// Keep dropdown in sync with shuffle-driven track changes.
+onTrackChange((id) => {
+  if (id !== 'title') musicSelect.value = id;
 });
 
 musicMute.addEventListener('click', () => {
