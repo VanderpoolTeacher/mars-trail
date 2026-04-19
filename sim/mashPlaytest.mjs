@@ -13,7 +13,7 @@ import { applyStageChoice } from '../src/systems/multiStage.js';
 import { acceptAwayTeam, resolveAwayTeamStage, finalizeReunion } from '../src/systems/awayTeam.js';
 import { resolveMedicalStage } from '../src/systems/medicalEmergency.js';
 import { makeLandmarkEncounter } from '../src/content/landmarks.js';
-import { recordDecision } from '../src/systems/clickMetrics.js';
+import { recordDecision, CLICK_METRICS_CONFIG } from '../src/systems/clickMetrics.js';
 
 function isEmergency(event) { return typeof event?.id === 'string' && event.id.startsWith('emer_'); }
 
@@ -152,4 +152,5 @@ summary('READER (20s · first choice)', reader);
 summary('MASH-RANDOM (50ms · random choice)', mashRandom);
 
 console.log(`\nExpected correct-by-chance with 3 choices: 33.3%`);
-console.log(`Emergency cap per run: 2\n`);
+console.log(`Emergency cap per run: ${CLICK_METRICS_CONFIG.maxEmergenciesPerRun}`);
+console.log(`Mash threshold: ${CLICK_METRICS_CONFIG.mashScoreThreshold}\n`);

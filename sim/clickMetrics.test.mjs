@@ -58,8 +58,9 @@ test('recordDecision decays mashScore for thoughtful reads and floors at 0', () 
 });
 
 test('shouldFireEmergency respects threshold and per-run cap', () => {
-  assert.equal(shouldFireEmergency({ mashScore: 5, emergenciesFired: 0 }), false);
-  assert.equal(shouldFireEmergency({ mashScore: 6, emergenciesFired: 0 }), true);
+  const t = CLICK_METRICS_CONFIG.mashScoreThreshold;
+  assert.equal(shouldFireEmergency({ mashScore: t - 1, emergenciesFired: 0 }), false);
+  assert.equal(shouldFireEmergency({ mashScore: t,     emergenciesFired: 0 }), true);
   assert.equal(
     shouldFireEmergency({ mashScore: 99, emergenciesFired: CLICK_METRICS_CONFIG.maxEmergenciesPerRun }),
     false,
@@ -133,24 +134,21 @@ test('pickEmergency returns a fully-materialized concrete event', () => {
   assert.equal(start.choices.length, 3);
 });
 
-test('sustained mashing trips emergency, cap stops further fires', () => {
+test('sustained mashing trips emergencies until the per-run cap is hit', () => {
+  const cap = CLICK_METRICS_CONFIG.maxEmergenciesPerRun;
   let m = initialClickMetrics();
   const body = 'x'.repeat(50);
-  // Six rapid clicks should reach threshold.
-  for (let i = 0; i < 2; i++) m = recordDecision(m, 50, body);  // +3+3 = 6
-  assert.equal(shouldFireEmergency(m), true);
 
-  // Fire the first emergency.
-  m = afterEmergencyFired(m);
-  assert.equal(m.emergenciesFired, 1);
+  // Fast click trips the heuristic; arm and fire up to the cap.
+  for (let fired = 0; fired < cap; fired++) {
+    while (!shouldFireEmergency(m)) {
+      m = recordDecision(m, 50, body);
+    }
+    m = afterEmergencyFired(m);
+    assert.equal(m.emergenciesFired, fired + 1);
+  }
 
-  // Re-arm and fire a second.
-  for (let i = 0; i < 3; i++) m = recordDecision(m, 50, body);
-  assert.equal(shouldFireEmergency(m), true);
-  m = afterEmergencyFired(m);
-  assert.equal(m.emergenciesFired, 2);
-
-  // Further mashing should not trip a third.
-  for (let i = 0; i < 5; i++) m = recordDecision(m, 50, body);
+  // Further mashing should not exceed the cap.
+  for (let i = 0; i < 10; i++) m = recordDecision(m, 50, body);
   assert.equal(shouldFireEmergency(m), false, 'cap holds');
 });

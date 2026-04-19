@@ -6,15 +6,15 @@
 export const CLICK_METRICS_CONFIG = {
   minReadMs: 1200,              // floor below which any decision is "too fast to read"
   readMsPerChar: 35,            // ~28 wpm slow-reader rate; scales expected time with body length
-  mashScoreThreshold: 6,        // at or above this score, an emergency fires on the next event
-  maxEmergenciesPerRun: 2,      // cap so a single run can't chain-die from this alone
-  emergencyCooldownDelta: -4,   // mashScore reduction applied when an emergency fires
+  mashScoreThreshold: 3,        // at or above this score, an emergency fires on the next event
+  maxEmergenciesPerRun: 5,      // cap so a single run can't chain-die from this alone
+  emergencyCooldownDelta: -2,   // mashScore reduction applied when an emergency fires
   scoreDelta: {
-    didNotRead: 3,   // elapsed < 0.2 * expected
-    skim:       2,   // elapsed < 0.5 * expected
+    didNotRead: 3,   // elapsed < 0.2 * expected — one fast click is enough to flag
+    skim:       2,   // elapsed < 0.5 * expected — two skims trip the heuristic
     hurried:    1,   // elapsed < 0.75 * expected
     normal:     0,   // elapsed < expected
-    thoughtful: -1   // elapsed >= expected
+    thoughtful: -1   // elapsed >= expected — slow reads decay the score
   }
 };
 
