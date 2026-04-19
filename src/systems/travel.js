@@ -4,6 +4,8 @@
 import { landmarkName, PART_TYPES } from '../state.js';
 import { rollEvent } from './events.js';
 import { rollMultiStageEvent } from './multiStage.js';
+import { shouldFireEmergency, afterEmergencyFired } from './clickMetrics.js';
+import { pickEmergency } from '../content/emergencies.js';
 import { applyDamage, checkAllDead } from './crew.js';
 import { makeLandmarkEncounter } from '../content/landmarks.js';
 import { WAYPOINTS } from '../content/waypoints.js';
@@ -248,18 +250,27 @@ export function advanceSol(state, mode = 'travel') {
 
   // ---- Roll for random event (travel sols only, only if not already in a modal) ----
   if (mode === 'travel' && s.status === 'active' && !s.activeModal) {
-    const event = rollEvent(s);
-    if (event) {
-      s.activeModal = { type: 'event', payload: event };
-      if (event.oneShot) s.firedEvents = [...s.firedEvents, event.id];
+    // Mash-detection emergency: pre-empts the normal event roll when the
+    // click-metrics heuristic has flagged sustained click-through behavior.
+    if (shouldFireEmergency(s.clickMetrics)) {
+      const emergency = pickEmergency();
+      s.activeModal = { type: 'event', payload: emergency };
+      s.clickMetrics = afterEmergencyFired(s.clickMetrics);
+      s.log = [...s.log, { sol: s.sol, text: '⚠ ANOMALY — systems flag inattentive operator. Emergency scenario.' }];
     } else {
-      const msEvent = rollMultiStageEvent(s);
-      if (msEvent) {
-        if (msEvent.customResolver === 'medical') {
-          s = beginMedicalEmergency(s);
-        } else {
-          s.activeModal = { type: 'multi_stage', payload: { event: msEvent, stageId: msEvent.startStage } };
-          if (msEvent.oneShot) s.firedEvents = [...s.firedEvents, msEvent.id];
+      const event = rollEvent(s);
+      if (event) {
+        s.activeModal = { type: 'event', payload: event };
+        if (event.oneShot) s.firedEvents = [...s.firedEvents, event.id];
+      } else {
+        const msEvent = rollMultiStageEvent(s);
+        if (msEvent) {
+          if (msEvent.customResolver === 'medical') {
+            s = beginMedicalEmergency(s);
+          } else {
+            s.activeModal = { type: 'multi_stage', payload: { event: msEvent, stageId: msEvent.startStage } };
+            if (msEvent.oneShot) s.firedEvents = [...s.firedEvents, msEvent.id];
+          }
         }
       }
     }
