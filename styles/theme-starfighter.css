@@ -255,16 +255,16 @@ body[data-theme="starfighter"] .landmark-dot.current { fill: var(--fg-dim); stro
 body[data-theme="starfighter"] .landmark-dot.dest    { stroke: var(--sf-red); stroke-width: 1.2; }
 
 /* Polar overlay: concentric rings + radial spokes + sweep line.
-   Rendered as a CSS background on the route-section that contains the
-   minimap so it reads as a round radar sitting in a rectangular panel. */
-body[data-theme="starfighter"] .route-section:has(.minimap) {
-  position: relative;
+   Rendered as CSS backgrounds on the .minimap-wrap and centered on the
+   player position (issue #61) via --player-x / --player-y set by render.js. */
+body[data-theme="starfighter"] .minimap-wrap {
+  overflow: hidden;
 }
-body[data-theme="starfighter"] .route-section:has(.minimap)::before {
+body[data-theme="starfighter"] .minimap-wrap::before {
   content: '';
   position: absolute;
-  left: 50%;
-  top: 50%;
+  left: var(--player-x, 50%);
+  top: var(--player-y, 50%);
   width: min(80%, 180px);
   aspect-ratio: 1 / 1;
   transform: translate(-50%, -50%);
@@ -284,11 +284,11 @@ body[data-theme="starfighter"] .route-section:has(.minimap)::before {
 }
 
 /* Rotating sweep line */
-body[data-theme="starfighter"] .route-section:has(.minimap)::after {
+body[data-theme="starfighter"] .minimap-wrap::after {
   content: '';
   position: absolute;
-  left: 50%;
-  top: 50%;
+  left: var(--player-x, 50%);
+  top: var(--player-y, 50%);
   width: min(80%, 180px);
   aspect-ratio: 1 / 1;
   transform: translate(-50%, -50%);
@@ -315,7 +315,7 @@ body[data-theme="starfighter"] .route-section:has(.minimap)::after {
 
 /* Respect reduced-motion preference */
 @media (prefers-reduced-motion: reduce) {
-  body[data-theme="starfighter"] .route-section:has(.minimap)::after {
+  body[data-theme="starfighter"] .minimap-wrap::after {
     animation: none;
   }
 }
