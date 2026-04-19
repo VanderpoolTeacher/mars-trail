@@ -1,5 +1,6 @@
 // Mars Trail — music manager.
-// Single <audio> element, looped. Track selection + mute persisted to localStorage.
+// Title loops. Gameplay plays a shuffled queue that reshuffles each run
+// and avoids back-to-back repeats across cycle boundaries.
 
 const STORAGE_KEY_TRACK = 'marsTrail.musicTrack';
 const STORAGE_KEY_MUTE  = 'marsTrail.musicMute';
@@ -19,11 +20,48 @@ export const GAMEPLAY_TRACKS = [
 ];
 
 const audio = new Audio();
-audio.loop = true;
 audio.volume = 0.4;
 
 let currentTrackId = null;
 let unlocked = false;   // audio context unlocked by first user interaction
+let shuffleQueue = [];  // remaining gameplay tracks in current shuffled cycle
+
+const trackChangeListeners = [];
+export function onTrackChange(cb) { trackChangeListeners.push(cb); }
+function notifyTrackChange(id) { trackChangeListeners.forEach(cb => { try { cb(id); } catch {} }); }
+
+function buildShuffleQueue(avoidFirstId = null) {
+  const ids = GAMEPLAY_TRACKS.map(t => t.id);
+  for (let i = ids.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [ids[i], ids[j]] = [ids[j], ids[i]];
+  }
+  // Avoid back-to-back repeat across cycle boundary.
+  if (avoidFirstId && ids.length > 1 && ids[0] === avoidFirstId) {
+    [ids[0], ids[1]] = [ids[1], ids[0]];
+  }
+  return ids;
+}
+
+function nextShuffledId() {
+  if (shuffleQueue.length === 0) {
+    shuffleQueue = buildShuffleQueue(currentTrackId);
+  }
+  let next = shuffleQueue.shift();
+  // Defensive: if the user jumped to a track that's also next in queue,
+  // swap so we don't play it twice in a row.
+  if (next === currentTrackId && shuffleQueue.length > 0) {
+    const after = shuffleQueue.shift();
+    shuffleQueue.unshift(next);
+    next = after;
+  }
+  return next;
+}
+
+audio.addEventListener('ended', () => {
+  if (currentTrackId === 'title') return; // title loops; shouldn't fire
+  play(nextShuffledId());
+});
 
 export function getSelectedTrackId() {
   return localStorage.getItem(STORAGE_KEY_TRACK) || GAMEPLAY_TRACKS[0].id;
@@ -42,9 +80,11 @@ export function play(trackId) {
 
   currentTrackId = track.id;
   audio.src = track.file;
+  audio.loop = (track.id === 'title'); // title loops; gameplay advances via 'ended'
   audio.muted = isMuted();
   audio.play().catch(() => {});
   unlocked = true;
+  notifyTrackChange(track.id);
 }
 
 export function stop() {
@@ -84,7 +124,9 @@ export function playTitle() {
 }
 
 export function playGameplay() {
-  play(getSelectedTrackId());
+  // Start a fresh shuffled cycle each time gameplay music begins.
+  shuffleQueue = buildShuffleQueue(currentTrackId);
+  play(shuffleQueue.shift());
 }
 
 // Shared fade timer so a new fade cancels any in-flight fade.
@@ -116,14 +158,18 @@ export function fadeOut(durationMs = 1500) {
 
 export function fadeInGameplay(durationMs = 1500) {
   clearFade();
-  const trackId = getSelectedTrackId();
+  // New run: reshuffle track order.
+  shuffleQueue = buildShuffleQueue(currentTrackId);
+  const trackId = shuffleQueue.shift();
   const track = GAMEPLAY_TRACKS.find(t => t.id === trackId);
   if (!track) return;
   currentTrackId = track.id;
   audio.src = track.file;
+  audio.loop = false;
   audio.muted = isMuted();
   audio.volume = 0;
   audio.play().catch(() => {});
+  notifyTrackChange(track.id);
   const targetVol = 0.4;
   const steps = 30;
   const interval = durationMs / steps;
