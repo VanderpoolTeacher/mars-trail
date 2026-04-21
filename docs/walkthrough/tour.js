@@ -58,7 +58,10 @@ window.addEventListener('hashchange', () => {
 });
 
 function initTourTheme() {
-  const select = document.getElementById('theme-select');
+  // Uses a distinct id ('tour-theme-select') so src/theme.js's module-top initTheme()
+  // — which getElementById('theme-select')s and binds a localStorage-writing change
+  // listener — doesn't attach to the tour dropdown. Tour theme is session-only.
+  const select = document.getElementById('tour-theme-select');
   if (!select) return;
   select.innerHTML = '';
   for (const t of THEMES) {
