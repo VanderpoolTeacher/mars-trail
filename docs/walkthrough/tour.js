@@ -99,7 +99,7 @@ function renderHubTiles(branches) {
   `;
 }
 
-function renderBreadcrumb(location, slides) {
+function renderBreadcrumb(location) {
   if (location.kind !== 'branch') return '';
   const hub = slides.spine.find(s => s.id === 'hub');
   const branch = hub.branches.find(b => b.id === location.branchId);
@@ -114,7 +114,7 @@ function renderSlideHtml(slide, location) {
   const hubTilesHtml = (location.kind === 'spine' && slide.id === 'hub')
     ? renderHubTiles(slide.branches)
     : '';
-  const breadcrumbHtml = renderBreadcrumb(location, slides);
+  const breadcrumbHtml = renderBreadcrumb(location);
   return `
     <section class="tour-slide">
       ${breadcrumbHtml}
