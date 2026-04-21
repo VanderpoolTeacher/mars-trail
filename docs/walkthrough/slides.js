@@ -16,8 +16,8 @@ export const spine = [
     id: 'pitch',
     title: 'What is Mars Trail?',
     body: `
-      <p>An Oregon-Trail-style survival sim set on Mars, built for a game jam. You captain a rover across Acidalia Planitia, rationing power and EVA suits, managing crew, responding to emergencies, and diverting for side missions ("away teams") that chase science points.</p>
-      <p>Runs are short (~10–20 sols of play), most of the difficulty is in the event system, and a run ends when you reach the goal or lose the crew.</p>
+      <p>An Oregon-Trail-style survival sim set on Mars, built for a game jam. You captain a rover from Jezero Crater to a colony site near Olympus Mons, rationing power and EVA suits, managing crew, responding to emergencies, and diverting for side missions ("away teams") that chase science points.</p>
+      <p>Runs typically take ~15–30 sols (2–3 weeks of in-game time), most of the difficulty is in the event system, and a run ends when you reach the goal or lose the crew.</p>
     `,
   },
   {
@@ -48,7 +48,10 @@ export const spine = [
 ├── styles/             — theme.css + per-theme overlays
 ├── sim/                — unit tests + playtest harness
 ├── assets/             — images, music
-└── docs/superpowers/   — per-feature specs + implementation plans
+└── docs/
+    ├── superpowers/    — per-feature specs + implementation plans
+    ├── walkthrough/    — this interactive tour
+    └── reports/        — session reports
 </code></pre>
       <p>The rest of the tour follows the data flow: entry point → state → render → systems (via a hub) → content → UI → themes → audio → tests → workflow.</p>
     `,
