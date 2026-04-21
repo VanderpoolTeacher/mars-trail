@@ -54,7 +54,11 @@ function renderProgress(location) {
   if (location.kind === 'spine') {
     el.textContent = `SPINE ${location.index + 1} / ${slides.spine.length}`;
   } else {
-    el.textContent = `HUB › ${location.branchId} › ${location.subIndex + 1}`;
+    const hub = slides.spine.find(s => s.id === 'hub');
+    const branch = hub?.branches.find(b => b.id === location.branchId);
+    const label = branch?.label ?? location.branchId;
+    const total = branch?.sub.length ?? 1;
+    el.textContent = `HUB › ${label} › ${location.subIndex + 1} / ${total}`;
   }
 }
 
@@ -102,9 +106,9 @@ function renderHubTiles(branches) {
 function renderBreadcrumb(location) {
   if (location.kind !== 'branch') return '';
   const hub = slides.spine.find(s => s.id === 'hub');
-  const branch = hub.branches.find(b => b.id === location.branchId);
-  const total = branch ? branch.sub.length : 1;
-  return `<div class="tour-breadcrumb">HUB › ${escapeHtml(location.branchId)} › ${location.subIndex + 1} / ${total}</div>`;
+  const branch = hub?.branches.find(b => b.id === location.branchId);
+  if (!branch) return '';
+  return `<div class="tour-breadcrumb">HUB › ${escapeHtml(branch.label)} › ${location.subIndex + 1} / ${branch.sub.length}</div>`;
 }
 
 function renderSlideHtml(slide, location) {
