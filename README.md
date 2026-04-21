@@ -2,12 +2,21 @@
 
 A browser-based Mars colony survival game — Oregon Trail in space. No build step; open `index.html` in a browser to play.
 
-**New to this repo?** Open [`docs/walkthrough/index.html`](docs/walkthrough/index.html) for an interactive code tour.
+**New to this repo?** Serve the repo over HTTP and open `/docs/walkthrough/` for an interactive code tour.
 
 ## Running locally
 
-- Play the game: open `index.html` directly, or serve the repo root (e.g. `python3 -m http.server`) and visit `/`.
-- Run the sim test suite: `node --test sim/*.test.mjs`.
+Browsers block ES-module imports from `file://` URLs, so both the game and the code tour need to be served over HTTP.
+
+```bash
+python3 -m http.server 8765
+```
+
+Then:
+- Play the game: http://localhost:8765/
+- Take the code tour: http://localhost:8765/docs/walkthrough/
+
+Run the sim test suite: `node --test sim/*.test.mjs`.
 
 ## Layout
 
