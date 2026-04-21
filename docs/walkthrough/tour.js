@@ -87,6 +87,25 @@ function renderSnippet(snippet) {
   `;
 }
 
+function renderSlideHtml(slide) {
+  const snippetsHtml = slide.snippets?.length
+    ? `<div class="tour-snippets">${slide.snippets.map(renderSnippet).join('')}</div>`
+    : '';
+  return `
+    <section class="tour-slide">
+      <h1>${slide.title}</h1>
+      ${slide.body}
+      ${snippetsHtml}
+    </section>
+  `;
+}
+
+function wireSnippetToggles(stage) {
+  for (const header of stage.querySelectorAll('[data-snippet-toggle]')) {
+    header.addEventListener('click', () => header.parentElement.classList.toggle('is-open'));
+  }
+}
+
 // Renders a slide into #tour-stage.
 // TRUST BOUNDARY: slide.title, slide.body, slide.snippets[i].path, and
 // slide.snippets[i].caption are interpolated as HTML. The slide manifest
@@ -95,20 +114,9 @@ function renderSnippet(snippet) {
 // Do not route any user-supplied content through this function.
 function render(location) {
   const slide = slideAt(location);
-  const snippetsHtml = slide.snippets?.length
-    ? `<div class="tour-snippets">${slide.snippets.map(renderSnippet).join('')}</div>`
-    : '';
-  document.getElementById('tour-stage').innerHTML = `
-    <section class="tour-slide">
-      <h1>${slide.title}</h1>
-      ${slide.body}
-      ${snippetsHtml}
-    </section>
-  `;
-  // Wire expand/collapse.
-  for (const header of document.querySelectorAll('[data-snippet-toggle]')) {
-    header.addEventListener('click', () => header.parentElement.classList.toggle('is-open'));
-  }
+  const stage = document.getElementById('tour-stage');
+  stage.innerHTML = renderSlideHtml(slide);
+  wireSnippetToggles(stage);
   renderProgress(location);
   mountDemo(slide);
 }
