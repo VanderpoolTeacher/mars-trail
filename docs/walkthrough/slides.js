@@ -453,10 +453,303 @@ export function getMedicalStageView(state, stageId, context) {
           },
         ],
       },
-      { id: 'clickmetrics',label: 'clickMetrics.js',                   sub: [{ id: 's1', title: 'clickMetrics.js — placeholder', body: '<p>Branch content arrives in Task 13.</p>' }] },
-      { id: 'awayteam',    label: 'awayTeam.js',                       sub: [{ id: 's1', title: 'awayTeam.js — placeholder', body: '<p>Branch content arrives in Task 13.</p>' }] },
-      { id: 'smallsys',    label: 'crew / corpse / waypoints',         sub: [{ id: 's1', title: 'Small systems — placeholder', body: '<p>Branch content arrives in Task 13.</p>' }] },
-      { id: 'scoring',     label: 'career.js + scoring.js',            sub: [{ id: 's1', title: 'Career & scoring — placeholder', body: '<p>Branch content arrives in Task 13.</p>' }] },
+      {
+        id: 'clickmetrics',
+        label: 'clickMetrics.js',
+        sub: [
+          {
+            id: 's1',
+            title: 'clickMetrics.js — anti-mash detection',
+            body: `
+              <p>Every click through an event modal is timed and bucketed against an expected read duration that scales with body length. One "didNotRead" bucket is enough to flag a player; two skims will also trip it. Above <code>mashScoreThreshold</code>, the game rolls an anti-mash catastrophic emergency.</p>
+              <p>The module is small and intentionally standalone so its thresholds can be tuned in one place.</p>
+            `,
+            snippets: [
+              { path: 'src/systems/clickMetrics.js', lines: [6, 19], caption: 'CLICK_METRICS_CONFIG — the tunables',
+                code: `export const CLICK_METRICS_CONFIG = {
+  minReadMs: 1200,              // floor below which any decision is "too fast to read"
+  readMsPerChar: 35,            // ~28 wpm slow-reader rate; scales expected time with body length
+  mashScoreThreshold: 3,        // at or above this score, an emergency fires on the next event
+  maxEmergenciesPerRun: 5,      // cap so a single run can't chain-die from this alone
+  emergencyCooldownDelta: -2,   // mashScore reduction applied when an emergency fires
+  scoreDelta: {
+    didNotRead: 3,   // elapsed < 0.2 * expected — one fast click is enough to flag
+    skim:       2,   // elapsed < 0.5 * expected — two skims trip the heuristic
+    hurried:    1,   // elapsed < 0.75 * expected
+    normal:     0,   // elapsed < expected
+    thoughtful: -1   // elapsed >= expected — slow reads decay the score
+  }
+};` },
+            ],
+          },
+        ],
+      },
+      {
+        id: 'awayteam',
+        label: 'awayTeam.js',
+        sub: [
+          {
+            id: 's1',
+            title: 'awayTeam.js — divert and camp',
+            body: `
+              <p>Waypoint diverts dispatch an "away team" of 1–3 crew. The rover camps (does not advance km) while authored chains in <code>src/content/awayTeamChains.js</code> fire stage-per-sol. Rewards accumulate on <code>state.awayTeam.accumulated</code> and only land on the rover at reunion.</p>
+              <p>Built on the same multi-stage shape as medical emergencies, but with its own resolver because away-team outcomes target the roster (not the full crew) and rewards are deferred.</p>
+            `,
+            snippets: [
+              { path: 'src/systems/awayTeam.js', lines: [36, 69], caption: 'acceptAwayTeam — dispatch the detour',
+                code: `export function acceptAwayTeam(state, waypointId, crewIds) {
+  const aliveCount = state.crew.filter(c => c.alive).length;
+  if (aliveCount < MIN_CREW_FOR_DIVERT) {
+    return {
+      ...state,
+      log: [...state.log, { sol: state.sol, text: 'Too few crew to dispatch an away team. Divert cancelled.' }]
+    };
+  }
+  const waypoint = WAYPOINTS.find(w => w.id === waypointId);
+  const chain = AWAY_TEAM_CHAINS[waypointId];
+  if (!waypoint || !chain) return state;
+
+  const validIds = crewIds.filter(id => state.crew.some(c => c.id === id && c.alive));
+  if (validIds.length === 0) return state;
+  if (validIds.length > aliveCount - 1) return state;   // keep ≥1 on rover
+
+  const returnSol = state.sol + waypoint.detourSols;
+  return {
+    ...state,
+    awayTeam: {
+      waypointId,
+      crewIds:      [...validIds],
+      departSol:    state.sol,
+      returnSol,
+      currentStage: chain.startStage,
+      accumulated:  emptyAccumulated(),
+      deaths:       []
+    },
+    log: [
+      ...state.log,
+      { sol: state.sol, text: \`Away team dispatched to \${waypoint.name}. Due back sol \${returnSol}.\` }
+    ]
+  };
+}` },
+            ],
+          },
+          {
+            id: 's2',
+            title: 'Authored chains',
+            body: `
+              <p>Per-waypoint chains live in <code>src/content/awayTeamChains.js</code>, keyed by waypoint id. Each is a small state machine: stages with choices, some choices mutating <code>returnSolDelta</code> to extend or shorten the camp, others carrying <code>awayTeamDamage</code> that only hits the roster.</p>
+            `,
+            snippets: [
+              { path: 'src/content/awayTeamChains.js', lines: [24, 57], caption: 'olivine_outcrop — a 2-stage geology chain',
+                code: `  olivine_outcrop: {
+    startStage: 'approach',
+    stages: {
+      approach: {
+        title:       'Olivine Outcrop — On Foot',
+        description: 'The cliff face drops fifteen meters to a fresh volcanic scar. Rappel gear is in the kit; ridgeline scan is the safe read.',
+        choices: [
+          { label:          'Rappel to the fresh face (deeper sample)',
+            nextStage:      'deep_sample',
+            returnSolDelta: 1 },
+          { label:          'Scan the face from the ridgeline',
+            skillCheck:     { role: 'engineer', successP: 0.75 },
+            successOutcome: { sciencePoints: 40 },
+            failOutcome:    { sciencePoints: 15 },
+            nextStage:      null }
+        ]
+      },
+      deep_sample: {
+        title:       'Down the Face',
+        description: 'You are halfway down the scar, rope anchored above. Fresh olivine vein exposed at eye level — drillable if you commit.',
+        choices: [
+          { label:          'Drill the exposed vein',
+            skillCheck:     { role: 'engineer', successP: 0.75 },
+            successOutcome: { sciencePoints: 80 },
+            failOutcome:    { sciencePoints: 30, awayTeamDamage: 20 },
+            nextStage:      null },
+          { label:          'Bag a chip sample and climb out',
+            returnSolDelta: -1,
+            outcome:        { sciencePoints: 35 },
+            nextStage:      null }
+        ]
+      }
+    }
+  },` },
+            ],
+          },
+        ],
+      },
+      {
+        id: 'smallsys',
+        label: 'crew / corpse / waypoints',
+        sub: [
+          {
+            id: 's1',
+            title: 'Small systems grouped',
+            body: `
+              <p>Three small modules that share state:</p>
+              <ul>
+                <li><code>crew.js</code> — damage, status, death bookkeeping (the biggest of the three; owns the medic-reduction rule and the death queue).</li>
+                <li><code>corpse.js</code> — dead-but-present crew; feeds extra weight into the cargo calc.</li>
+                <li><code>waypoints.js</code> — run-start roll of optional diverts along the route; acceptance hands off to <code>awayTeam.js</code>.</li>
+              </ul>
+              <p>Each is a coordinator between <code>state.js</code> and the higher-level systems. <code>corpse.js</code> is essentially a list and a sum; <code>waypoints.js</code> is a roll-and-decline pair.</p>
+            `,
+            snippets: [
+              { path: 'src/systems/crew.js',      lines: [22, 58], caption: 'crew.js — applyDamage with medic reduction',
+                code: `export function applyDamage(state, targetSpec, rawAmount, cause) {
+  const s = {
+    ...state,
+    crew: state.crew.map(c => ({ ...c })),
+    log: [...state.log]
+  };
+
+  const target = pickTarget(s.crew, targetSpec);
+  if (!target) return { state: s, target: null, died: false, dealt: 0 };
+
+  const medicAlive = s.crew.some(c => c.role === 'medic' && c.alive && c.id !== target.id);
+  // Medic doesn't reduce damage to themselves.
+  const reduction = medicAlive ? MEDIC_DAMAGE_REDUCTION : 0;
+  const dealt = Math.max(0, Math.round(rawAmount * (1 - reduction)));
+
+  const wasAlive = target.alive;
+  target.health = Math.max(0, target.health - dealt);
+  target.status = deriveStatus(target.health);
+  if (target.status === 'dead') target.alive = false;
+
+  const died = wasAlive && !target.alive;
+  if (died) {
+    s.log.push({
+      sol: s.sol,
+      text: \`\${target.name} (\${target.role.toUpperCase()}) succumbed to \${cause || 'injuries'}.\`
+    });
+    // Queue a death dialog for the UI dispatcher to surface (issue #33).
+    s.deathQueue = [...(s.deathQueue || []), {
+      crewId: target.id,
+      name:   target.name,
+      role:   target.role,
+      cause:  cause || 'injuries',
+      sol:    s.sol
+    }];
+  }
+  return { state: s, target, died, dealt };
+}` },
+              { path: 'src/systems/corpse.js',    lines: [5, 14], caption: 'corpse.js — the whole module',
+                code: `export const DEFAULT_CORPSE_LBS = 180;
+
+export function addCorpse(state, crewId, weightLbs = DEFAULT_CORPSE_LBS) {
+  if (state.corpses.some(c => c.crewId === crewId)) return state;
+  return { ...state, corpses: [...state.corpses, { crewId, weightLbs }] };
+}
+
+export function corpseWeight(state) {
+  return state.corpses.reduce((n, c) => n + c.weightLbs, 0);
+}` },
+              { path: 'src/systems/waypoints.js', lines: [23, 55], caption: 'waypoints.js — run-start two-pass roll',
+                code: `export function rollWaypoints(state) {
+  const usedIds = new Set();
+  const usedSegments = new Set();
+  const waypoints = [];
+
+  // Pass 1: probabilistic roll per eligible segment.
+  for (let segmentIdx = 1; segmentIdx < state.route.length - 1; segmentIdx++) {
+    if (Math.random() >= WAYPOINT_ROLL_PROB) continue;
+    const candidates = WAYPOINTS.filter(w => !usedIds.has(w.id));
+    if (candidates.length === 0) break;
+    const pick = candidates[Math.floor(Math.random() * candidates.length)];
+    usedIds.add(pick.id);
+    usedSegments.add(segmentIdx);
+    waypoints.push({ waypointId: pick.id, segmentIdx });
+  }
+
+  // Pass 2: top-up until we hit the per-run floor (or run out of room).
+  while (waypoints.length < MIN_WAYPOINTS_PER_RUN) {
+    const empty = [];
+    for (let segmentIdx = 1; segmentIdx < state.route.length - 1; segmentIdx++) {
+      if (!usedSegments.has(segmentIdx)) empty.push(segmentIdx);
+    }
+    const candidates = WAYPOINTS.filter(w => !usedIds.has(w.id));
+    if (empty.length === 0 || candidates.length === 0) break;
+    const segmentIdx = empty[Math.floor(Math.random() * empty.length)];
+    const pick = candidates[Math.floor(Math.random() * candidates.length)];
+    usedIds.add(pick.id);
+    usedSegments.add(segmentIdx);
+    waypoints.push({ waypointId: pick.id, segmentIdx });
+  }
+
+  return { ...state, waypoints };
+}` },
+            ],
+          },
+        ],
+      },
+      {
+        id: 'scoring',
+        label: 'career.js + scoring.js',
+        sub: [
+          {
+            id: 's1',
+            title: 'End-of-run scoring',
+            body: `
+              <p>When a run ends, <code>scoring.js</code> computes a point total and rank from science collected, sols taken, crew outcome, and resources remaining. Rank is gated by a checklist (issue #24): surviving is C, science + learning earn A, and only a full-crew-returned S-run earns the top mark.</p>
+              <p><code>career.js</code> persists science across runs for the long-term meta-progression — tiered bonuses like skill-check boosts and rover km/sol uplift. Both modules keep their compute functions pure; the only impure corners are the localStorage helpers at the bottom of each file.</p>
+            `,
+            snippets: [
+              { path: 'src/systems/scoring.js', lines: [96, 124], caption: 'scoring.js — computeScore breakdown',
+                code: `export function computeScore(state) {
+  const won = state.status === 'won';
+  const breakdown = [];
+
+  const outcomePts = won
+    ? 500
+    : state.totalKmTraveled >= 0.8 * totalRouteKm(state) ? 100 : 0;
+  breakdown.push({ label: 'Mission outcome', value: state.status, points: outcomePts });
+
+  const alive = aliveCrewCount(state);
+  breakdown.push({ label: 'Crew survived', value: \`\${alive}/\${state.crew.length}\`, points: alive * 100 });
+
+  const sciPts = Math.min(state.sciencePoints, 300);
+  breakdown.push({ label: 'Science points', value: state.sciencePoints, points: sciPts });
+
+  const r = state.resources;
+  const rawResPts = Math.round((r.oxygen + r.water + r.food + r.power) / 4);
+  const resPts = Math.min(rawResPts, 100);
+  breakdown.push({ label: 'Resources remaining', value: \`\${rawResPts}%\`, points: resPts });
+
+  const speedPts = won ? Math.max(0, 300 - state.sol * 10) : 0;
+  breakdown.push({ label: 'Speed bonus', value: \`sol \${state.sol}\`, points: speedPts });
+
+  const stops = Math.max(0, state.currentLandmarkIndex);
+  breakdown.push({ label: 'Landmark stops', value: stops, points: stops * 20 });
+
+  const points = breakdown.reduce((sum, b) => sum + b.points, 0);
+  return { points, breakdown, rank: rankFor(state) };
+}` },
+              { path: 'src/systems/career.js',  lines: [7, 26], caption: 'career.js — six persistent meta-tiers',
+                code: `export const CAREER_TIERS = [
+  { minSci:   0, id: 'rookie',          name: 'Rookie',
+    description: 'No bonuses yet.',
+    effect: {} },
+  { minSci:  30, id: 'calibration',     name: 'Calibration Data Analysis',
+    description: 'Waypoint offers show exact reward estimates.',
+    effect: { exactWaypointReward: true } },
+  { minSci: 100, id: 'navigation',      name: 'Navigation Pattern Analysis',
+    description: 'Rover base km/sol +5% at every pace.',
+    effect: { kmMult: 1.05 } },
+  { minSci: 225, id: 'methodology',     name: 'Field Methodology Training',
+    description: 'Skill-check success +10 percentage points across all events.',
+    effect: { skillBonus: 0.10 } },
+  { minSci: 400, id: 'life_support',    name: 'Life-Support Optimization',
+    description: 'O₂ and H₂O consumption −10% at every pace.',
+    effect: { lifeSupportMult: 0.90 } },
+  { minSci: 700, id: 'intel_synthesis', name: 'Mission Intel Synthesis',
+    description: 'One upcoming event previewed on the briefing screen each run.',
+    effect: { eventPreview: true } }
+];` },
+            ],
+          },
+        ],
+      },
     ],
   },
   // Slide 9 (hub) in Task 9, 10–16 in Task 13.
