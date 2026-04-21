@@ -108,7 +108,7 @@ import { GAMEPLAY_TRACKS, getSelectedTrackId, isMuted, playTitle, playGameplay, 
     id: 'state',
     title: 'State',
     body: `
-      <p><code>src/state.js</code> exports a single function, <code>createInitialState()</code>, that returns a plain JS object. That object <em>is</em> the game. Everything else reads it; systems mutate it; <code>render()</code> projects it to DOM.</p>
+      <p><code>src/state.js</code>'s central export is a factory, <code>createInitialState()</code>, that returns a plain JS object. That object <em>is</em> the game. Everything else reads it; systems mutate it; <code>render()</code> projects it to DOM. (The module also exports a few shared constants and lookup tables — see the file itself.)</p>
       <p>Keeping state in one place is what makes tests easy to write: seed a state, call a system, assert on the resulting state.</p>
     `,
     snippets: [
