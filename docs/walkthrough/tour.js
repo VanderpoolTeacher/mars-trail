@@ -3,6 +3,32 @@ import { parseHash, hashFor, routeForward, routeBack, routeToSlide } from './rou
 import { THEMES, resolveTheme } from '../../src/theme.js';
 import { githubUrl } from './repo.js';
 
+const demoLoaders = {
+  loop:          () => import('./demos/loop.js'),
+  eventPreview:  () => import('./demos/eventPreview.js'),     // wired in Task 11
+  mashEmergency: () => import('./demos/mashEmergency.js'),    // wired in Task 12
+};
+
+let currentDemoCleanup = null;
+
+async function mountDemo(slide) {
+  if (currentDemoCleanup) { currentDemoCleanup(); currentDemoCleanup = null; }
+  if (!slide.demo) return;
+  const loader = demoLoaders[slide.demo];
+  if (!loader) return;
+  let mod;
+  try {
+    mod = await loader();
+  } catch (err) {
+    console.warn(`Demo "${slide.demo}" failed to load:`, err);
+    return;
+  }
+  const mount = document.getElementById(`demo-${slide.demo}-mount`);
+  if (!mount || typeof mod.init !== 'function') return;
+  const cleanup = mod.init(mount);
+  if (typeof cleanup === 'function') currentDemoCleanup = cleanup;
+}
+
 const slides = { spine };
 let current = routeToSlide(parseHash(window.location.hash), slides);
 
@@ -75,6 +101,7 @@ function render(location) {
     header.addEventListener('click', () => header.parentElement.classList.toggle('is-open'));
   }
   renderProgress(location);
+  mountDemo(slide);
 }
 
 function go(nextLocation) {
