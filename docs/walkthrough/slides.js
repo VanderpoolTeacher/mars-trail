@@ -182,9 +182,218 @@ export function render(state) {
       <p>The game logic lives under <code>src/systems/</code>. Click any tile below to take a short tour of that module and return here. Press <strong>Esc</strong> to come back. Digit keys <strong>1–8</strong> jump to a tile.</p>
     `,
     branches: [
-      { id: 'travel',      label: 'travel.js',                         sub: [{ id: 's1', title: 'travel.js — placeholder', body: '<p>Branch content arrives in Task 10.</p>' }] },
-      { id: 'events',      label: 'events.js + content/events.js',     sub: [{ id: 's1', title: 'events.js — placeholder', body: '<p>Branch content arrives in Task 10.</p>' }] },
-      { id: 'multistage',  label: 'multiStage.js + multi-stage events', sub: [{ id: 's1', title: 'multiStage.js — placeholder', body: '<p>Branch content arrives in Task 10.</p>' }] },
+      {
+        id: 'travel',
+        label: 'travel.js',
+        sub: [
+          {
+            id: 's1',
+            title: 'travel.js — pace, tick, arrival',
+            body: `
+              <p><code>src/systems/travel.js</code> owns the per-sol resource tick. It advances the rover by pace-dependent km, consumes power, rations, EVA charges, and decides when the rover arrives at the next landmark.</p>
+              <p>The module is (mostly) pure: given a state and a pace, it returns a new state. That purity is what lets <code>sim/playtest1000.mjs</code> run thousands of simulated runs in ~10 seconds.</p>
+            `,
+            snippets: [
+              {
+                path: 'src/systems/travel.js',
+                lines: [26, 54],
+                caption: 'Pace-driven tunables',
+                code: `// Tunable per-sol values. Balanced for a ~17-sol clean trek at steady pace.
+
+const KM_PER_SOL = {
+  cautious: 70,
+  steady:   100,
+  push:     150
+};
+
+// ± variance per sol. Cautious is predictable; push swings wide.
+const KM_VARIANCE = {
+  cautious: 0.10,   // ±10%
+  steady:   0.18,   // ±18%
+  push:     0.30    // ±30% — sometimes great, sometimes you hit a rut
+};
+
+const POWER_PER_SOL = {
+  cautious: 2.5,
+  steady:   4.2,
+  push:     5.8
+};
+
+const FOOD_PER_SOL = {
+  meager:   1.0,
+  standard: 2.2,
+  full:     3.2
+};
+
+const O2_PER_SOL  = 2.2;
+const H2O_PER_SOL = 2.2;`,
+              },
+            ],
+          },
+          {
+            id: 's2',
+            title: 'travel.js — the sol tick',
+            body: `
+              <p>The heart of travel is <code>advanceSol()</code>: one function that runs once per "NEXT SOL" button press. It consumes resources, maybe rolls an event, maybe arrives at a landmark, and writes log lines.</p>
+              <p>This excerpt covers the opening: clone-on-write, camp-mode guard, and the km math for a travel sol. Resource drain, arrival handling, and event rolls live further down in the same function.</p>
+            `,
+            snippets: [
+              {
+                path: 'src/systems/travel.js',
+                lines: [96, 132],
+                caption: 'advanceSol — setup and km math',
+                code: `export function advanceSol(state, mode = 'travel') {
+  if (state.status !== 'active') return state;
+
+  // Camp mode: if an away team is out, the rover stays parked at the
+  // detour turn-off. Resources drain and crew damage accrue as usual,
+  // but km/travel/event-rolling are suppressed — the stage modal IS
+  // the event for that sol.
+  if (state.awayTeam && mode === 'travel') mode = 'camp';
+
+  // Shallow clone the branches we'll mutate.
+  let s = { ...state,
+    resources: { ...state.resources },
+    crew: state.crew.map(c => ({ ...c })),
+    log: [...state.log],
+    crewDialogue: null   // clear yesterday's speech bubble
+  };
+
+  s.sol = state.sol + 1;
+  const powerDead = s.resources.power === 0;
+
+  // ---- Travel (skipped on repair/clean/camp sols and when batteries are dead) ----
+  let usableKm = 0;
+  if (mode === 'travel' && !powerDead) {
+    const pilotAlive = s.crew.some(c => c.role === 'pilot' && c.alive);
+    const baseKm     = KM_PER_SOL[s.pace];
+    const variance   = KM_VARIANCE[s.pace] * (pilotAlive ? 1 : NO_PILOT_VARIANCE_MULT);
+    const jitter     = (Math.random() * 2 - 1) * variance;
+    const pilotMult  = pilotAlive ? 1 + PILOT_KM_BONUS : 1;
+    const lbs        = cargoPounds(s);
+    const weightMult = Math.max(0.5, 1 - lbs * CARGO_WEIGHT_SPEED);
+    const kmMult     = state.careerBonuses?.kmMult || 1;
+    const km         = Math.max(0, baseKm * pilotMult * weightMult * kmMult * (1 + jitter));
+    usableKm         = Math.min(km, s.kmToNextLandmark);
+
+    s.totalKmTraveled += usableKm;
+    s.kmToNextLandmark -= usableKm;
+  }`,
+              },
+            ],
+          },
+        ],
+      },
+      {
+        id: 'events',
+        label: 'events.js + content/events.js',
+        sub: [
+          {
+            id: 's1',
+            title: 'events.js — rolling an event',
+            body: `
+              <p><code>src/systems/events.js</code> picks which event fires on a given sol, based on pace and per-event weighting. Event <em>data</em> lives separately in <code>src/content/events.js</code>: each entry has a title, body, and a set of choices with effects.</p>
+              <p>This split (system vs. content) is the dominant pattern in the codebase: logic in <code>src/systems/</code>, data in <code>src/content/</code>. Content can grow without touching logic.</p>
+            `,
+            snippets: [
+              {
+                path: 'src/systems/events.js',
+                lines: [23, 45],
+                caption: 'Event selection',
+                code: `// P(event per sol) by pace. Careful driving = fewer incidents.
+const EVENT_BASE_RATE_BY_PACE = {
+  cautious: 0.20,
+  steady:   0.25,
+  push:     0.78
+};
+
+// Pick a random event using weighted selection. One-shot events that have
+// already fired this run are filtered out. Returns an event object or null.
+export function rollEvent(state) {
+  const rate = EVENT_BASE_RATE_BY_PACE[state.pace];
+  if (Math.random() > rate) return null;
+  const fired = state.firedEvents || [];
+  const eligible = EVENTS.filter(e => !(e.oneShot && fired.includes(e.id)));
+  if (eligible.length === 0) return null;
+  const totalWeight = eligible.reduce((sum, e) => sum + e.weight, 0);
+  let r = Math.random() * totalWeight;
+  for (const e of eligible) {
+    r -= e.weight;
+    if (r <= 0) return e;
+  }
+  return eligible[eligible.length - 1];
+}`,
+              },
+            ],
+          },
+          {
+            id: 's2',
+            title: 'Live: a random event card',
+            body: `
+              <p>Here is an event card, rendered by the <em>real</em> modal renderer against data from <code>src/content/events.js</code>. Click "Roll another" to re-roll. Choice buttons are real but don't apply effects — this preview is read-only.</p>
+              <div id="demo-eventPreview-mount"></div>
+            `,
+            demo: 'eventPreview',
+          },
+        ],
+      },
+      {
+        id: 'multistage',
+        label: 'multiStage.js + multi-stage events',
+        sub: [
+          {
+            id: 's1',
+            title: 'multiStage.js — authored chains',
+            body: `
+              <p>A multi-stage event is an authored chain: each choice points to the next stage, or to an outcome. <code>src/systems/multiStage.js</code> is a tiny engine that walks that graph. <code>src/content/multiStageEvents.js</code> (and <code>emergencies.js</code>) are the authored data.</p>
+              <p>The medical emergency (hub branch <strong>4</strong>) is the flagship example — a three-stage diagnosis-treatment-disposal chain.</p>
+            `,
+            snippets: [
+              {
+                path: 'src/systems/multiStage.js',
+                lines: [10, 45],
+                caption: 'Engine shape — resolving a stage choice',
+                code: `// ---- Resolve a chosen option on a given stage ----
+//
+// Returns { state, nextStage, skillResult, damageTarget, applied, returnSolDelta }.
+// state:          new state after outcome application.
+// nextStage:      key of the next stage, or null to end the chain.
+// skillResult:    present when the choice had a skillCheck.
+// returnSolDelta: number to shift an away-team return sol by; 0 for non-away contexts.
+export function applyStageChoice(state, event, stageId, choiceIdx) {
+  const stage  = event.stages[stageId];
+  const choice = stage?.choices[choiceIdx];
+  if (!choice) return { state, nextStage: null, skillResult: null, damageTarget: null, applied: {}, returnSolDelta: 0 };
+
+  let outcome = choice.outcome;
+  let skillResult = null;
+
+  if (choice.skillCheck) {
+    const { role, successP } = choice.skillCheck;
+    const specialistAlive = state.crew.some(c => c.role === role && c.alive);
+    const baseP = specialistAlive ? successP : Math.max(0.2, successP - 0.4);
+    const bonus = state.careerBonuses?.skillBonus || 0;
+    const effectiveP = Math.min(0.95, baseP + bonus);
+    const success = Math.random() < effectiveP;
+    outcome = success ? choice.successOutcome : choice.failOutcome;
+    skillResult = { role, success, specialistAlive };
+  }
+
+  const { state: s, damageTarget, applied } = applyOutcome(state, outcome);
+  return {
+    state: s,
+    nextStage: choice.nextStage ?? null,
+    skillResult,
+    damageTarget,
+    applied,
+    returnSolDelta: choice.returnSolDelta ?? 0
+  };
+}`,
+              },
+            ],
+          },
+        ],
+      },
       { id: 'medical',     label: 'medicalEmergency.js',               sub: [{ id: 's1', title: 'medicalEmergency.js — placeholder', body: '<p>Branch content arrives in Task 12.</p>' }] },
       { id: 'clickmetrics',label: 'clickMetrics.js',                   sub: [{ id: 's1', title: 'clickMetrics.js — placeholder', body: '<p>Branch content arrives in Task 13.</p>' }] },
       { id: 'awayteam',    label: 'awayTeam.js',                       sub: [{ id: 's1', title: 'awayTeam.js — placeholder', body: '<p>Branch content arrives in Task 13.</p>' }] },
