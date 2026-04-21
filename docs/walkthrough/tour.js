@@ -1,5 +1,6 @@
 import { spine } from './slides.js';
 import { parseHash, hashFor, routeForward, routeBack, routeToSlide } from './router.js';
+import { THEMES, resolveTheme } from '../../src/theme.js';
 
 const slides = { spine };
 let current = routeToSlide(parseHash(window.location.hash), slides);
@@ -55,5 +56,27 @@ window.addEventListener('hashchange', () => {
   current = routeToSlide(parseHash(window.location.hash), slides);
   render(current);
 });
+
+function initTourTheme() {
+  const select = document.getElementById('theme-select');
+  if (!select) return;
+  select.innerHTML = '';
+  for (const t of THEMES) {
+    const opt = document.createElement('option');
+    opt.value = t.id;
+    opt.textContent = t.label;
+    select.appendChild(opt);
+  }
+  const applyTheme = (raw) => {
+    const theme = resolveTheme(raw);
+    if (theme === 'mc') document.body.removeAttribute('data-theme');
+    else document.body.setAttribute('data-theme', theme);
+    select.value = theme;
+  };
+  applyTheme('mc'); // slideshow always starts in mc; tour does NOT read localStorage
+  select.addEventListener('change', (e) => applyTheme(e.target.value));
+}
+
+initTourTheme();
 
 render(current);
