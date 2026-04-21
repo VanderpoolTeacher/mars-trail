@@ -191,7 +191,7 @@ export function render(state) {
             title: 'travel.js — pace, tick, arrival',
             body: `
               <p><code>src/systems/travel.js</code> owns the per-sol resource tick. It advances the rover by pace-dependent km, consumes power, rations, EVA charges, and decides when the rover arrives at the next landmark.</p>
-              <p>The module is (mostly) pure: given a state and a pace, it returns a new state. That purity is what lets <code>sim/playtest1000.mjs</code> run thousands of simulated runs in ~10 seconds.</p>
+              <p>The module is (mostly) pure: given a state and a pace, it returns a new state. That purity is what lets <code>sim/playtest1000.mjs</code> run thousands of simulated runs in a couple of seconds.</p>
             `,
             snippets: [
               {
