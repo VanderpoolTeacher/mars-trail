@@ -10,12 +10,14 @@ const demoLoaders = {
 };
 
 let currentDemoCleanup = null;
+let demoMountEpoch = 0;
 
 async function mountDemo(slide) {
   if (currentDemoCleanup) { currentDemoCleanup(); currentDemoCleanup = null; }
   if (!slide.demo) return;
   const loader = demoLoaders[slide.demo];
   if (!loader) return;
+  const myEpoch = ++demoMountEpoch;
   let mod;
   try {
     mod = await loader();
@@ -23,9 +25,16 @@ async function mountDemo(slide) {
     console.warn(`Demo "${slide.demo}" failed to load:`, err);
     return;
   }
+  if (myEpoch !== demoMountEpoch) return;
   const mount = document.getElementById(`demo-${slide.demo}-mount`);
   if (!mount || typeof mod.init !== 'function') return;
-  const cleanup = mod.init(mount);
+  let cleanup;
+  try {
+    cleanup = mod.init(mount);
+  } catch (err) {
+    console.warn(`Demo "${slide.demo}" init failed:`, err);
+    return;
+  }
   if (typeof cleanup === 'function') currentDemoCleanup = cleanup;
 }
 
