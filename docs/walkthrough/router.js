@@ -7,17 +7,12 @@
 const SLIDE_HASH = /^#slide-(\d+)$/;
 const BRANCH_HASH = /^#branch-([a-zA-Z0-9_-]+)-(\d+)$/;
 
-// Sanity cap for parseHash: any spine index at or above this is treated as
-// invalid and clamped to 0 (protects against garbage / stale deep links like
-// `#slide-999`). The real manifest length is enforced later by routeToSlide.
-const MAX_SPINE_INDEX = 100;
-
 export function parseHash(hash) {
   if (!hash || hash === '#') return { kind: 'spine', index: 0 };
   const m1 = SLIDE_HASH.exec(hash);
   if (m1) {
     const idx = Number(m1[1]);
-    if (idx < 0 || !Number.isFinite(idx) || idx >= MAX_SPINE_INDEX) {
+    if (idx < 0 || !Number.isFinite(idx)) {
       return { kind: 'spine', index: 0 };
     }
     return { kind: 'spine', index: idx };

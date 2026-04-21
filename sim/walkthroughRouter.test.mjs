@@ -6,6 +6,7 @@ import {
   hashFor,
   routeForward,
   routeBack,
+  routeToSlide,
 } from '../docs/walkthrough/router.js';
 
 // Minimal slide set used by all tests.
@@ -37,8 +38,32 @@ test('parseHash returns branch location for branch hash', () => {
 
 test('parseHash clamps invalid input to spine index 0', () => {
   assert.deepEqual(parseHash('#gibberish'),  { kind: 'spine', index: 0 });
-  assert.deepEqual(parseHash('#slide-999'),  { kind: 'spine', index: 0 });
   assert.deepEqual(parseHash('#slide--1'),   { kind: 'spine', index: 0 });
+});
+
+test('routeToSlide clamps out-of-range spine index to 0', () => {
+  assert.deepEqual(
+    routeToSlide({ kind: 'spine', index: 999 }, slides),
+    { kind: 'spine', index: 0 }
+  );
+  assert.deepEqual(
+    routeToSlide({ kind: 'spine', index: -1 }, slides),
+    { kind: 'spine', index: 0 }
+  );
+});
+
+test('routeToSlide falls back to spine 0 when branchId is unknown', () => {
+  assert.deepEqual(
+    routeToSlide({ kind: 'branch', branchId: 'missing', subIndex: 0 }, slides),
+    { kind: 'spine', index: 0 }
+  );
+});
+
+test('routeToSlide clamps out-of-range subIndex to 0 inside its branch', () => {
+  assert.deepEqual(
+    routeToSlide({ kind: 'branch', branchId: 'travel', subIndex: 99 }, slides),
+    { kind: 'branch', branchId: 'travel', subIndex: 0 }
+  );
 });
 
 test('hashFor round-trips a spine location', () => {
