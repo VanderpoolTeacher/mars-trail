@@ -115,3 +115,17 @@
   margin-bottom: 12px;
   font-family: ui-monospace, monospace;
 }
+
+/* Links inherit the surrounding themed text color instead of browser blue. */
+.tour-stage a,
+.tour-stage a:visited {
+  color: currentColor;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.tour-stage a:hover,
+.tour-stage a:focus {
+  opacity: 0.75;
+  outline: none;
+}
