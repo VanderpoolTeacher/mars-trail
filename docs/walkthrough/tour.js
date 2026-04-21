@@ -144,6 +144,12 @@ function wireHubTiles(stage) {
   }
 }
 
+function wireCtas(stage) {
+  for (const btn of stage.querySelectorAll('[data-action="restart"]')) {
+    btn.addEventListener('click', () => go({ kind: 'spine', index: 0 }));
+  }
+}
+
 // Renders a slide into #tour-stage.
 // TRUST BOUNDARY: slide.title, slide.body, slide.snippets[i].path, and
 // slide.snippets[i].caption are interpolated as HTML. The slide manifest
@@ -156,6 +162,7 @@ function render(location) {
   stage.innerHTML = renderSlideHtml(slide, location);
   wireSnippetToggles(stage);
   wireHubTiles(stage);
+  wireCtas(stage);
   renderProgress(location);
   mountDemo(slide);
 }
@@ -191,6 +198,7 @@ function onKey(e) {
 document.addEventListener('keydown', onKey);
 document.getElementById('tour-next').addEventListener('click', () => go(routeForward(current, slides)));
 document.getElementById('tour-prev').addEventListener('click', () => go(routeBack(current, slides)));
+document.getElementById('tour-home')?.addEventListener('click', () => go({ kind: 'spine', index: 0 }));
 window.addEventListener('hashchange', () => {
   current = routeToSlide(parseHash(window.location.hash), slides);
   render(current);

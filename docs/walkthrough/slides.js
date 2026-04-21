@@ -870,11 +870,13 @@ export function resolveTheme(raw) {
     body: `
       <p>Thanks for walking through. Suggested next steps:</p>
       <ul>
-        <li>Play a run — <code>index.html</code> in the repo root.</li>
         <li>Skim the most recent spec in <code>docs/superpowers/specs/</code> to see the current frontier.</li>
         <li>Pick any system that caught your eye and read its test file under <code>sim/</code>.</li>
       </ul>
-      <p>Press <strong>Home</strong> to return to the start of the tour, or close the tab.</p>
+      <div class="tour-cta-row">
+        <a class="tour-cta" href="../../index.html">Start Game</a>
+        <button class="tour-cta" type="button" data-action="restart">Restart Mission</button>
+      </div>
     `,
   },
 ];
