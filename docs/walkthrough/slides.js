@@ -56,5 +56,124 @@ export const spine = [
       <p>The rest of the tour follows the data flow: entry point → state → render → systems (via a hub) → content → UI → themes → audio → tests → workflow.</p>
     `,
   },
-  // Slides 5–8 added in Task 7, slide 9 (hub) in Task 9, 10–16 in Task 13.
+  {
+    id: 'loop',
+    title: 'The game loop',
+    body: `
+      <p>Every turn (a "sol") follows the same four-phase rhythm:</p>
+      <ol>
+        <li><strong>Input</strong> — player picks pace / rations / actions.</li>
+        <li><strong>Systems</strong> — <code>travel.js</code>, <code>events.js</code>, and friends mutate state.</li>
+        <li><strong>Render</strong> — <code>render.js</code> rebuilds the DOM from state.</li>
+        <li><strong>Log</strong> — mission log entries appear for what just happened.</li>
+      </ol>
+      <p>There is <em>no</em> observer pattern, <em>no</em> virtual DOM, <em>no</em> reactive framework. On every change, <code>render()</code> rebuilds the parts of the DOM it owns from scratch.</p>
+      <div id="demo-loop-mount"></div>
+    `,
+    demo: 'loop',
+  },
+  {
+    id: 'entry',
+    title: 'Entry point',
+    body: `
+      <p><code>index.html</code> loads stylesheets and calls into <code>src/main.js</code>, which boots the game: builds initial state, wires event listeners, paints the first frame.</p>
+      <p>Follow the imports at the top of <code>main.js</code> and you get a one-page map of the whole app.</p>
+    `,
+    snippets: [
+      {
+        path: 'src/main.js',
+        lines: [1, 17],
+        caption: 'Boot imports',
+        code: `// Mars Trail — entry point
+// Builds initial state, runs first render, wires UI events.
+
+import { createInitialState, CARGO_BUDGET, PART_TYPES } from './state.js';
+import { render } from './render.js';
+import { advanceSol, setPace, setRations, repairBattery, cleanPanels } from './systems/travel.js';
+import { applyEventChoice } from './systems/events.js';
+import { recordDecision } from './systems/clickMetrics.js';
+import { showEventModal, showOutcomeModal, showBriefingModal, showLoadoutModal, showTitleLayer, dimTitleStart, hideTitleLayer, showEndOfRunModal, closeModal, showWaypointOfferModal, showMultiStageModal, showAwayTeamPickerModal, showAwayTeamReunionModal, showDeathDialog } from './ui/modals.js';
+import { declineWaypoint } from './systems/waypoints.js';
+import { applyStageChoice } from './systems/multiStage.js';
+import { acceptAwayTeam, resolveAwayTeamStage, finalizeReunion } from './systems/awayTeam.js';
+import { resolveMedicalStage, getMedicalStageView } from './systems/medicalEmergency.js';
+import { WAYPOINTS } from './content/waypoints.js';
+import { makeLandmarkEncounter } from './content/landmarks.js';
+import './ui/codex.js';   // registers global click handler for codex terms
+import { GAMEPLAY_TRACKS, getSelectedTrackId, isMuted, playTitle, playGameplay, selectTrack, toggleMute, fadeOut, fadeInGameplay, cycleTrack, onTrackChange } from './audio.js';`,
+      },
+    ],
+  },
+  {
+    id: 'state',
+    title: 'State',
+    body: `
+      <p><code>src/state.js</code> exports a single function, <code>createInitialState()</code>, that returns a plain JS object. That object <em>is</em> the game. Everything else reads it; systems mutate it; <code>render()</code> projects it to DOM.</p>
+      <p>Keeping state in one place is what makes tests easy to write: seed a state, call a system, assert on the resulting state.</p>
+    `,
+    snippets: [
+      {
+        path: 'src/state.js',
+        lines: [43, 70],
+        caption: 'State shape (excerpt)',
+        code: `  const baseState = {
+    schemaVersion: 1,
+    runId: uuid(),
+    scenario: 'trek',
+    startedAt: Date.now(),
+    sol: 1,
+    status: 'active',          // 'active' | 'won' | 'lost'
+    lossReason: null,
+
+    // Geography
+    route: TREK_ROUTE.ids,
+    routeKm: TREK_ROUTE.kms,
+    currentLandmarkIndex: 0,
+    kmToNextLandmark: TREK_ROUTE.kms[0],
+    totalKmTraveled: 0,
+
+    // Resources. % values (except panels which is efficiency, and parts which
+    // are discrete). Base levels are lower — supply loadout items bring them up.
+    resources: {
+      oxygen: 76,     // base; +8% per O₂ canister (default 3 = 100%)
+      water:  76,     // base; +8% per H₂O tank (default 3 = 100%)
+      power:  100,
+      food:   76,     // base; +8% per ration pack (default 3 = 100%)
+      panels: 100,
+      mech: 4,
+      eva:  4,
+      cell: 3
+    },`,
+      },
+    ],
+  },
+  {
+    id: 'render',
+    title: 'Render',
+    body: `
+      <p><code>src/render.js</code> is a pure <code>state → DOM</code> projection. It exports one function — <code>render(state)</code> — that is called after every state change. No partial updates, no diffing; just rebuild the panels it owns.</p>
+      <p>This stays cheap because the DOM is small: a few panels, a crew list, a log. The simplicity is the feature.</p>
+    `,
+    snippets: [
+      {
+        path: 'src/render.js',
+        lines: [345, 357],
+        caption: 'Render entry',
+        code: `// ---------- Top-level render ----------
+
+let bound = false;
+export function render(state) {
+  if (!bound) { bindDom(); bound = true; }
+  renderTopbar(state);
+  renderRoute(state);
+  renderTelemetry(state);
+  renderCrew(state);
+  renderControls(state);
+  renderLog(state);
+  renderActionBar(state);
+}`,
+      },
+    ],
+  },
+  // Slide 9 (hub) in Task 9, 10–16 in Task 13.
 ];
