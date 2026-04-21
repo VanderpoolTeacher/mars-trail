@@ -1,6 +1,7 @@
 import { spine } from './slides.js';
 import { parseHash, hashFor, routeForward, routeBack, routeToSlide } from './router.js';
 import { THEMES, resolveTheme } from '../../src/theme.js';
+import { githubUrl } from './repo.js';
 
 const slides = { spine };
 let current = routeToSlide(parseHash(window.location.hash), slides);
@@ -22,14 +23,57 @@ function renderProgress(location) {
   }
 }
 
+function escapeHtml(s) {
+  return String(s)
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#39;');
+}
+
+function renderSnippet(snippet) {
+  const [a, b] = snippet.lines || [];
+  const label = `${snippet.path}${a ? ` : ${a}${b && b !== a ? `–${b}` : ''}` : ''}`;
+  const url = githubUrl(snippet.path, a, b);
+  return `
+    <div class="tour-snippet" data-snippet>
+      <div class="tour-snippet-header" data-snippet-toggle>
+        <span class="tour-snippet-label">${escapeHtml(label)}${snippet.caption ? ` — ${escapeHtml(snippet.caption)}` : ''}</span>
+        <span class="tour-snippet-links">
+          <a href="${url}" target="_blank" rel="noopener">View on GitHub ↗</a>
+          <span class="tour-snippet-chevron">▾</span>
+        </span>
+      </div>
+      <div class="tour-snippet-body">
+        <pre><code>${escapeHtml(snippet.code)}</code></pre>
+      </div>
+    </div>
+  `;
+}
+
+// Renders a slide into #tour-stage.
+// TRUST BOUNDARY: slide.title, slide.body, slide.snippets[i].path, and
+// slide.snippets[i].caption are interpolated as HTML. The slide manifest
+// (slides.js, authored in-repo) is trusted. Snippet code is escaped via
+// escapeHtml because it contains literal source with '<', '&', etc.
+// Do not route any user-supplied content through this function.
 function render(location) {
   const slide = slideAt(location);
+  const snippetsHtml = slide.snippets?.length
+    ? `<div class="tour-snippets">${slide.snippets.map(renderSnippet).join('')}</div>`
+    : '';
   document.getElementById('tour-stage').innerHTML = `
     <section class="tour-slide">
       <h1>${slide.title}</h1>
       ${slide.body}
+      ${snippetsHtml}
     </section>
   `;
+  // Wire expand/collapse.
+  for (const header of document.querySelectorAll('[data-snippet-toggle]')) {
+    header.addEventListener('click', () => header.parentElement.classList.toggle('is-open'));
+  }
   renderProgress(location);
 }
 

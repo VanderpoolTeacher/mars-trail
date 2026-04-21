@@ -34,3 +34,46 @@
 
 .tour-slide h1 { margin-top: 0; }
 .tour-slide p { line-height: 1.5; max-width: 70ch; }
+
+.tour-snippets { margin-top: 16px; }
+
+.tour-snippet {
+  border: 1px solid var(--panel-border, #0a8);
+  border-radius: 4px;
+  margin-bottom: 10px;
+  overflow: hidden;
+}
+
+.tour-snippet-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 10px;
+  background: var(--panel-header-bg, rgba(0, 170, 136, 0.1));
+  cursor: pointer;
+  user-select: none;
+  font-size: 0.85em;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+.tour-snippet-header .tour-snippet-label { font-weight: 600; }
+.tour-snippet-header .tour-snippet-links { display: flex; gap: 10px; font-size: 0.9em; }
+
+.tour-snippet-body {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.2s ease;
+}
+
+.tour-snippet.is-open .tour-snippet-body { max-height: 800px; overflow: auto; }
+
+.tour-snippet pre {
+  margin: 0;
+  padding: 10px 12px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.85em;
+  line-height: 1.45;
+  white-space: pre;
+  background: var(--code-bg, #000);
+  color: var(--code-fg, inherit);
+}
