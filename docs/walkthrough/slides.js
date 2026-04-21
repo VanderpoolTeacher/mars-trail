@@ -394,7 +394,65 @@ export function applyStageChoice(state, event, stageId, choiceIdx) {
           },
         ],
       },
-      { id: 'medical',     label: 'medicalEmergency.js',               sub: [{ id: 's1', title: 'medicalEmergency.js — placeholder', body: '<p>Branch content arrives in Task 12.</p>' }] },
+      {
+        id: 'medical',
+        label: 'medicalEmergency.js',
+        sub: [
+          {
+            id: 's1',
+            title: 'medicalEmergency.js — the three-act chain',
+            body: `
+              <p>The medical emergency is the project's flagship multi-stage event: <strong>Diagnosis → Treatment → Disposal</strong>. Each stage branches on the player's choice and on crew damage. It's the first real stress-test of the <code>multiStage.js</code> engine.</p>
+              <p>Authored data lives in <code>src/content/medicalEmergency.js</code>. The system module wires stage transitions and computes outcomes (including the "leave the body or haul it" disposal beat). Stage <em>views</em> are built per-run by <code>getMedicalStageView</code> so the diagnose text can weave in the specific patient, the rolled ailment, and whether the medic is themselves the patient.</p>
+            `,
+            snippets: [
+              {
+                path: 'src/systems/medicalEmergency.js',
+                lines: [56, 83],
+                caption: 'getMedicalStageView — Act 1 (diagnose)',
+                code: `// ---- Stage view (title/description/choices, built per-run) ----
+// Returns { title, description, choices } where each choice has
+// { label, key }. The resolver dispatches on key.
+export function getMedicalStageView(state, stageId, context) {
+  const patient = state.crew.find(c => c.id === context.patientId);
+  const ailment = AILMENTS.find(a => a.id === context.ailmentId) || AILMENTS[0];
+  if (!patient) return null;
+
+  const roleCode = (patient.role || '').toUpperCase();
+  const patientTag = \`\${patient.name} (\${roleCode})\`;
+
+  if (stageId === 'diagnose') {
+    const intro = context.selfTreat
+      ? \`\${patientTag} — your medic — is in trouble. \${ailment.symptom} The crew is on their own.\`
+      : \`\${patientTag} is in trouble. \${ailment.symptom} You have to act.\`;
+    const choices = context.selfTreat
+      ? [
+          { label: 'Self-triage (medic impaired)',        key: 'self_triage' },
+          { label: 'Query Earth (comms delay)',           key: 'earth' },
+          { label: 'Dose from med kit and hope',          key: 'hope' }
+        ]
+      : [
+          { label: 'Consult the medic',                    key: 'medic' },
+          { label: 'Query Earth (comms delay)',            key: 'earth' },
+          { label: 'Dose from med kit and hope',           key: 'hope' }
+        ];
+    return { title: \`Medical Emergency — \${ailment.label}\`, description: intro, choices };
+  }`,
+              },
+            ],
+          },
+          {
+            id: 's2',
+            title: 'Live: the mash-rescue UI',
+            body: `
+              <p>Click <strong>Start emergency</strong> below to run a seeded medical chain against the real modal renderer. Every click is timed by <code>clickMetrics.recordDecision</code> — the same anti-mashing heuristic the game uses in a live run. Mash the buttons fast and <code>mashScore</code> climbs past the threshold; read carefully and it stays at 0.</p>
+              <p>This demo imports <code>src/systems/medicalEmergency.js</code>, <code>src/ui/modals.js</code>, and <code>src/systems/clickMetrics.js</code> directly; no mock reimplementation. State is seeded locally and thrown away — nothing leaks into the rest of the tour.</p>
+              <div id="demo-mashEmergency-mount"></div>
+            `,
+            demo: 'mashEmergency',
+          },
+        ],
+      },
       { id: 'clickmetrics',label: 'clickMetrics.js',                   sub: [{ id: 's1', title: 'clickMetrics.js — placeholder', body: '<p>Branch content arrives in Task 13.</p>' }] },
       { id: 'awayteam',    label: 'awayTeam.js',                       sub: [{ id: 's1', title: 'awayTeam.js — placeholder', body: '<p>Branch content arrives in Task 13.</p>' }] },
       { id: 'smallsys',    label: 'crew / corpse / waypoints',         sub: [{ id: 's1', title: 'Small systems — placeholder', body: '<p>Branch content arrives in Task 13.</p>' }] },
