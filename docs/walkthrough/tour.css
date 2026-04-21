@@ -77,3 +77,41 @@
   background: var(--code-bg, #000);
   color: var(--code-fg, inherit);
 }
+
+.hub-tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.hub-tile {
+  padding: 14px;
+  border: 1px solid var(--panel-border, #0a8);
+  border-radius: 4px;
+  cursor: pointer;
+  font-family: ui-monospace, monospace;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  transition: background 0.15s;
+}
+
+.hub-tile:hover, .hub-tile:focus {
+  background: var(--panel-header-bg, rgba(0, 170, 136, 0.15));
+  outline: none;
+}
+
+.hub-tile-key {
+  display: inline-block;
+  font-size: 0.75em;
+  opacity: 0.7;
+  margin-right: 8px;
+}
+
+.tour-breadcrumb {
+  font-size: 0.85em;
+  opacity: 0.75;
+  margin-bottom: 12px;
+  font-family: ui-monospace, monospace;
+}

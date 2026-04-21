@@ -87,14 +87,40 @@ function renderSnippet(snippet) {
   `;
 }
 
-function renderSlideHtml(slide) {
+function renderHubTiles(branches) {
+  return `
+    <div class="hub-tiles" role="navigation" aria-label="Systems">
+      ${branches.map((b, i) => `
+        <button class="hub-tile" data-branch-id="${escapeHtml(b.id)}" type="button">
+          <span class="hub-tile-key">${i + 1}</span>${escapeHtml(b.label)}
+        </button>
+      `).join('')}
+    </div>
+  `;
+}
+
+function renderBreadcrumb(location, slides) {
+  if (location.kind !== 'branch') return '';
+  const hub = slides.spine.find(s => s.id === 'hub');
+  const branch = hub.branches.find(b => b.id === location.branchId);
+  const total = branch ? branch.sub.length : 1;
+  return `<div class="tour-breadcrumb">HUB › ${escapeHtml(location.branchId)} › ${location.subIndex + 1} / ${total}</div>`;
+}
+
+function renderSlideHtml(slide, location) {
   const snippetsHtml = slide.snippets?.length
     ? `<div class="tour-snippets">${slide.snippets.map(renderSnippet).join('')}</div>`
     : '';
+  const hubTilesHtml = (location.kind === 'spine' && slide.id === 'hub')
+    ? renderHubTiles(slide.branches)
+    : '';
+  const breadcrumbHtml = renderBreadcrumb(location, slides);
   return `
     <section class="tour-slide">
+      ${breadcrumbHtml}
       <h1>${slide.title}</h1>
       ${slide.body}
+      ${hubTilesHtml}
       ${snippetsHtml}
     </section>
   `;
@@ -103,6 +129,14 @@ function renderSlideHtml(slide) {
 function wireSnippetToggles(stage) {
   for (const header of stage.querySelectorAll('[data-snippet-toggle]')) {
     header.addEventListener('click', () => header.parentElement.classList.toggle('is-open'));
+  }
+}
+
+function wireHubTiles(stage) {
+  for (const tile of stage.querySelectorAll('.hub-tile')) {
+    tile.addEventListener('click', () => {
+      go({ kind: 'branch', branchId: tile.dataset.branchId, subIndex: 0 });
+    });
   }
 }
 
@@ -115,8 +149,9 @@ function wireSnippetToggles(stage) {
 function render(location) {
   const slide = slideAt(location);
   const stage = document.getElementById('tour-stage');
-  stage.innerHTML = renderSlideHtml(slide);
+  stage.innerHTML = renderSlideHtml(slide, location);
   wireSnippetToggles(stage);
+  wireHubTiles(stage);
   renderProgress(location);
   mountDemo(slide);
 }
@@ -131,10 +166,22 @@ function go(nextLocation) {
 }
 
 function onKey(e) {
-  if (e.key === 'ArrowRight')      go(routeForward(current, slides));
-  else if (e.key === 'ArrowLeft')  go(routeBack(current, slides));
-  else if (e.key === 'Home')       go({ kind: 'spine', index: 0 });
-  else if (e.key === 'End')        go({ kind: 'spine', index: slides.spine.length - 1 });
+  if (e.key === 'ArrowRight')      return go(routeForward(current, slides));
+  if (e.key === 'ArrowLeft')       return go(routeBack(current, slides));
+  if (e.key === 'Home')            return go({ kind: 'spine', index: 0 });
+  if (e.key === 'End')             return go({ kind: 'spine', index: slides.spine.length - 1 });
+  if (e.key === 'Escape' && current.kind === 'branch') {
+    const hubIdx = slides.spine.findIndex(s => s.id === 'hub');
+    return go({ kind: 'spine', index: hubIdx });
+  }
+  // Digit 1–9 on hub → open corresponding branch.
+  if (current.kind === 'spine' && slideAt(current).id === 'hub' && /^[1-9]$/.test(e.key)) {
+    const hub = slides.spine.find(s => s.id === 'hub');
+    const idx = Number(e.key) - 1;
+    if (idx < hub.branches.length) {
+      return go({ kind: 'branch', branchId: hub.branches[idx].id, subIndex: 0 });
+    }
+  }
 }
 
 document.addEventListener('keydown', onKey);

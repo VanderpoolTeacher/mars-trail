@@ -175,5 +175,22 @@ export function render(state) {
       },
     ],
   },
+  {
+    id: 'hub',
+    title: 'Systems architecture',
+    body: `
+      <p>The game logic lives under <code>src/systems/</code>. Click any tile below to take a short tour of that module and return here. Press <strong>Esc</strong> to come back. Digit keys <strong>1–8</strong> jump to a tile.</p>
+    `,
+    branches: [
+      { id: 'travel',      label: 'travel.js',                         sub: [{ id: 's1', title: 'travel.js — placeholder', body: '<p>Branch content arrives in Task 10.</p>' }] },
+      { id: 'events',      label: 'events.js + content/events.js',     sub: [{ id: 's1', title: 'events.js — placeholder', body: '<p>Branch content arrives in Task 10.</p>' }] },
+      { id: 'multistage',  label: 'multiStage.js + multi-stage events', sub: [{ id: 's1', title: 'multiStage.js — placeholder', body: '<p>Branch content arrives in Task 10.</p>' }] },
+      { id: 'medical',     label: 'medicalEmergency.js',               sub: [{ id: 's1', title: 'medicalEmergency.js — placeholder', body: '<p>Branch content arrives in Task 12.</p>' }] },
+      { id: 'clickmetrics',label: 'clickMetrics.js',                   sub: [{ id: 's1', title: 'clickMetrics.js — placeholder', body: '<p>Branch content arrives in Task 13.</p>' }] },
+      { id: 'awayteam',    label: 'awayTeam.js',                       sub: [{ id: 's1', title: 'awayTeam.js — placeholder', body: '<p>Branch content arrives in Task 13.</p>' }] },
+      { id: 'smallsys',    label: 'crew / corpse / waypoints',         sub: [{ id: 's1', title: 'Small systems — placeholder', body: '<p>Branch content arrives in Task 13.</p>' }] },
+      { id: 'scoring',     label: 'career.js + scoring.js',            sub: [{ id: 's1', title: 'Career & scoring — placeholder', body: '<p>Branch content arrives in Task 13.</p>' }] },
+    ],
+  },
   // Slide 9 (hub) in Task 9, 10–16 in Task 13.
 ];
