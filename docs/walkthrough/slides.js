@@ -752,5 +752,129 @@ export function corpseWeight(state) {
       },
     ],
   },
-  // Slide 9 (hub) in Task 9, 10–16 in Task 13.
+  {
+    id: 'content-vs-systems',
+    title: 'Content vs. systems',
+    body: `
+      <p>Across the branches you just walked, one pattern repeats: <strong>logic in <code>src/systems/</code>, data in <code>src/content/</code></strong>. A system module knows <em>how</em>; a content module knows <em>what</em>.</p>
+      <p>This split is why adding a new event, emergency, fact, or waypoint is usually a one-file change in <code>content/</code>. The systems stay stable; the world grows.</p>
+    `,
+  },
+  {
+    id: 'ui',
+    title: 'UI layer',
+    body: `
+      <p><code>src/ui/modals.js</code> renders event cards, multi-stage dialogs, mash-rescue, codex pages, and so on. It is DOM-heavy but state-light — every modal receives the game state and a dispatch function, and returns nothing. All flow lives in <code>main.js</code>.</p>
+      <p><code>src/ui/codex.js</code> handles the in-game encyclopedia of Mars facts that players unlock by playing.</p>
+    `,
+    snippets: [
+      { path: 'src/ui/modals.js', lines: [13, 31], caption: 'showEventModal — render a choice list',
+        code: `export function showEventModal(event, onChoose) {
+  const r = root();
+  if (!r) return;
+
+  const choicesHtml = event.modal.choices.map((c, i) => {
+    const cost = formatCost(c);
+    const check = c.skillCheck
+      ? \`<span class="modal-choice-check">\${c.skillCheck.role.toUpperCase()} CHECK · \${Math.round(c.skillCheck.successP * 100)}%</span>\`
+      : '';
+    const cls = ['modal-choice'];
+    if (c.primary) cls.push('primary');
+    return \`
+      <button class="\${cls.join(' ')}" data-idx="\${i}" type="button">
+        <span class="modal-choice-label">\${escapeHtml(c.label)}</span>
+        \${check}
+        \${cost ? \`<span class="modal-choice-cost">\${cost}</span>\` : ''}
+      </button>
+    \`;
+  }).join('');` },
+    ],
+  },
+  {
+    id: 'theme',
+    title: 'Theme system',
+    body: `
+      <p>Three themes (plus Mission Control default): LCARS, Voltron HUD, Last Starfighter. Each is a stylesheet under <code>styles/theme-*.css</code> that overrides a shared set of CSS variables defined in <code>styles/theme.css</code>. <code>src/theme.js</code> is a 68-line switcher that sets <code>data-theme</code> on <code>&lt;body&gt;</code> and remembers the last choice in localStorage.</p>
+      <p><strong>Live proof:</strong> this slideshow reuses those exact stylesheets. Change the theme dropdown in the top-right right now — every frame, chrome, and demo repaints instantly.</p>
+    `,
+    snippets: [
+      { path: 'src/theme.js', lines: [7, 17], caption: 'THEMES list + resolveTheme',
+        code: `export const THEMES = [
+  { id: 'mc',          label: 'Mission Control' },
+  { id: 'lcars',       label: 'LCARS / TNG' },
+  { id: 'voltron',     label: 'Voltron HUD' },
+  { id: 'starfighter', label: 'Last Starfighter' }
+];
+
+export function resolveTheme(raw) {
+  if (typeof raw !== 'string' || raw.length === 0) return 'mc';
+  return THEMES.some(t => t.id === raw) ? raw : 'mc';
+}` },
+    ],
+  },
+  {
+    id: 'audio',
+    title: 'Audio',
+    body: `
+      <p><code>src/audio.js</code> is a minimal music player: a shuffled playlist, a mute toggle, a manual track dropdown. It never auto-plays — users have to click first, per browser policy. The module wraps a single <code>Audio</code> object and exposes small helpers (play, stop, mute, cycle, fade) that <code>main.js</code> wires to the UI.</p>
+    `,
+    snippets: [
+      { path: 'src/audio.js', lines: [74, 88], caption: 'play — load, loop-if-title, respect mute',
+        code: `export function play(trackId) {
+  const track = trackId === 'title'
+    ? TITLE_TRACK
+    : GAMEPLAY_TRACKS.find(t => t.id === trackId);
+  if (!track) return;
+  if (currentTrackId === track.id && !audio.paused) return;
+
+  currentTrackId = track.id;
+  audio.src = track.file;
+  audio.loop = (track.id === 'title'); // title loops; gameplay advances via 'ended'
+  audio.muted = isMuted();
+  audio.play().catch(() => {});
+  unlocked = true;
+  notifyTrackChange(track.id);
+}` },
+    ],
+  },
+  {
+    id: 'tests',
+    title: 'Testing',
+    body: `
+      <p>Two kinds of test code:</p>
+      <ul>
+        <li><strong>Unit tests</strong> — <code>sim/*.test.mjs</code>, each uses <code>node --test</code>. Exercise pure functions from <code>src/systems/</code> and <code>src/theme.js</code>. Run one file: <code>node --test sim/theme.test.mjs</code>.</li>
+        <li><strong>Playtest harness</strong> — <code>sim/play.mjs</code> and <code>sim/playtest1000.mjs</code>. Runs thousands of AI-driven playthroughs with various strategies, prints a balance table. This catches difficulty regressions that unit tests can't.</li>
+      </ul>
+      <p>Both paths depend on keeping system modules pure (no DOM imports in <code>src/systems/</code>).</p>
+    `,
+  },
+  {
+    id: 'workflow',
+    title: 'Workflow',
+    body: `
+      <p>Every change follows the same trail:</p>
+      <ol>
+        <li><strong>GitHub issue</strong> — describes problem + acceptance criteria.</li>
+        <li><strong>Spec</strong> — <code>docs/superpowers/specs/YYYY-MM-DD-&lt;topic&gt;-design.md</code>.</li>
+        <li><strong>Plan</strong> — <code>docs/superpowers/plans/YYYY-MM-DD-&lt;topic&gt;.md</code> (this tour is one).</li>
+        <li><strong>Implementation</strong> — small commits, each referencing the issue.</li>
+        <li><strong>Release</strong> — SemVer git tag + GitHub release.</li>
+      </ol>
+      <p>The <code>docs/superpowers/</code> directory is the repository of all past specs and plans, and is a great read in its own right.</p>
+    `,
+  },
+  {
+    id: 'credits',
+    title: 'End of tour',
+    body: `
+      <p>Thanks for walking through. Suggested next steps:</p>
+      <ul>
+        <li>Play a run — <code>index.html</code> in the repo root.</li>
+        <li>Skim the most recent spec in <code>docs/superpowers/specs/</code> to see the current frontier.</li>
+        <li>Pick any system that caught your eye and read its test file under <code>sim/</code>.</li>
+      </ul>
+      <p>Press <strong>Home</strong> to return to the start of the tour, or close the tab.</p>
+    `,
+  },
 ];
