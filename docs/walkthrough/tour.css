@@ -216,9 +216,13 @@
 
 .tour-stage .term-def {
   margin: 6px 0 10px 0;
-  opacity: 0.85;
+  color: #f0ece4;
   font-size: 0.95em;
   font-style: italic;
+}
+
+.tour-stage .term-def code {
+  color: inherit;
 }
 
 .tour-stage .term-def p:first-child { margin-top: 0; }
