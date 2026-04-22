@@ -875,7 +875,6 @@ export function resolveTheme(raw) {
       </ul>
       <div class="tour-cta-row">
         <a class="tour-cta" href="../../index.html">Start Game</a>
-        <button class="tour-cta" type="button" data-action="restart">Restart Mission</button>
       </div>
     `,
   },
