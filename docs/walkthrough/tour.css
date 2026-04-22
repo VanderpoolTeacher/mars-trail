@@ -92,7 +92,7 @@ body {
 
 .tour-snippet pre {
   margin: 0;
-  padding: 10px 12px;
+  padding: 10px 12px 24px;            /* extra bottom padding so last line breathes */
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   font-size: 0.85em;
   line-height: 1.45;
@@ -103,13 +103,23 @@ body {
   color: var(--code-fg, inherit);
 }
 
-/* Inline <pre> blocks inside slide prose (e.g. the repo-layout tree) — also wrap. */
+/* Inline <pre> blocks inside slide prose (e.g. the repo-layout tree) — wrap,
+   and if they'd otherwise exceed the available stage, cap and scroll. */
 .tour-stage pre {
   white-space: pre-wrap;
   word-break: break-word;
   overflow-wrap: anywhere;
   max-width: 100%;
+  max-height: min(55vh, 460px);
   overflow-x: hidden;
+  overflow-y: auto;
+  padding-bottom: 16px;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.tour-stage pre::-webkit-scrollbar {
+  display: none;
 }
 
 .hub-tiles {
