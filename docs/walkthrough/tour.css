@@ -194,8 +194,8 @@
   font: inherit;
   color: currentColor;
   cursor: pointer;
-  text-decoration: underline dotted;
-  text-underline-offset: 3px;
+  text-decoration: underline;
+  text-underline-offset: 2px;
 }
 
 .term:hover,
@@ -204,16 +204,11 @@
   outline: none;
 }
 
-.term[aria-expanded="true"] {
-  font-weight: 600;
-}
-
 .term-def {
-  margin: 6px 0 10px 14px;
-  padding: 8px 12px;
-  border-left: 3px solid var(--panel-border, currentColor);
-  opacity: 0.9;
+  margin: 6px 0 10px 0;
+  opacity: 0.85;
   font-size: 0.95em;
+  font-style: italic;
 }
 
 .term-def p:first-child { margin-top: 0; }
