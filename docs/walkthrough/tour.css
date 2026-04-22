@@ -82,6 +82,12 @@ body {
   max-height: min(60vh, 500px);
   overflow-x: hidden;
   overflow-y: auto;
+  scrollbar-width: none;        /* Firefox */
+  -ms-overflow-style: none;     /* legacy Edge / IE */
+}
+
+.tour-snippet-body::-webkit-scrollbar {
+  display: none;                /* WebKit: Safari, Chrome */
 }
 
 .tour-snippet pre {
