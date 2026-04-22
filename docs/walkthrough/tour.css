@@ -1,12 +1,12 @@
 /* Layout primitives. Colors and decoration come from styles/theme-*.css via CSS vars. */
 
-/* The game's layout.css pins html/body to 100dvh with overflow:hidden on desktop so
-   the dashboard fits the viewport exactly. The tour is a document-flow page and
-   needs normal page scrolling — override that here (tour.css loads last). */
-html, body {
-  overflow: auto;
-  height: auto;
-  min-height: 100dvh;
+/* Keep the page pinned to the viewport (topbar + footer always visible) and put
+   the scroll inside the main stage. Layout.css already sets html/body to 100dvh
+   with overflow:hidden on desktop; we make body a flex column so the stage can
+   flex:1 and own the overflow. */
+body {
+  display: flex;
+  flex-direction: column;
 }
 
 .tour-topbar {
@@ -28,10 +28,14 @@ html, body {
 .tour-progress { font-size: 0.9em; opacity: 0.85; }
 
 .tour-stage {
-  padding: 24px;
+  flex: 1 1 auto;
+  min-height: 0;        /* required for flex child to actually clip/scroll */
+  overflow-y: auto;
+  width: 100%;
   max-width: 920px;
   margin: 0 auto;
-  min-height: calc(100vh - 140px);
+  padding: 24px;
+  box-sizing: border-box;
 }
 
 .tour-nav {
