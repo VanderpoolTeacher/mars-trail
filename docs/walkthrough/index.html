@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mars Trail · Code Tour</title>
+  <link rel="stylesheet" href="../../styles/theme.css">
+  <link rel="stylesheet" href="../../styles/layout.css">
+  <link rel="stylesheet" href="../../styles/components.css">
+  <link rel="stylesheet" href="../../styles/modals.css">
+  <link rel="stylesheet" href="../../styles/theme-lcars.css">
+  <link rel="stylesheet" href="../../styles/theme-voltron.css">
+  <link rel="stylesheet" href="../../styles/theme-starfighter.css">
+  <link rel="stylesheet" href="tour.css">
+</head>
+<body>
+  <div class="scanlines" aria-hidden="true"></div>
+
+  <header class="tour-topbar topbar">
+    <span class="tour-brand">MARS TRAIL · CODE TOUR</span>
+    <span class="tour-topbar-right">
+      <span class="tour-progress" id="tour-progress"></span>
+      <button id="tour-home" type="button" class="tour-chrome-btn" title="Return to slide 1">HOME</button>
+      <a id="tour-play-game" class="tour-chrome-btn" href="../../index.html" title="Open the game">PLAY GAME</a>
+      <select id="tour-theme-select" class="theme-select" aria-label="Interface theme"></select>
+    </span>
+  </header>
+
+  <main class="tour-stage" id="tour-stage" aria-live="polite"></main>
+
+  <footer class="tour-nav">
+    <button id="tour-prev" type="button" class="btn-secondary">← PREV</button>
+    <button id="tour-next" type="button" class="btn-primary">NEXT →</button>
+  </footer>
+
+  <div id="modal-root"></div>
+
+  <script type="module" src="tour.js"></script>
+</body>
+</html>

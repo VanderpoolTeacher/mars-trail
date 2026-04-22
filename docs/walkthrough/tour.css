@@ -1,0 +1,290 @@
+/* Layout primitives. Colors and decoration come from styles/theme-*.css via CSS vars. */
+
+/* Keep the page pinned to the viewport (topbar + footer always visible) and put
+   the scroll inside the main stage. Layout.css already sets html/body to 100dvh
+   with overflow:hidden on desktop; we make body a flex column so the stage can
+   flex:1 and own the overflow. */
+body {
+  display: flex;
+  flex-direction: column;
+}
+
+.tour-topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--panel-border, #0a8);
+}
+
+.tour-brand { font-weight: 700; letter-spacing: 0.08em; }
+
+.tour-topbar-right {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.tour-progress { font-size: 0.9em; opacity: 0.85; }
+
+.tour-stage {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+  width: 100%;
+  max-width: 920px;
+  margin: 0 auto;
+  padding: 24px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+}
+
+.tour-slide {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.tour-nav {
+  display: flex;
+  justify-content: space-between;
+  padding: 12px 24px;
+  border-top: 1px solid var(--panel-border, #0a8);
+}
+
+.tour-slide h1 { margin-top: 0; }
+.tour-slide p { line-height: 1.5; max-width: 70ch; }
+
+.tour-snippets {
+  margin-top: 16px;
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.tour-snippet {
+  border: 1px solid var(--panel-border, #0a8);
+  border-radius: 4px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  flex: 0 0 auto;
+  min-height: 0;
+}
+
+.tour-snippet.is-open {
+  flex: 1 1 auto;
+}
+
+.tour-snippet-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 10px;
+  background: var(--panel-header-bg, rgba(0, 170, 136, 0.1));
+  cursor: pointer;
+  user-select: none;
+  font-size: 0.85em;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+.tour-snippet-header .tour-snippet-label { font-weight: 600; }
+.tour-snippet-header .tour-snippet-links { display: flex; gap: 10px; font-size: 0.9em; }
+
+.tour-snippet-body {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.2s ease;
+}
+
+.tour-snippet.is-open .tour-snippet-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  max-height: none;
+  overflow-x: hidden;
+  overflow-y: auto;
+  scrollbar-width: none;        /* Firefox */
+  -ms-overflow-style: none;     /* legacy Edge / IE */
+}
+
+.tour-snippet-body::-webkit-scrollbar {
+  display: none;                /* WebKit: Safari, Chrome */
+}
+
+.tour-snippet pre {
+  margin: 0;
+  padding: 10px 12px 24px;            /* extra bottom padding so last line breathes */
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.85em;
+  line-height: 1.45;
+  white-space: pre-wrap;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+  background: var(--code-bg, #000);
+  color: var(--code-fg, inherit);
+}
+
+/* Inline <pre> blocks in slide prose (e.g. the repo-layout tree). Snippet pre
+   scroll is handled by the surrounding .tour-snippet-body (flex-filled), so
+   this rule just ensures inline pre blocks wrap and never horizontal-scroll. */
+.tour-stage pre {
+  white-space: pre-wrap;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+.hub-tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.hub-tile {
+  padding: 14px;
+  border: 1px solid var(--panel-border, #0a8);
+  border-radius: 4px;
+  cursor: pointer;
+  font-family: ui-monospace, monospace;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  transition: background 0.15s;
+}
+
+.hub-tile:hover, .hub-tile:focus {
+  background: var(--panel-header-bg, rgba(0, 170, 136, 0.15));
+  outline: none;
+}
+
+.hub-tile-key {
+  display: inline-block;
+  font-size: 0.75em;
+  opacity: 0.7;
+  margin-right: 8px;
+}
+
+.tour-breadcrumb {
+  font-size: 0.85em;
+  opacity: 0.75;
+  margin-bottom: 12px;
+  font-family: ui-monospace, monospace;
+}
+
+/* Links inherit the surrounding themed text color instead of browser blue. */
+.tour-stage a,
+.tour-stage a:visited {
+  color: currentColor;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.tour-stage a:hover,
+.tour-stage a:focus {
+  opacity: 0.75;
+  outline: none;
+}
+
+/* Persistent chrome buttons in the topbar (HOME / PLAY GAME). */
+.tour-chrome-btn {
+  display: inline-block;
+  padding: 4px 10px;
+  font-family: ui-monospace, monospace;
+  font-size: 0.85em;
+  letter-spacing: 0.08em;
+  color: currentColor;
+  background: transparent;
+  border: 1px solid var(--panel-border, currentColor);
+  border-radius: 3px;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background 0.15s, opacity 0.15s;
+}
+
+.tour-chrome-btn:hover,
+.tour-chrome-btn:focus-visible {
+  background: var(--panel-header-bg, rgba(255, 255, 255, 0.08));
+  outline: none;
+  opacity: 1;
+}
+
+/* End-slide CTAs — prominent, themed, glow + pulse. */
+.tour-cta-row {
+  display: flex;
+  gap: 18px;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin: 30px 0 10px;
+}
+
+.tour-cta {
+  display: inline-block;
+  padding: 12px 24px;
+  font-family: ui-monospace, monospace;
+  font-size: 1em;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  color: currentColor;
+  background: transparent;
+  border: 1px solid currentColor;
+  border-radius: 4px;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background 0.15s, transform 0.15s;
+}
+
+.tour-cta:hover,
+.tour-cta:focus-visible {
+  background: var(--panel-header-bg, rgba(255, 255, 255, 0.08));
+  transform: scale(1.02);
+  outline: none;
+}
+
+/* Glossary term buttons. Beat every theme's generic button styling by using a
+ * specificity high enough to win against `body[data-theme="..."] button {...}`. */
+.tour-stage .term,
+.tour-stage .term:hover,
+.tour-stage .term:focus,
+.tour-stage .term:focus-visible {
+  background: none;
+  background-color: transparent;
+  border: 0;
+  border-radius: 0;
+  padding: 0;
+  margin: 0;
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: none;
+  text-shadow: none;
+  box-shadow: none;
+  color: currentColor;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.tour-stage .term:hover,
+.tour-stage .term:focus-visible {
+  opacity: 0.75;
+  outline: none;
+}
+
+.tour-stage .term-def {
+  margin: 6px 0 10px 0;
+  color: #f0ece4;
+  font-size: 0.95em;
+  font-style: italic;
+}
+
+.tour-stage .term-def code {
+  color: inherit;
+}
+
+.tour-stage .term-def p:first-child { margin-top: 0; }
+.tour-stage .term-def p:last-child  { margin-bottom: 0; }

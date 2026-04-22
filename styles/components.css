@@ -979,4 +979,17 @@ body[data-theme="lcars"] .eor-col-facts {
   display: block;
   width: 100%;
   margin: 0.75rem 0 1rem;
+  animation: mission-cta-pulse 1.8s ease-in-out infinite;
+}
+
+.eor-new-rank:hover,
+.eor-new-rank:focus-visible {
+  animation-play-state: paused;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .eor-new-rank {
+    animation: none;
+    box-shadow: 0 0 10px currentColor;
+  }
 }

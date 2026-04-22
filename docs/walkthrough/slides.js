@@ -1,0 +1,881 @@
+// Slide manifest. All HTML in `title`, `body`, and `snippets[].caption` is
+// authored in-repo and trusted — rendered unescaped. Snippet `code` contains
+// literal source text and is escaped at render time. Do not route user input
+// through this file.
+export const spine = [
+  {
+    id: 'welcome',
+    title: 'Welcome to the Mars Trail code tour',
+    body: `
+      <p class="subtitle">A ~15-minute guided tour of how this game is organized.</p>
+      <p>Use <strong>← →</strong> to navigate. <strong>Esc</strong> returns from a hub branch. Theme selector in the top-right repaints everything — the tour itself is a live demo of the game's theme system.</p>
+      <p>Press <strong>→</strong> or click <strong>NEXT</strong> to begin.</p>
+    `,
+  },
+  {
+    id: 'pitch',
+    title: 'What is Mars Trail?',
+    body: `
+      <p>An Oregon-Trail-style survival sim set on Mars, built for a game jam. You captain a rover from Jezero Crater to a colony site near Olympus Mons, rationing power and EVA suits, managing crew, responding to emergencies, and diverting for side missions ("away teams") that chase science points.</p>
+      <p>Runs typically take ~15–30 sols (2–3 weeks of in-game time), most of the difficulty is in the event system, and a run ends when you reach the goal or lose the crew.</p>
+    `,
+  },
+  {
+    id: 'stack',
+    title: 'Tech stack',
+    body: `
+      <p><strong>Vanilla <span class="term" data-term="es-modules">ES modules</span>.</strong> No framework, no bundler, no build step. Open <code>index.html</code> in a browser and you're running the game.</p>
+      <p>This is deliberate: the project is small enough that a build toolchain would be more complexity than feature. It also makes the code unusually easy to read — what you see in the file is what runs.</p>
+      <p>Testing uses Node's built-in <code>node --test</code> runner (see <code>sim/</code>). The simulation harness at <code>sim/play.mjs</code> runs thousands of AI-driven playthroughs to validate balance.</p>
+    `,
+  },
+  {
+    id: 'layout',
+    title: 'Repo layout',
+    body: `
+      <p>The whole project fits in a handful of folders. Each has one job.</p>
+      <pre style="line-height:1.35;font-size:0.9em"><code>Mars Trail/
+├── index.html          — game entry point
+├── src/
+│   ├── main.js         — boots the game, wires UI
+│   ├── state.js        — single source of truth
+│   ├── render.js       — state → DOM
+│   ├── theme.js        — theme switcher
+│   ├── audio.js        — music + mute
+│   ├── systems/        — game logic (pure where possible)
+│   ├── content/        — data: events, emergencies, facts, waypoints
+│   └── ui/             — modals, codex overlay
+├── styles/             — theme.css + per-theme overlays
+├── sim/                — unit tests + playtest harness
+├── assets/             — images, music
+└── docs/
+    ├── superpowers/    — per-feature specs + implementation plans
+    ├── walkthrough/    — this interactive tour
+    └── reports/        — session reports
+</code></pre>
+      <p>The rest of the tour follows the data flow: entry point → state → render → systems (via a hub) → content → UI → themes → audio → tests → workflow.</p>
+    `,
+  },
+  {
+    id: 'loop',
+    title: 'The game loop',
+    body: `
+      <p>Every turn (a "sol") follows the same four-phase rhythm:</p>
+      <ol>
+        <li><strong>Input</strong> — player picks pace / rations / actions.</li>
+        <li><strong>Systems</strong> — <code>travel.js</code>, <code>events.js</code>, and friends mutate state.</li>
+        <li><strong>Render</strong> — <code>render.js</code> rebuilds the DOM from state.</li>
+        <li><strong>Log</strong> — mission log entries appear for what just happened.</li>
+      </ol>
+      <p>There is <em>no</em> observer pattern, <em>no</em> <span class="term" data-term="virtual-dom">virtual DOM</span>, <em>no</em> <span class="term" data-term="reactive-framework">reactive framework</span>. On every change, <code>render()</code> rebuilds the parts of the <span class="term" data-term="dom">DOM</span> it owns from scratch.</p>
+      <div id="demo-loop-mount"></div>
+    `,
+    demo: 'loop',
+  },
+  {
+    id: 'entry',
+    title: 'Entry point',
+    body: `
+      <p><code>index.html</code> loads stylesheets and calls into <code>src/main.js</code>, which boots the game: builds initial state, wires event listeners, paints the first frame.</p>
+      <p>Follow the imports at the top of <code>main.js</code> and you get a one-page map of the whole app.</p>
+    `,
+    snippets: [
+      {
+        path: 'src/main.js',
+        lines: [1, 17],
+        caption: 'Boot imports',
+        code: `// Mars Trail — entry point
+// Builds initial state, runs first render, wires UI events.
+
+import { createInitialState, CARGO_BUDGET, PART_TYPES } from './state.js';
+import { render } from './render.js';
+import { advanceSol, setPace, setRations, repairBattery, cleanPanels } from './systems/travel.js';
+import { applyEventChoice } from './systems/events.js';
+import { recordDecision } from './systems/clickMetrics.js';
+import { showEventModal, showOutcomeModal, showBriefingModal, showLoadoutModal, showTitleLayer, dimTitleStart, hideTitleLayer, showEndOfRunModal, closeModal, showWaypointOfferModal, showMultiStageModal, showAwayTeamPickerModal, showAwayTeamReunionModal, showDeathDialog } from './ui/modals.js';
+import { declineWaypoint } from './systems/waypoints.js';
+import { applyStageChoice } from './systems/multiStage.js';
+import { acceptAwayTeam, resolveAwayTeamStage, finalizeReunion } from './systems/awayTeam.js';
+import { resolveMedicalStage, getMedicalStageView } from './systems/medicalEmergency.js';
+import { WAYPOINTS } from './content/waypoints.js';
+import { makeLandmarkEncounter } from './content/landmarks.js';
+import './ui/codex.js';   // registers global click handler for codex terms
+import { GAMEPLAY_TRACKS, getSelectedTrackId, isMuted, playTitle, playGameplay, selectTrack, toggleMute, fadeOut, fadeInGameplay, cycleTrack, onTrackChange } from './audio.js';`,
+      },
+    ],
+  },
+  {
+    id: 'state',
+    title: 'State',
+    body: `
+      <p><code>src/state.js</code>'s central export is a <span class="term" data-term="factory-function">factory</span>, <code>createInitialState()</code>, that returns a plain JS object. That object <em>is</em> the game. Everything else reads it; systems mutate it; <code>render()</code> projects it to DOM. (The module also exports a few shared constants and lookup tables — see the file itself.)</p>
+      <p>Keeping state in one place — a <span class="term" data-term="single-source-of-truth">single source of truth</span> — is what makes tests easy to write: seed a state, call a system, assert on the resulting state.</p>
+    `,
+    snippets: [
+      {
+        path: 'src/state.js',
+        lines: [43, 70],
+        caption: 'State shape (excerpt)',
+        code: `  const baseState = {
+    schemaVersion: 1,
+    runId: uuid(),
+    scenario: 'trek',
+    startedAt: Date.now(),
+    sol: 1,
+    status: 'active',          // 'active' | 'won' | 'lost'
+    lossReason: null,
+
+    // Geography
+    route: TREK_ROUTE.ids,
+    routeKm: TREK_ROUTE.kms,
+    currentLandmarkIndex: 0,
+    kmToNextLandmark: TREK_ROUTE.kms[0],
+    totalKmTraveled: 0,
+
+    // Resources. % values (except panels which is efficiency, and parts which
+    // are discrete). Base levels are lower — supply loadout items bring them up.
+    resources: {
+      oxygen: 76,     // base; +8% per O₂ canister (default 3 = 100%)
+      water:  76,     // base; +8% per H₂O tank (default 3 = 100%)
+      power:  100,
+      food:   76,     // base; +8% per ration pack (default 3 = 100%)
+      panels: 100,
+      mech: 4,
+      eva:  4,
+      cell: 3
+    },`,
+      },
+    ],
+  },
+  {
+    id: 'render',
+    title: 'Render',
+    body: `
+      <p><code>src/render.js</code> is a pure <code>state → DOM</code> projection. It exports one function — <code>render(state)</code> — that is called after every state change. No partial updates, no diffing; just rebuild the panels it owns.</p>
+      <p>This stays cheap because the DOM is small: a few panels, a crew list, a log. The simplicity is the feature.</p>
+    `,
+    snippets: [
+      {
+        path: 'src/render.js',
+        lines: [345, 357],
+        caption: 'Render entry',
+        code: `// ---------- Top-level render ----------
+
+let bound = false;
+export function render(state) {
+  if (!bound) { bindDom(); bound = true; }
+  renderTopbar(state);
+  renderRoute(state);
+  renderTelemetry(state);
+  renderCrew(state);
+  renderControls(state);
+  renderLog(state);
+  renderActionBar(state);
+}`,
+      },
+    ],
+  },
+  {
+    id: 'hub',
+    title: 'Systems architecture',
+    body: `
+      <p>The game logic lives under <code>src/systems/</code>. Click any tile below to take a short tour of that module and return here. Press <strong>Esc</strong> to come back. Digit keys <strong>1–8</strong> jump to a tile.</p>
+    `,
+    branches: [
+      {
+        id: 'travel',
+        label: 'travel.js',
+        sub: [
+          {
+            id: 's1',
+            title: 'travel.js — pace, tick, arrival',
+            body: `
+              <p><code>src/systems/travel.js</code> owns the per-<span class="term" data-term="sol">sol</span> resource tick. It advances the rover by pace-dependent km, consumes power, rations, <span class="term" data-term="eva">EVA</span> charges, and decides when the rover arrives at the next landmark.</p>
+              <p>The module is (mostly) <span class="term" data-term="pure-function">pure</span>: given a state and a pace, it returns a new state. That purity is what lets <code>sim/playtest1000.mjs</code> run thousands of simulated runs in a couple of seconds.</p>
+            `,
+            snippets: [
+              {
+                path: 'src/systems/travel.js',
+                lines: [26, 54],
+                caption: 'Pace-driven tunables',
+                code: `// Tunable per-sol values. Balanced for a ~17-sol clean trek at steady pace.
+
+const KM_PER_SOL = {
+  cautious: 70,
+  steady:   100,
+  push:     150
+};
+
+// ± variance per sol. Cautious is predictable; push swings wide.
+const KM_VARIANCE = {
+  cautious: 0.10,   // ±10%
+  steady:   0.18,   // ±18%
+  push:     0.30    // ±30% — sometimes great, sometimes you hit a rut
+};
+
+const POWER_PER_SOL = {
+  cautious: 2.5,
+  steady:   4.2,
+  push:     5.8
+};
+
+const FOOD_PER_SOL = {
+  meager:   1.0,
+  standard: 2.2,
+  full:     3.2
+};
+
+const O2_PER_SOL  = 2.2;
+const H2O_PER_SOL = 2.2;`,
+              },
+            ],
+          },
+          {
+            id: 's2',
+            title: 'travel.js — the sol tick',
+            body: `
+              <p>The heart of travel is <code>advanceSol()</code>: one function that runs once per "NEXT SOL" button press. It consumes resources, maybe rolls an event, maybe arrives at a landmark, and writes log lines.</p>
+              <p>This excerpt covers the opening: clone-on-write, camp-mode guard, and the km math for a travel sol. Resource drain, arrival handling, and event rolls live further down in the same function.</p>
+            `,
+            snippets: [
+              {
+                path: 'src/systems/travel.js',
+                lines: [96, 132],
+                caption: 'advanceSol — setup and km math',
+                code: `export function advanceSol(state, mode = 'travel') {
+  if (state.status !== 'active') return state;
+
+  // Camp mode: if an away team is out, the rover stays parked at the
+  // detour turn-off. Resources drain and crew damage accrue as usual,
+  // but km/travel/event-rolling are suppressed — the stage modal IS
+  // the event for that sol.
+  if (state.awayTeam && mode === 'travel') mode = 'camp';
+
+  // Shallow clone the branches we'll mutate.
+  let s = { ...state,
+    resources: { ...state.resources },
+    crew: state.crew.map(c => ({ ...c })),
+    log: [...state.log],
+    crewDialogue: null   // clear yesterday's speech bubble
+  };
+
+  s.sol = state.sol + 1;
+  const powerDead = s.resources.power === 0;
+
+  // ---- Travel (skipped on repair/clean/camp sols and when batteries are dead) ----
+  let usableKm = 0;
+  if (mode === 'travel' && !powerDead) {
+    const pilotAlive = s.crew.some(c => c.role === 'pilot' && c.alive);
+    const baseKm     = KM_PER_SOL[s.pace];
+    const variance   = KM_VARIANCE[s.pace] * (pilotAlive ? 1 : NO_PILOT_VARIANCE_MULT);
+    const jitter     = (Math.random() * 2 - 1) * variance;
+    const pilotMult  = pilotAlive ? 1 + PILOT_KM_BONUS : 1;
+    const lbs        = cargoPounds(s);
+    const weightMult = Math.max(0.5, 1 - lbs * CARGO_WEIGHT_SPEED);
+    const kmMult     = state.careerBonuses?.kmMult || 1;
+    const km         = Math.max(0, baseKm * pilotMult * weightMult * kmMult * (1 + jitter));
+    usableKm         = Math.min(km, s.kmToNextLandmark);
+
+    s.totalKmTraveled += usableKm;
+    s.kmToNextLandmark -= usableKm;
+  }`,
+              },
+            ],
+          },
+        ],
+      },
+      {
+        id: 'events',
+        label: 'events.js + content/events.js',
+        sub: [
+          {
+            id: 's1',
+            title: 'events.js — rolling an event',
+            body: `
+              <p><code>src/systems/events.js</code> picks which event fires on a given sol, based on pace and per-event weighting. Event <em>data</em> lives separately in <code>src/content/events.js</code>: each entry has a title, body, and a set of choices with effects.</p>
+              <p>This split (system vs. content) is the dominant pattern in the codebase: logic in <code>src/systems/</code>, data in <code>src/content/</code>. Content can grow without touching logic.</p>
+            `,
+            snippets: [
+              {
+                path: 'src/systems/events.js',
+                lines: [23, 45],
+                caption: 'Event selection',
+                code: `// P(event per sol) by pace. Careful driving = fewer incidents.
+const EVENT_BASE_RATE_BY_PACE = {
+  cautious: 0.20,
+  steady:   0.25,
+  push:     0.78
+};
+
+// Pick a random event using weighted selection. One-shot events that have
+// already fired this run are filtered out. Returns an event object or null.
+export function rollEvent(state) {
+  const rate = EVENT_BASE_RATE_BY_PACE[state.pace];
+  if (Math.random() > rate) return null;
+  const fired = state.firedEvents || [];
+  const eligible = EVENTS.filter(e => !(e.oneShot && fired.includes(e.id)));
+  if (eligible.length === 0) return null;
+  const totalWeight = eligible.reduce((sum, e) => sum + e.weight, 0);
+  let r = Math.random() * totalWeight;
+  for (const e of eligible) {
+    r -= e.weight;
+    if (r <= 0) return e;
+  }
+  return eligible[eligible.length - 1];
+}`,
+              },
+            ],
+          },
+          {
+            id: 's2',
+            title: 'Live: a random event card',
+            body: `
+              <p>Here is an event card, rendered by the <em>real</em> modal renderer against data from <code>src/content/events.js</code>. Click "Roll another" to re-roll. Choice buttons are real but don't apply effects — this preview is read-only.</p>
+              <div id="demo-eventPreview-mount"></div>
+            `,
+            demo: 'eventPreview',
+          },
+        ],
+      },
+      {
+        id: 'multistage',
+        label: 'multiStage.js + multi-stage events',
+        sub: [
+          {
+            id: 's1',
+            title: 'multiStage.js — authored chains',
+            body: `
+              <p>A <span class="term" data-term="multi-stage-event">multi-stage event</span> is an authored chain: each choice points to the next stage, or to an outcome. <code>src/systems/multiStage.js</code> is a tiny engine that walks that graph. <code>src/content/multiStageEvents.js</code> (and <code>emergencies.js</code>) are the authored data.</p>
+              <p>The medical emergency (hub branch <strong>4</strong>) is the flagship example — a three-stage diagnosis-treatment-disposal chain.</p>
+            `,
+            snippets: [
+              {
+                path: 'src/systems/multiStage.js',
+                lines: [10, 45],
+                caption: 'Engine shape — resolving a stage choice',
+                code: `// ---- Resolve a chosen option on a given stage ----
+//
+// Returns { state, nextStage, skillResult, damageTarget, applied, returnSolDelta }.
+// state:          new state after outcome application.
+// nextStage:      key of the next stage, or null to end the chain.
+// skillResult:    present when the choice had a skillCheck.
+// returnSolDelta: number to shift an away-team return sol by; 0 for non-away contexts.
+export function applyStageChoice(state, event, stageId, choiceIdx) {
+  const stage  = event.stages[stageId];
+  const choice = stage?.choices[choiceIdx];
+  if (!choice) return { state, nextStage: null, skillResult: null, damageTarget: null, applied: {}, returnSolDelta: 0 };
+
+  let outcome = choice.outcome;
+  let skillResult = null;
+
+  if (choice.skillCheck) {
+    const { role, successP } = choice.skillCheck;
+    const specialistAlive = state.crew.some(c => c.role === role && c.alive);
+    const baseP = specialistAlive ? successP : Math.max(0.2, successP - 0.4);
+    const bonus = state.careerBonuses?.skillBonus || 0;
+    const effectiveP = Math.min(0.95, baseP + bonus);
+    const success = Math.random() < effectiveP;
+    outcome = success ? choice.successOutcome : choice.failOutcome;
+    skillResult = { role, success, specialistAlive };
+  }
+
+  const { state: s, damageTarget, applied } = applyOutcome(state, outcome);
+  return {
+    state: s,
+    nextStage: choice.nextStage ?? null,
+    skillResult,
+    damageTarget,
+    applied,
+    returnSolDelta: choice.returnSolDelta ?? 0
+  };
+}`,
+              },
+            ],
+          },
+        ],
+      },
+      {
+        id: 'medical',
+        label: 'medicalEmergency.js',
+        sub: [
+          {
+            id: 's1',
+            title: 'medicalEmergency.js — the three-act chain',
+            body: `
+              <p>The medical emergency is the project's flagship multi-stage event: <strong>Diagnosis → Treatment → Disposal</strong>. Each stage branches on the player's choice and on crew damage. It's the first real stress-test of the <code>multiStage.js</code> engine.</p>
+              <p>Authored data lives in <code>src/content/medicalEmergency.js</code>. The system module wires stage transitions and computes outcomes (including the "leave the body or haul it" disposal beat). Stage <em>views</em> are built per-run by <code>getMedicalStageView</code> so the diagnose text can weave in the specific patient, the rolled ailment, and whether the medic is themselves the patient.</p>
+            `,
+            snippets: [
+              {
+                path: 'src/systems/medicalEmergency.js',
+                lines: [56, 83],
+                caption: 'getMedicalStageView — Act 1 (diagnose)',
+                code: `// ---- Stage view (title/description/choices, built per-run) ----
+// Returns { title, description, choices } where each choice has
+// { label, key }. The resolver dispatches on key.
+export function getMedicalStageView(state, stageId, context) {
+  const patient = state.crew.find(c => c.id === context.patientId);
+  const ailment = AILMENTS.find(a => a.id === context.ailmentId) || AILMENTS[0];
+  if (!patient) return null;
+
+  const roleCode = (patient.role || '').toUpperCase();
+  const patientTag = \`\${patient.name} (\${roleCode})\`;
+
+  if (stageId === 'diagnose') {
+    const intro = context.selfTreat
+      ? \`\${patientTag} — your medic — is in trouble. \${ailment.symptom} The crew is on their own.\`
+      : \`\${patientTag} is in trouble. \${ailment.symptom} You have to act.\`;
+    const choices = context.selfTreat
+      ? [
+          { label: 'Self-triage (medic impaired)',        key: 'self_triage' },
+          { label: 'Query Earth (comms delay)',           key: 'earth' },
+          { label: 'Dose from med kit and hope',          key: 'hope' }
+        ]
+      : [
+          { label: 'Consult the medic',                    key: 'medic' },
+          { label: 'Query Earth (comms delay)',            key: 'earth' },
+          { label: 'Dose from med kit and hope',           key: 'hope' }
+        ];
+    return { title: \`Medical Emergency — \${ailment.label}\`, description: intro, choices };
+  }`,
+              },
+            ],
+          },
+          {
+            id: 's2',
+            title: 'Live: the mash-rescue UI',
+            body: `
+              <p>Click <strong>Start emergency</strong> below to run a seeded medical chain against the real modal renderer. Every click is timed by <code>clickMetrics.recordDecision</code> — the same <span class="term" data-term="anti-mashing">anti-mashing</span> <span class="term" data-term="heuristic">heuristic</span> the game uses in a live run. Mash the buttons fast and <code>mashScore</code> climbs past the threshold; read carefully and it stays at 0.</p>
+              <p>This demo imports <code>src/systems/medicalEmergency.js</code>, <code>src/ui/modals.js</code>, and <code>src/systems/clickMetrics.js</code> directly; no mock reimplementation. State is seeded locally and thrown away — nothing leaks into the rest of the tour.</p>
+              <div id="demo-mashEmergency-mount"></div>
+            `,
+            demo: 'mashEmergency',
+          },
+        ],
+      },
+      {
+        id: 'clickmetrics',
+        label: 'clickMetrics.js',
+        sub: [
+          {
+            id: 's1',
+            title: 'clickMetrics.js — anti-mash detection',
+            body: `
+              <p>Every click through an event modal is timed and bucketed against an expected read duration that scales with body length. One "didNotRead" bucket is enough to flag a player; two skims will also trip it. Above <code>mashScoreThreshold</code>, the game rolls an anti-mash catastrophic emergency.</p>
+              <p>The module is small and intentionally standalone so its thresholds can be tuned in one place.</p>
+            `,
+            snippets: [
+              { path: 'src/systems/clickMetrics.js', lines: [6, 19], caption: 'CLICK_METRICS_CONFIG — the tunables',
+                code: `export const CLICK_METRICS_CONFIG = {
+  minReadMs: 1200,              // floor below which any decision is "too fast to read"
+  readMsPerChar: 35,            // ~28 wpm slow-reader rate; scales expected time with body length
+  mashScoreThreshold: 3,        // at or above this score, an emergency fires on the next event
+  maxEmergenciesPerRun: 5,      // cap so a single run can't chain-die from this alone
+  emergencyCooldownDelta: -2,   // mashScore reduction applied when an emergency fires
+  scoreDelta: {
+    didNotRead: 3,   // elapsed < 0.2 * expected — one fast click is enough to flag
+    skim:       2,   // elapsed < 0.5 * expected — two skims trip the heuristic
+    hurried:    1,   // elapsed < 0.75 * expected
+    normal:     0,   // elapsed < expected
+    thoughtful: -1   // elapsed >= expected — slow reads decay the score
+  }
+};` },
+            ],
+          },
+        ],
+      },
+      {
+        id: 'awayteam',
+        label: 'awayTeam.js',
+        sub: [
+          {
+            id: 's1',
+            title: 'awayTeam.js — divert and camp',
+            body: `
+              <p><span class="term" data-term="waypoint">Waypoint</span> diverts dispatch an "away team" of 1–3 crew. The rover camps (does not advance km) while authored chains in <code>src/content/awayTeamChains.js</code> fire stage-per-sol. Rewards accumulate on <code>state.awayTeam.accumulated</code> and only land on the rover at reunion.</p>
+              <p>Built on the same multi-stage shape as medical emergencies, but with its own resolver because away-team outcomes target the roster (not the full crew) and rewards are deferred.</p>
+            `,
+            snippets: [
+              { path: 'src/systems/awayTeam.js', lines: [36, 69], caption: 'acceptAwayTeam — dispatch the detour',
+                code: `export function acceptAwayTeam(state, waypointId, crewIds) {
+  const aliveCount = state.crew.filter(c => c.alive).length;
+  if (aliveCount < MIN_CREW_FOR_DIVERT) {
+    return {
+      ...state,
+      log: [...state.log, { sol: state.sol, text: 'Too few crew to dispatch an away team. Divert cancelled.' }]
+    };
+  }
+  const waypoint = WAYPOINTS.find(w => w.id === waypointId);
+  const chain = AWAY_TEAM_CHAINS[waypointId];
+  if (!waypoint || !chain) return state;
+
+  const validIds = crewIds.filter(id => state.crew.some(c => c.id === id && c.alive));
+  if (validIds.length === 0) return state;
+  if (validIds.length > aliveCount - 1) return state;   // keep ≥1 on rover
+
+  const returnSol = state.sol + waypoint.detourSols;
+  return {
+    ...state,
+    awayTeam: {
+      waypointId,
+      crewIds:      [...validIds],
+      departSol:    state.sol,
+      returnSol,
+      currentStage: chain.startStage,
+      accumulated:  emptyAccumulated(),
+      deaths:       []
+    },
+    log: [
+      ...state.log,
+      { sol: state.sol, text: \`Away team dispatched to \${waypoint.name}. Due back sol \${returnSol}.\` }
+    ]
+  };
+}` },
+            ],
+          },
+          {
+            id: 's2',
+            title: 'Authored chains',
+            body: `
+              <p>Per-waypoint chains live in <code>src/content/awayTeamChains.js</code>, keyed by waypoint id. Each is a small state machine: stages with choices, some choices mutating <code>returnSolDelta</code> to extend or shorten the camp, others carrying <code>awayTeamDamage</code> that only hits the roster.</p>
+            `,
+            snippets: [
+              { path: 'src/content/awayTeamChains.js', lines: [24, 57], caption: 'olivine_outcrop — a 2-stage geology chain',
+                code: `  olivine_outcrop: {
+    startStage: 'approach',
+    stages: {
+      approach: {
+        title:       'Olivine Outcrop — On Foot',
+        description: 'The cliff face drops fifteen meters to a fresh volcanic scar. Rappel gear is in the kit; ridgeline scan is the safe read.',
+        choices: [
+          { label:          'Rappel to the fresh face (deeper sample)',
+            nextStage:      'deep_sample',
+            returnSolDelta: 1 },
+          { label:          'Scan the face from the ridgeline',
+            skillCheck:     { role: 'engineer', successP: 0.75 },
+            successOutcome: { sciencePoints: 40 },
+            failOutcome:    { sciencePoints: 15 },
+            nextStage:      null }
+        ]
+      },
+      deep_sample: {
+        title:       'Down the Face',
+        description: 'You are halfway down the scar, rope anchored above. Fresh olivine vein exposed at eye level — drillable if you commit.',
+        choices: [
+          { label:          'Drill the exposed vein',
+            skillCheck:     { role: 'engineer', successP: 0.75 },
+            successOutcome: { sciencePoints: 80 },
+            failOutcome:    { sciencePoints: 30, awayTeamDamage: 20 },
+            nextStage:      null },
+          { label:          'Bag a chip sample and climb out',
+            returnSolDelta: -1,
+            outcome:        { sciencePoints: 35 },
+            nextStage:      null }
+        ]
+      }
+    }
+  },` },
+            ],
+          },
+        ],
+      },
+      {
+        id: 'smallsys',
+        label: 'crew / corpse / waypoints',
+        sub: [
+          {
+            id: 's1',
+            title: 'Small systems grouped',
+            body: `
+              <p>Three small modules that share state:</p>
+              <ul>
+                <li><code>crew.js</code> — damage, status, death bookkeeping (the biggest of the three; owns the medic-reduction rule and the death queue).</li>
+                <li><code>corpse.js</code> — dead-but-present crew; feeds extra weight into the cargo calc.</li>
+                <li><code>waypoints.js</code> — run-start roll of optional diverts along the route; acceptance hands off to <code>awayTeam.js</code>.</li>
+              </ul>
+              <p>Each is a coordinator between <code>state.js</code> and the higher-level systems. <code>corpse.js</code> is essentially a list and a sum; <code>waypoints.js</code> is a roll-and-decline pair.</p>
+            `,
+            snippets: [
+              { path: 'src/systems/crew.js',      lines: [22, 58], caption: 'crew.js — applyDamage with medic reduction',
+                code: `export function applyDamage(state, targetSpec, rawAmount, cause) {
+  const s = {
+    ...state,
+    crew: state.crew.map(c => ({ ...c })),
+    log: [...state.log]
+  };
+
+  const target = pickTarget(s.crew, targetSpec);
+  if (!target) return { state: s, target: null, died: false, dealt: 0 };
+
+  const medicAlive = s.crew.some(c => c.role === 'medic' && c.alive && c.id !== target.id);
+  // Medic doesn't reduce damage to themselves.
+  const reduction = medicAlive ? MEDIC_DAMAGE_REDUCTION : 0;
+  const dealt = Math.max(0, Math.round(rawAmount * (1 - reduction)));
+
+  const wasAlive = target.alive;
+  target.health = Math.max(0, target.health - dealt);
+  target.status = deriveStatus(target.health);
+  if (target.status === 'dead') target.alive = false;
+
+  const died = wasAlive && !target.alive;
+  if (died) {
+    s.log.push({
+      sol: s.sol,
+      text: \`\${target.name} (\${target.role.toUpperCase()}) succumbed to \${cause || 'injuries'}.\`
+    });
+    // Queue a death dialog for the UI dispatcher to surface (issue #33).
+    s.deathQueue = [...(s.deathQueue || []), {
+      crewId: target.id,
+      name:   target.name,
+      role:   target.role,
+      cause:  cause || 'injuries',
+      sol:    s.sol
+    }];
+  }
+  return { state: s, target, died, dealt };
+}` },
+              { path: 'src/systems/corpse.js',    lines: [5, 14], caption: 'corpse.js — the whole module',
+                code: `export const DEFAULT_CORPSE_LBS = 180;
+
+export function addCorpse(state, crewId, weightLbs = DEFAULT_CORPSE_LBS) {
+  if (state.corpses.some(c => c.crewId === crewId)) return state;
+  return { ...state, corpses: [...state.corpses, { crewId, weightLbs }] };
+}
+
+export function corpseWeight(state) {
+  return state.corpses.reduce((n, c) => n + c.weightLbs, 0);
+}` },
+              { path: 'src/systems/waypoints.js', lines: [23, 55], caption: 'waypoints.js — run-start two-pass roll',
+                code: `export function rollWaypoints(state) {
+  const usedIds = new Set();
+  const usedSegments = new Set();
+  const waypoints = [];
+
+  // Pass 1: probabilistic roll per eligible segment.
+  for (let segmentIdx = 1; segmentIdx < state.route.length - 1; segmentIdx++) {
+    if (Math.random() >= WAYPOINT_ROLL_PROB) continue;
+    const candidates = WAYPOINTS.filter(w => !usedIds.has(w.id));
+    if (candidates.length === 0) break;
+    const pick = candidates[Math.floor(Math.random() * candidates.length)];
+    usedIds.add(pick.id);
+    usedSegments.add(segmentIdx);
+    waypoints.push({ waypointId: pick.id, segmentIdx });
+  }
+
+  // Pass 2: top-up until we hit the per-run floor (or run out of room).
+  while (waypoints.length < MIN_WAYPOINTS_PER_RUN) {
+    const empty = [];
+    for (let segmentIdx = 1; segmentIdx < state.route.length - 1; segmentIdx++) {
+      if (!usedSegments.has(segmentIdx)) empty.push(segmentIdx);
+    }
+    const candidates = WAYPOINTS.filter(w => !usedIds.has(w.id));
+    if (empty.length === 0 || candidates.length === 0) break;
+    const segmentIdx = empty[Math.floor(Math.random() * empty.length)];
+    const pick = candidates[Math.floor(Math.random() * candidates.length)];
+    usedIds.add(pick.id);
+    usedSegments.add(segmentIdx);
+    waypoints.push({ waypointId: pick.id, segmentIdx });
+  }
+
+  return { ...state, waypoints };
+}` },
+            ],
+          },
+        ],
+      },
+      {
+        id: 'scoring',
+        label: 'career.js + scoring.js',
+        sub: [
+          {
+            id: 's1',
+            title: 'End-of-run scoring',
+            body: `
+              <p>When a run ends, <code>scoring.js</code> computes a point total and rank from science collected, sols taken, crew outcome, and resources remaining. Rank is gated by a checklist (issue #24): surviving is C, science + learning earn A, and only a full-crew-returned S-run earns the top mark.</p>
+              <p><code>career.js</code> persists science across runs for the long-term meta-progression — tiered bonuses like skill-check boosts and rover km/sol uplift. Both modules keep their compute functions <span class="term" data-term="pure-function">pure</span>; the only impure corners are the <span class="term" data-term="local-storage">localStorage</span> helpers at the bottom of each file.</p>
+            `,
+            snippets: [
+              { path: 'src/systems/scoring.js', lines: [96, 124], caption: 'scoring.js — computeScore breakdown',
+                code: `export function computeScore(state) {
+  const won = state.status === 'won';
+  const breakdown = [];
+
+  const outcomePts = won
+    ? 500
+    : state.totalKmTraveled >= 0.8 * totalRouteKm(state) ? 100 : 0;
+  breakdown.push({ label: 'Mission outcome', value: state.status, points: outcomePts });
+
+  const alive = aliveCrewCount(state);
+  breakdown.push({ label: 'Crew survived', value: \`\${alive}/\${state.crew.length}\`, points: alive * 100 });
+
+  const sciPts = Math.min(state.sciencePoints, 300);
+  breakdown.push({ label: 'Science points', value: state.sciencePoints, points: sciPts });
+
+  const r = state.resources;
+  const rawResPts = Math.round((r.oxygen + r.water + r.food + r.power) / 4);
+  const resPts = Math.min(rawResPts, 100);
+  breakdown.push({ label: 'Resources remaining', value: \`\${rawResPts}%\`, points: resPts });
+
+  const speedPts = won ? Math.max(0, 300 - state.sol * 10) : 0;
+  breakdown.push({ label: 'Speed bonus', value: \`sol \${state.sol}\`, points: speedPts });
+
+  const stops = Math.max(0, state.currentLandmarkIndex);
+  breakdown.push({ label: 'Landmark stops', value: stops, points: stops * 20 });
+
+  const points = breakdown.reduce((sum, b) => sum + b.points, 0);
+  return { points, breakdown, rank: rankFor(state) };
+}` },
+              { path: 'src/systems/career.js',  lines: [7, 26], caption: 'career.js — six persistent meta-tiers',
+                code: `export const CAREER_TIERS = [
+  { minSci:   0, id: 'rookie',          name: 'Rookie',
+    description: 'No bonuses yet.',
+    effect: {} },
+  { minSci:  30, id: 'calibration',     name: 'Calibration Data Analysis',
+    description: 'Waypoint offers show exact reward estimates.',
+    effect: { exactWaypointReward: true } },
+  { minSci: 100, id: 'navigation',      name: 'Navigation Pattern Analysis',
+    description: 'Rover base km/sol +5% at every pace.',
+    effect: { kmMult: 1.05 } },
+  { minSci: 225, id: 'methodology',     name: 'Field Methodology Training',
+    description: 'Skill-check success +10 percentage points across all events.',
+    effect: { skillBonus: 0.10 } },
+  { minSci: 400, id: 'life_support',    name: 'Life-Support Optimization',
+    description: 'O₂ and H₂O consumption −10% at every pace.',
+    effect: { lifeSupportMult: 0.90 } },
+  { minSci: 700, id: 'intel_synthesis', name: 'Mission Intel Synthesis',
+    description: 'One upcoming event previewed on the briefing screen each run.',
+    effect: { eventPreview: true } }
+];` },
+            ],
+          },
+        ],
+      },
+    ],
+  },
+  {
+    id: 'content-vs-systems',
+    title: 'Content vs. systems',
+    body: `
+      <p>Across the branches you just walked, one pattern repeats: <strong>logic in <code>src/systems/</code>, data in <code>src/content/</code></strong>. A system module knows <em>how</em>; a content module knows <em>what</em>.</p>
+      <p>This split is why adding a new event, emergency, fact, or waypoint is usually a one-file change in <code>content/</code>. The systems stay stable; the world grows.</p>
+    `,
+  },
+  {
+    id: 'ui',
+    title: 'UI layer',
+    body: `
+      <p><code>src/ui/modals.js</code> renders event cards, multi-stage dialogs, mash-rescue, codex pages, and so on. It is DOM-heavy but state-light — every modal receives the game state and a <span class="term" data-term="dispatch">dispatch</span> function, and returns nothing. All flow lives in <code>main.js</code>.</p>
+      <p><code>src/ui/codex.js</code> handles the in-game encyclopedia of Mars facts that players unlock by playing.</p>
+    `,
+    snippets: [
+      { path: 'src/ui/modals.js', lines: [13, 31], caption: 'showEventModal — render a choice list',
+        code: `export function showEventModal(event, onChoose) {
+  const r = root();
+  if (!r) return;
+
+  const choicesHtml = event.modal.choices.map((c, i) => {
+    const cost = formatCost(c);
+    const check = c.skillCheck
+      ? \`<span class="modal-choice-check">\${c.skillCheck.role.toUpperCase()} CHECK · \${Math.round(c.skillCheck.successP * 100)}%</span>\`
+      : '';
+    const cls = ['modal-choice'];
+    if (c.primary) cls.push('primary');
+    return \`
+      <button class="\${cls.join(' ')}" data-idx="\${i}" type="button">
+        <span class="modal-choice-label">\${escapeHtml(c.label)}</span>
+        \${check}
+        \${cost ? \`<span class="modal-choice-cost">\${cost}</span>\` : ''}
+      </button>
+    \`;
+  }).join('');` },
+    ],
+  },
+  {
+    id: 'theme',
+    title: 'Theme system',
+    body: `
+      <p>Three themes (plus Mission Control default): LCARS, Voltron HUD, Last Starfighter. Each is a stylesheet under <code>styles/theme-*.css</code> that overrides a shared set of <span class="term" data-term="css-variable">CSS variables</span> defined in <code>styles/theme.css</code>. <code>src/theme.js</code> is a 68-line switcher that sets <code>data-theme</code> on <code>&lt;body&gt;</code> and remembers the last choice in <span class="term" data-term="local-storage">localStorage</span>.</p>
+      <p><strong>Live proof:</strong> this slideshow reuses those exact stylesheets. Change the theme dropdown in the top-right right now — every frame, chrome, and demo repaints instantly.</p>
+    `,
+    snippets: [
+      { path: 'src/theme.js', lines: [7, 17], caption: 'THEMES list + resolveTheme',
+        code: `export const THEMES = [
+  { id: 'mc',          label: 'Mission Control' },
+  { id: 'lcars',       label: 'LCARS / TNG' },
+  { id: 'voltron',     label: 'Voltron HUD' },
+  { id: 'starfighter', label: 'Last Starfighter' }
+];
+
+export function resolveTheme(raw) {
+  if (typeof raw !== 'string' || raw.length === 0) return 'mc';
+  return THEMES.some(t => t.id === raw) ? raw : 'mc';
+}` },
+    ],
+  },
+  {
+    id: 'audio',
+    title: 'Audio',
+    body: `
+      <p><code>src/audio.js</code> is a minimal music player: a shuffled playlist, a mute toggle, a manual track dropdown. It never auto-plays — users have to click first, per browser policy. The module wraps a single <code>Audio</code> object and exposes small helpers (play, stop, mute, cycle, fade) that <code>main.js</code> wires to the UI.</p>
+    `,
+    snippets: [
+      { path: 'src/audio.js', lines: [74, 88], caption: 'play — load, loop-if-title, respect mute',
+        code: `export function play(trackId) {
+  const track = trackId === 'title'
+    ? TITLE_TRACK
+    : GAMEPLAY_TRACKS.find(t => t.id === trackId);
+  if (!track) return;
+  if (currentTrackId === track.id && !audio.paused) return;
+
+  currentTrackId = track.id;
+  audio.src = track.file;
+  audio.loop = (track.id === 'title'); // title loops; gameplay advances via 'ended'
+  audio.muted = isMuted();
+  audio.play().catch(() => {});
+  unlocked = true;
+  notifyTrackChange(track.id);
+}` },
+    ],
+  },
+  {
+    id: 'tests',
+    title: 'Testing',
+    body: `
+      <p>Two kinds of test code:</p>
+      <ul>
+        <li><strong>Unit tests</strong> — <code>sim/*.test.mjs</code>, each uses <code>node --test</code>. Exercise pure functions from <code>src/systems/</code> and <code>src/theme.js</code>. Run one file: <code>node --test sim/theme.test.mjs</code>.</li>
+        <li><strong>Playtest harness</strong> — <code>sim/play.mjs</code> and <code>sim/playtest1000.mjs</code>. Runs thousands of AI-driven playthroughs with various strategies, prints a balance table. This catches difficulty regressions that unit tests can't.</li>
+      </ul>
+      <p>Both paths depend on keeping system modules pure (no DOM imports in <code>src/systems/</code>).</p>
+    `,
+  },
+  {
+    id: 'workflow',
+    title: 'Workflow',
+    body: `
+      <p>Every change follows the same trail:</p>
+      <ol>
+        <li><strong>GitHub issue</strong> — describes problem + acceptance criteria.</li>
+        <li><strong>Spec</strong> — <code>docs/superpowers/specs/YYYY-MM-DD-&lt;topic&gt;-design.md</code>.</li>
+        <li><strong>Plan</strong> — <code>docs/superpowers/plans/YYYY-MM-DD-&lt;topic&gt;.md</code> (this tour is one).</li>
+        <li><strong>Implementation</strong> — small commits, each referencing the issue.</li>
+        <li><strong>Release</strong> — SemVer git tag + GitHub release.</li>
+      </ol>
+      <p>The <code>docs/superpowers/</code> directory is the repository of all past specs and plans, and is a great read in its own right.</p>
+    `,
+  },
+  {
+    id: 'credits',
+    title: 'End of tour',
+    body: `
+      <p>Thanks for walking through. Suggested next steps:</p>
+      <ul>
+        <li>Skim the most recent spec in <code>docs/superpowers/specs/</code> to see the current frontier.</li>
+        <li>Pick any system that caught your eye and read its test file under <code>sim/</code>.</li>
+      </ul>
+      <div class="tour-cta-row">
+        <a class="tour-cta" href="../../index.html">Start Game</a>
+      </div>
+    `,
+  },
+];
