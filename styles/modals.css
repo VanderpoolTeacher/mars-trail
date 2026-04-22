@@ -282,12 +282,30 @@ body[data-theme="lcars"] .modal-severity.severity-away-team {
   box-shadow: var(--glow);
   cursor: pointer;
   margin-bottom: 48px;
-  transition: background 120ms, box-shadow 120ms;
+  transition: background 120ms, box-shadow 120ms, transform 120ms;
+  animation: mission-cta-pulse 1.8s ease-in-out infinite;
 }
 
 .title-start:hover {
   background: rgba(0, 255, 100, 0.18);
   box-shadow: var(--glow-strong);
+  animation-play-state: paused;
+}
+
+@keyframes mission-cta-pulse {
+  0%, 100% {
+    box-shadow: 0 0 6px currentColor, 0 0 10px currentColor;
+  }
+  50% {
+    box-shadow: 0 0 18px currentColor, 0 0 32px currentColor;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .title-start {
+    animation: none;
+    box-shadow: 0 0 10px currentColor;
+  }
 }
 
 .title-credits {

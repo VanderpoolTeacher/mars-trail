@@ -164,42 +164,23 @@
 
 .tour-cta {
   display: inline-block;
-  padding: 14px 28px;
+  padding: 12px 24px;
   font-family: ui-monospace, monospace;
-  font-size: 1.1em;
-  font-weight: 700;
-  letter-spacing: 0.12em;
+  font-size: 1em;
+  font-weight: 600;
+  letter-spacing: 0.1em;
   color: currentColor;
   background: transparent;
-  border: 2px solid currentColor;
+  border: 1px solid currentColor;
   border-radius: 4px;
   text-decoration: none;
   cursor: pointer;
-  animation: tour-cta-pulse 1.8s ease-in-out infinite;
-  transition: transform 0.15s;
+  transition: background 0.15s, transform 0.15s;
 }
 
 .tour-cta:hover,
 .tour-cta:focus-visible {
-  transform: scale(1.03);
+  background: var(--panel-header-bg, rgba(255, 255, 255, 0.08));
+  transform: scale(1.02);
   outline: none;
-  animation-play-state: paused;
-}
-
-@keyframes tour-cta-pulse {
-  0%, 100% {
-    box-shadow: 0 0 4px currentColor, 0 0 8px currentColor;
-    opacity: 1;
-  }
-  50% {
-    box-shadow: 0 0 16px currentColor, 0 0 28px currentColor;
-    opacity: 0.92;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .tour-cta {
-    animation: none;
-    box-shadow: 0 0 8px currentColor;
-  }
 }
