@@ -185,31 +185,41 @@
   outline: none;
 }
 
-/* Glossary term buttons. Inherit the themed text color. */
-.term {
+/* Glossary term buttons. Beat every theme's generic button styling by using a
+ * specificity high enough to win against `body[data-theme="..."] button {...}`. */
+.tour-stage .term,
+.tour-stage .term:hover,
+.tour-stage .term:focus,
+.tour-stage .term:focus-visible {
   background: none;
+  background-color: transparent;
   border: 0;
+  border-radius: 0;
   padding: 0;
   margin: 0;
   font: inherit;
+  letter-spacing: inherit;
+  text-transform: none;
+  text-shadow: none;
+  box-shadow: none;
   color: currentColor;
   cursor: pointer;
   text-decoration: underline;
   text-underline-offset: 2px;
 }
 
-.term:hover,
-.term:focus-visible {
+.tour-stage .term:hover,
+.tour-stage .term:focus-visible {
   opacity: 0.75;
   outline: none;
 }
 
-.term-def {
+.tour-stage .term-def {
   margin: 6px 0 10px 0;
   opacity: 0.85;
   font-size: 0.95em;
   font-style: italic;
 }
 
-.term-def p:first-child { margin-top: 0; }
-.term-def p:last-child  { margin-bottom: 0; }
+.tour-stage .term-def p:first-child { margin-top: 0; }
+.tour-stage .term-def p:last-child  { margin-bottom: 0; }
