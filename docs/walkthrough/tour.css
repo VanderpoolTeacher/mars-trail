@@ -1,5 +1,14 @@
 /* Layout primitives. Colors and decoration come from styles/theme-*.css via CSS vars. */
 
+/* The game's layout.css pins html/body to 100dvh with overflow:hidden on desktop so
+   the dashboard fits the viewport exactly. The tour is a document-flow page and
+   needs normal page scrolling — override that here (tour.css loads last). */
+html, body {
+  overflow: auto;
+  height: auto;
+  min-height: 100dvh;
+}
+
 .tour-topbar {
   display: flex;
   justify-content: space-between;
