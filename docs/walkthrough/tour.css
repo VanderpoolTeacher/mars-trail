@@ -30,12 +30,21 @@ body {
 .tour-stage {
   flex: 1 1 auto;
   min-height: 0;
-  overflow: hidden;       /* stage itself does not scroll; only code blocks do */
+  overflow: hidden;
   width: 100%;
   max-width: 920px;
   margin: 0 auto;
   padding: 24px;
   box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+}
+
+.tour-slide {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
 }
 
 .tour-nav {
@@ -48,13 +57,27 @@ body {
 .tour-slide h1 { margin-top: 0; }
 .tour-slide p { line-height: 1.5; max-width: 70ch; }
 
-.tour-snippets { margin-top: 16px; }
+.tour-snippets {
+  margin-top: 16px;
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
 
 .tour-snippet {
   border: 1px solid var(--panel-border, #0a8);
   border-radius: 4px;
-  margin-bottom: 10px;
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  flex: 0 0 auto;
+  min-height: 0;
+}
+
+.tour-snippet.is-open {
+  flex: 1 1 auto;
 }
 
 .tour-snippet-header {
@@ -79,7 +102,9 @@ body {
 }
 
 .tour-snippet.is-open .tour-snippet-body {
-  max-height: min(60vh, 500px);
+  flex: 1 1 auto;
+  min-height: 0;
+  max-height: none;
   overflow-x: hidden;
   overflow-y: auto;
   scrollbar-width: none;        /* Firefox */
@@ -103,23 +128,15 @@ body {
   color: var(--code-fg, inherit);
 }
 
-/* Inline <pre> blocks inside slide prose (e.g. the repo-layout tree) — wrap,
-   and if they'd otherwise exceed the available stage, cap and scroll. */
+/* Inline <pre> blocks in slide prose (e.g. the repo-layout tree). Snippet pre
+   scroll is handled by the surrounding .tour-snippet-body (flex-filled), so
+   this rule just ensures inline pre blocks wrap and never horizontal-scroll. */
 .tour-stage pre {
   white-space: pre-wrap;
   word-break: break-word;
   overflow-wrap: anywhere;
   max-width: 100%;
-  max-height: min(55vh, 460px);
   overflow-x: hidden;
-  overflow-y: auto;
-  padding-bottom: 16px;
-  scrollbar-width: none;
-  -ms-overflow-style: none;
-}
-
-.tour-stage pre::-webkit-scrollbar {
-  display: none;
 }
 
 .hub-tiles {
