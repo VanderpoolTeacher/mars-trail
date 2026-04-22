@@ -24,7 +24,7 @@ export const spine = [
     id: 'stack',
     title: 'Tech stack',
     body: `
-      <p><strong>Vanilla ES modules.</strong> No framework, no bundler, no build step. Open <code>index.html</code> in a browser and you're running the game.</p>
+      <p><strong>Vanilla <span class="term" data-term="es-modules">ES modules</span>.</strong> No framework, no bundler, no build step. Open <code>index.html</code> in a browser and you're running the game.</p>
       <p>This is deliberate: the project is small enough that a build toolchain would be more complexity than feature. It also makes the code unusually easy to read — what you see in the file is what runs.</p>
       <p>Testing uses Node's built-in <code>node --test</code> runner (see <code>sim/</code>). The simulation harness at <code>sim/play.mjs</code> runs thousands of AI-driven playthroughs to validate balance.</p>
     `,
@@ -67,7 +67,7 @@ export const spine = [
         <li><strong>Render</strong> — <code>render.js</code> rebuilds the DOM from state.</li>
         <li><strong>Log</strong> — mission log entries appear for what just happened.</li>
       </ol>
-      <p>There is <em>no</em> observer pattern, <em>no</em> virtual DOM, <em>no</em> reactive framework. On every change, <code>render()</code> rebuilds the parts of the DOM it owns from scratch.</p>
+      <p>There is <em>no</em> observer pattern, <em>no</em> <span class="term" data-term="virtual-dom">virtual DOM</span>, <em>no</em> <span class="term" data-term="reactive-framework">reactive framework</span>. On every change, <code>render()</code> rebuilds the parts of the <span class="term" data-term="dom">DOM</span> it owns from scratch.</p>
       <div id="demo-loop-mount"></div>
     `,
     demo: 'loop',
@@ -108,8 +108,8 @@ import { GAMEPLAY_TRACKS, getSelectedTrackId, isMuted, playTitle, playGameplay, 
     id: 'state',
     title: 'State',
     body: `
-      <p><code>src/state.js</code>'s central export is a factory, <code>createInitialState()</code>, that returns a plain JS object. That object <em>is</em> the game. Everything else reads it; systems mutate it; <code>render()</code> projects it to DOM. (The module also exports a few shared constants and lookup tables — see the file itself.)</p>
-      <p>Keeping state in one place is what makes tests easy to write: seed a state, call a system, assert on the resulting state.</p>
+      <p><code>src/state.js</code>'s central export is a <span class="term" data-term="factory-function">factory</span>, <code>createInitialState()</code>, that returns a plain JS object. That object <em>is</em> the game. Everything else reads it; systems mutate it; <code>render()</code> projects it to DOM. (The module also exports a few shared constants and lookup tables — see the file itself.)</p>
+      <p>Keeping state in one place — a <span class="term" data-term="single-source-of-truth">single source of truth</span> — is what makes tests easy to write: seed a state, call a system, assert on the resulting state.</p>
     `,
     snippets: [
       {
@@ -190,8 +190,8 @@ export function render(state) {
             id: 's1',
             title: 'travel.js — pace, tick, arrival',
             body: `
-              <p><code>src/systems/travel.js</code> owns the per-sol resource tick. It advances the rover by pace-dependent km, consumes power, rations, EVA charges, and decides when the rover arrives at the next landmark.</p>
-              <p>The module is (mostly) pure: given a state and a pace, it returns a new state. That purity is what lets <code>sim/playtest1000.mjs</code> run thousands of simulated runs in a couple of seconds.</p>
+              <p><code>src/systems/travel.js</code> owns the per-<span class="term" data-term="sol">sol</span> resource tick. It advances the rover by pace-dependent km, consumes power, rations, <span class="term" data-term="eva">EVA</span> charges, and decides when the rover arrives at the next landmark.</p>
+              <p>The module is (mostly) <span class="term" data-term="pure-function">pure</span>: given a state and a pace, it returns a new state. That purity is what lets <code>sim/playtest1000.mjs</code> run thousands of simulated runs in a couple of seconds.</p>
             `,
             snippets: [
               {
@@ -345,7 +345,7 @@ export function rollEvent(state) {
             id: 's1',
             title: 'multiStage.js — authored chains',
             body: `
-              <p>A multi-stage event is an authored chain: each choice points to the next stage, or to an outcome. <code>src/systems/multiStage.js</code> is a tiny engine that walks that graph. <code>src/content/multiStageEvents.js</code> (and <code>emergencies.js</code>) are the authored data.</p>
+              <p>A <span class="term" data-term="multi-stage-event">multi-stage event</span> is an authored chain: each choice points to the next stage, or to an outcome. <code>src/systems/multiStage.js</code> is a tiny engine that walks that graph. <code>src/content/multiStageEvents.js</code> (and <code>emergencies.js</code>) are the authored data.</p>
               <p>The medical emergency (hub branch <strong>4</strong>) is the flagship example — a three-stage diagnosis-treatment-disposal chain.</p>
             `,
             snippets: [
@@ -445,7 +445,7 @@ export function getMedicalStageView(state, stageId, context) {
             id: 's2',
             title: 'Live: the mash-rescue UI',
             body: `
-              <p>Click <strong>Start emergency</strong> below to run a seeded medical chain against the real modal renderer. Every click is timed by <code>clickMetrics.recordDecision</code> — the same anti-mashing heuristic the game uses in a live run. Mash the buttons fast and <code>mashScore</code> climbs past the threshold; read carefully and it stays at 0.</p>
+              <p>Click <strong>Start emergency</strong> below to run a seeded medical chain against the real modal renderer. Every click is timed by <code>clickMetrics.recordDecision</code> — the same <span class="term" data-term="anti-mashing">anti-mashing</span> <span class="term" data-term="heuristic">heuristic</span> the game uses in a live run. Mash the buttons fast and <code>mashScore</code> climbs past the threshold; read carefully and it stays at 0.</p>
               <p>This demo imports <code>src/systems/medicalEmergency.js</code>, <code>src/ui/modals.js</code>, and <code>src/systems/clickMetrics.js</code> directly; no mock reimplementation. State is seeded locally and thrown away — nothing leaks into the rest of the tour.</p>
               <div id="demo-mashEmergency-mount"></div>
             `,
@@ -492,7 +492,7 @@ export function getMedicalStageView(state, stageId, context) {
             id: 's1',
             title: 'awayTeam.js — divert and camp',
             body: `
-              <p>Waypoint diverts dispatch an "away team" of 1–3 crew. The rover camps (does not advance km) while authored chains in <code>src/content/awayTeamChains.js</code> fire stage-per-sol. Rewards accumulate on <code>state.awayTeam.accumulated</code> and only land on the rover at reunion.</p>
+              <p><span class="term" data-term="waypoint">Waypoint</span> diverts dispatch an "away team" of 1–3 crew. The rover camps (does not advance km) while authored chains in <code>src/content/awayTeamChains.js</code> fire stage-per-sol. Rewards accumulate on <code>state.awayTeam.accumulated</code> and only land on the rover at reunion.</p>
               <p>Built on the same multi-stage shape as medical emergencies, but with its own resolver because away-team outcomes target the roster (not the full crew) and rewards are deferred.</p>
             `,
             snippets: [
@@ -692,7 +692,7 @@ export function corpseWeight(state) {
             title: 'End-of-run scoring',
             body: `
               <p>When a run ends, <code>scoring.js</code> computes a point total and rank from science collected, sols taken, crew outcome, and resources remaining. Rank is gated by a checklist (issue #24): surviving is C, science + learning earn A, and only a full-crew-returned S-run earns the top mark.</p>
-              <p><code>career.js</code> persists science across runs for the long-term meta-progression — tiered bonuses like skill-check boosts and rover km/sol uplift. Both modules keep their compute functions pure; the only impure corners are the localStorage helpers at the bottom of each file.</p>
+              <p><code>career.js</code> persists science across runs for the long-term meta-progression — tiered bonuses like skill-check boosts and rover km/sol uplift. Both modules keep their compute functions <span class="term" data-term="pure-function">pure</span>; the only impure corners are the <span class="term" data-term="local-storage">localStorage</span> helpers at the bottom of each file.</p>
             `,
             snippets: [
               { path: 'src/systems/scoring.js', lines: [96, 124], caption: 'scoring.js — computeScore breakdown',
@@ -764,7 +764,7 @@ export function corpseWeight(state) {
     id: 'ui',
     title: 'UI layer',
     body: `
-      <p><code>src/ui/modals.js</code> renders event cards, multi-stage dialogs, mash-rescue, codex pages, and so on. It is DOM-heavy but state-light — every modal receives the game state and a dispatch function, and returns nothing. All flow lives in <code>main.js</code>.</p>
+      <p><code>src/ui/modals.js</code> renders event cards, multi-stage dialogs, mash-rescue, codex pages, and so on. It is DOM-heavy but state-light — every modal receives the game state and a <span class="term" data-term="dispatch">dispatch</span> function, and returns nothing. All flow lives in <code>main.js</code>.</p>
       <p><code>src/ui/codex.js</code> handles the in-game encyclopedia of Mars facts that players unlock by playing.</p>
     `,
     snippets: [
@@ -794,7 +794,7 @@ export function corpseWeight(state) {
     id: 'theme',
     title: 'Theme system',
     body: `
-      <p>Three themes (plus Mission Control default): LCARS, Voltron HUD, Last Starfighter. Each is a stylesheet under <code>styles/theme-*.css</code> that overrides a shared set of CSS variables defined in <code>styles/theme.css</code>. <code>src/theme.js</code> is a 68-line switcher that sets <code>data-theme</code> on <code>&lt;body&gt;</code> and remembers the last choice in localStorage.</p>
+      <p>Three themes (plus Mission Control default): LCARS, Voltron HUD, Last Starfighter. Each is a stylesheet under <code>styles/theme-*.css</code> that overrides a shared set of <span class="term" data-term="css-variable">CSS variables</span> defined in <code>styles/theme.css</code>. <code>src/theme.js</code> is a 68-line switcher that sets <code>data-theme</code> on <code>&lt;body&gt;</code> and remembers the last choice in <span class="term" data-term="local-storage">localStorage</span>.</p>
       <p><strong>Live proof:</strong> this slideshow reuses those exact stylesheets. Change the theme dropdown in the top-right right now — every frame, chrome, and demo repaints instantly.</p>
     `,
     snippets: [
