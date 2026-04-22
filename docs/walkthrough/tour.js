@@ -2,6 +2,7 @@ import { spine } from './slides.js';
 import { parseHash, hashFor, routeForward, routeBack, routeToSlide } from './router.js';
 import { THEMES, resolveTheme } from '../../src/theme.js';
 import { githubUrl } from './repo.js';
+import { GLOSSARY } from './glossary.js';
 
 const demoLoaders = {
   loop:          () => import('./demos/loop.js'),
@@ -150,6 +151,46 @@ function wireCtas(stage) {
   }
 }
 
+// Promote authored <span class="term" data-term="slug"> markers to interactive
+// buttons that toggle an inline definition pane. GLOSSARY.def is trusted HTML.
+function wireGlossaryTerms(stage) {
+  let counter = 0;
+  for (const span of stage.querySelectorAll('span.term[data-term]')) {
+    const slug = span.dataset.term;
+    const entry = GLOSSARY[slug];
+    if (!entry) {
+      console.warn(`Unknown term: "${slug}" — check data-term against glossary.js`);
+      continue;
+    }
+    const defId = `term-def-${slug}-${++counter}`;
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'term';
+    button.dataset.term = slug;
+    button.setAttribute('aria-expanded', 'false');
+    button.setAttribute('aria-controls', defId);
+    button.textContent = span.textContent;
+    span.replaceWith(button);
+
+    button.addEventListener('click', () => {
+      const isOpen = button.getAttribute('aria-expanded') === 'true';
+      if (isOpen) {
+        const existing = document.getElementById(defId);
+        if (existing) existing.remove();
+        button.setAttribute('aria-expanded', 'false');
+        return;
+      }
+      const def = document.createElement('div');
+      def.className = 'term-def';
+      def.id = defId;
+      def.setAttribute('role', 'region');
+      def.innerHTML = entry.def;
+      button.insertAdjacentElement('afterend', def);
+      button.setAttribute('aria-expanded', 'true');
+    });
+  }
+}
+
 // Renders a slide into #tour-stage.
 // TRUST BOUNDARY: slide.title, slide.body, slide.snippets[i].path, and
 // slide.snippets[i].caption are interpolated as HTML. The slide manifest
@@ -163,6 +204,7 @@ function render(location) {
   wireSnippetToggles(stage);
   wireHubTiles(stage);
   wireCtas(stage);
+  wireGlossaryTerms(stage);
   renderProgress(location);
   mountDemo(slide);
 }
