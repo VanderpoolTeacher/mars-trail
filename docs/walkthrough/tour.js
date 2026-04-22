@@ -145,12 +145,6 @@ function wireHubTiles(stage) {
   }
 }
 
-function wireCtas(stage) {
-  for (const btn of stage.querySelectorAll('[data-action="restart"]')) {
-    btn.addEventListener('click', () => go({ kind: 'spine', index: 0 }));
-  }
-}
-
 // Promote authored <span class="term" data-term="slug"> markers to interactive
 // buttons that toggle an inline definition pane. GLOSSARY.def is trusted HTML.
 function wireGlossaryTerms(stage) {
@@ -203,7 +197,6 @@ function render(location) {
   stage.innerHTML = renderSlideHtml(slide, location);
   wireSnippetToggles(stage);
   wireHubTiles(stage);
-  wireCtas(stage);
   wireGlossaryTerms(stage);
   renderProgress(location);
   mountDemo(slide);

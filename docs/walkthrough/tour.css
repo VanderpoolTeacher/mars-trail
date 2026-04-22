@@ -65,7 +65,11 @@
   transition: max-height 0.2s ease;
 }
 
-.tour-snippet.is-open .tour-snippet-body { max-height: 800px; overflow: auto; }
+.tour-snippet.is-open .tour-snippet-body {
+  max-height: 800px;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
 
 .tour-snippet pre {
   margin: 0;
@@ -73,9 +77,20 @@
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   font-size: 0.85em;
   line-height: 1.45;
-  white-space: pre;
+  white-space: pre-wrap;
+  word-break: break-word;
+  overflow-wrap: anywhere;
   background: var(--code-bg, #000);
   color: var(--code-fg, inherit);
+}
+
+/* Inline <pre> blocks inside slide prose (e.g. the repo-layout tree) — also wrap. */
+.tour-stage pre {
+  white-space: pre-wrap;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+  max-width: 100%;
+  overflow-x: hidden;
 }
 
 .hub-tiles {
