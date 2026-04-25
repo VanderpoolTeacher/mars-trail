@@ -169,7 +169,10 @@ export function showTitleLayer(onStart) {
       <p class="title-tagline">The colony is waiting. Earth cannot help you from here.</p>
       ${bestCaption}
       ${careerCaption}
-      <button class="title-start" id="title-start" type="button">START MISSION</button>
+      <div class="title-actions">
+        <button class="title-start" id="title-start" type="button">START MISSION</button>
+        <button class="title-lounge" id="title-lounge" type="button">🎵 THE LOUNGE</button>
+      </div>
       <div class="title-credits">
         <span class="title-credit-line">Created by</span>
         <span class="title-studio">Get Good Games and Tech</span>
@@ -181,6 +184,9 @@ export function showTitleLayer(onStart) {
   `;
 
   layer.querySelector('#title-start').addEventListener('click', onStart);
+  layer.querySelector('#title-lounge').addEventListener('click', () => {
+    import('./lounge.js').then(m => m.openLounge());
+  });
 }
 
 // Hide the START button once clicked; keep backdrop.

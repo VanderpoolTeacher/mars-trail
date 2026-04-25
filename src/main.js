@@ -14,7 +14,8 @@ import { resolveMedicalStage, getMedicalStageView } from './systems/medicalEmerg
 import { WAYPOINTS } from './content/waypoints.js';
 import { makeLandmarkEncounter } from './content/landmarks.js';
 import './ui/codex.js';   // registers global click handler for codex terms
-import { GAMEPLAY_TRACKS, getSelectedTrackId, isMuted, playTitle, playGameplay, selectTrack, toggleMute, fadeOut, fadeInGameplay, cycleTrack, onTrackChange } from './audio.js';
+import { isMuted, playTitle, playGameplay, toggleMute, fadeOut, fadeInGameplay, cycleTrack } from './audio.js';
+import { openLounge } from './ui/lounge.js';
 
 let state = createInitialState();
 renderAll();
@@ -302,28 +303,13 @@ function renderAll() {
 }
 
 // ---- Music controls ----
-const musicSelect = document.getElementById('music-select');
-const musicMute   = document.getElementById('music-mute');
+const loungeOpenBtn = document.getElementById('lounge-open');
+const musicMute     = document.getElementById('music-mute');
 
-// Populate track selector.
-GAMEPLAY_TRACKS.forEach(t => {
-  const opt = document.createElement('option');
-  opt.value = t.id;
-  opt.textContent = t.name;
-  musicSelect.appendChild(opt);
-});
-musicSelect.value = getSelectedTrackId();
 musicMute.textContent = isMuted() ? '🔇' : '🔊';
 musicMute.classList.toggle('muted', isMuted());
 
-musicSelect.addEventListener('change', () => {
-  selectTrack(musicSelect.value);
-});
-
-// Keep dropdown in sync with shuffle-driven track changes.
-onTrackChange((id) => {
-  if (id !== 'title') musicSelect.value = id;
-});
+loungeOpenBtn.addEventListener('click', () => openLounge());
 
 musicMute.addEventListener('click', () => {
   const muted = toggleMute();
@@ -339,8 +325,7 @@ document.addEventListener('keydown', (e) => {
   if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
     e.preventDefault();
     const dir = e.key === 'ArrowUp' ? -1 : 1;
-    const newId = cycleTrack(dir);
-    musicSelect.value = newId;
+    cycleTrack(dir);
   } else if (e.key === 'm' || e.key === 'M') {
     e.preventDefault();
     const muted = toggleMute();
