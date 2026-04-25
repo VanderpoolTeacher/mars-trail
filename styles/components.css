@@ -993,3 +993,192 @@ body[data-theme="lcars"] .eor-col-facts {
     box-shadow: 0 0 10px currentColor;
   }
 }
+
+/* ----- The Lounge ----- */
+
+.lounge-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  display: none;
+  background: var(--bg);
+  overflow: auto;
+}
+.lounge-layer.active { display: block; }
+
+.lounge-screen {
+  max-width: 880px;
+  margin: 0 auto;
+  padding: 24px 20px 48px;
+  display: grid;
+  gap: 20px;
+}
+
+.lounge-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--fg-faint);
+  padding-bottom: 8px;
+}
+.lounge-title {
+  margin: 0;
+  font-size: 22px;
+  letter-spacing: 0.15em;
+  color: var(--fg);
+  text-shadow: var(--glow);
+}
+.lounge-close {
+  background: transparent;
+  color: var(--fg);
+  border: 1px solid var(--fg-faint);
+  padding: 6px 12px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  cursor: pointer;
+}
+.lounge-close:hover { border-color: var(--fg); box-shadow: var(--glow); }
+
+.lounge-now-playing {
+  border: 1px solid var(--fg-faint);
+  padding: 14px 16px;
+  background: var(--bg-panel);
+}
+.lounge-np-label {
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  color: var(--fg-dim);
+}
+.lounge-np-name {
+  font-size: 18px;
+  margin: 4px 0 4px;
+  color: var(--fg);
+  text-shadow: var(--glow);
+}
+.lounge-np-flavor {
+  font-size: 12px;
+  color: var(--fg-dim);
+  font-style: italic;
+  min-height: 1.4em;
+}
+
+.lounge-progress-row {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 10px;
+  margin-top: 12px;
+}
+.lounge-time {
+  font-size: 11px;
+  color: var(--fg-dim);
+  min-width: 3.2em;
+  text-align: center;
+}
+.lounge-progress {
+  position: relative;
+  height: 6px;
+  background: var(--fg-faint);
+  cursor: pointer;
+  user-select: none;
+}
+.lounge-progress-fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 0;
+  background: var(--fg);
+  box-shadow: var(--glow);
+  transition: width 120ms linear;
+}
+
+.lounge-controls {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+  justify-content: center;
+}
+.lounge-ctrl {
+  background: transparent;
+  color: var(--fg);
+  border: 1px solid var(--fg-faint);
+  padding: 6px 12px;
+  font-family: var(--font-mono);
+  font-size: 14px;
+  cursor: pointer;
+  min-width: 44px;
+}
+.lounge-ctrl:hover { border-color: var(--fg); box-shadow: var(--glow); }
+.lounge-ctrl-play  { min-width: 56px; }
+
+.lounge-list-section { display: grid; gap: 8px; }
+.lounge-list-header {
+  margin: 0;
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  color: var(--fg-dim);
+  border-bottom: 1px dashed var(--fg-faint);
+  padding-bottom: 4px;
+}
+
+.lounge-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 4px;
+}
+.lounge-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid transparent;
+  cursor: pointer;
+}
+.lounge-row:hover {
+  border-color: var(--fg-faint);
+  background: var(--bg-panel);
+}
+.lounge-row.playing {
+  border-color: var(--fg);
+  background: var(--bg-panel);
+  box-shadow: var(--glow);
+}
+.lounge-row-main { display: grid; gap: 2px; min-width: 0; }
+.lounge-row-name {
+  font-size: 14px;
+  color: var(--fg);
+}
+.lounge-row-flavor {
+  font-size: 11px;
+  color: var(--fg-dim);
+  font-style: italic;
+}
+.lounge-row-indicator {
+  color: var(--fg-faint);
+  font-size: 12px;
+  visibility: hidden;
+}
+.lounge-row.playing .lounge-row-indicator { visibility: visible; color: var(--fg); }
+
+/* Title screen — give the LOUNGE button a sibling layout */
+.title-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: center;
+  margin-top: 6px;
+}
+.title-lounge {
+  background: transparent;
+  color: var(--fg);
+  border: 1px solid var(--fg-faint);
+  padding: 8px 18px;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  letter-spacing: 0.15em;
+  cursor: pointer;
+}
+.title-lounge:hover { border-color: var(--fg); box-shadow: var(--glow); }
