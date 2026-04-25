@@ -477,3 +477,28 @@ body[data-theme="starfighter"] .route-image {
   border: 1px solid var(--sf-red-dim);
   border-radius: 0;
 }
+
+/* ----- Lounge — Starfighter skin ----- */
+body[data-theme="starfighter"] .lounge-screen { padding-top: 32px; }
+body[data-theme="starfighter"] .lounge-title {
+  letter-spacing: 0.25em;
+  color: var(--sf-red);
+}
+body[data-theme="starfighter"] .lounge-now-playing,
+body[data-theme="starfighter"] .lounge-row {
+  border-style: dashed;
+  border-color: var(--sf-red-dim);
+}
+body[data-theme="starfighter"] .lounge-row:hover {
+  border-color: var(--fg-faint);
+}
+body[data-theme="starfighter"] .lounge-row.playing {
+  border-style: solid;
+  border-color: var(--sf-red);
+  background: rgba(255, 40, 64, 0.06);
+}
+body[data-theme="starfighter"] .lounge-progress { height: 4px; background: var(--sf-red-dim); }
+body[data-theme="starfighter"] .lounge-progress-fill { background: var(--fg); }
+body[data-theme="starfighter"] .lounge-np-name { color: var(--fg); }
+body[data-theme="starfighter"] .lounge-ctrl { border-color: var(--sf-red-dim); }
+body[data-theme="starfighter"] .lounge-ctrl:hover { border-color: var(--sf-red); }
