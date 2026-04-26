@@ -121,7 +121,7 @@ function render() {
             </div>
           </div>
           <div class="lounge-visualizer-footer">
-            <span class="lounge-visualizer-hint">POP BUBBLES BEFORE THEY HIT THE DIAMOND · F FULLSCREEN</span>
+            <span class="lounge-visualizer-hint">POP BUBBLES BEFORE THEY HIT THE DIAMOND · F OR DOUBLE-TAP FULLSCREEN</span>
             <button class="lounge-sfx-btn" id="lounge-sfx" type="button" aria-label="Toggle pop sounds" title="Toggle pop sounds">${isSfxMuted() ? '🔇' : '🔊'}</button>
           </div>
         </div>
@@ -177,7 +177,15 @@ function wire() {
   });
 
   const visFrame = layer.querySelector('#lounge-visualizer-frame');
+  let lastClickAt = 0;
   visFrame.addEventListener('click', (e) => {
+    const now = performance.now();
+    if (now - lastClickAt < 300) {
+      lastClickAt = 0;
+      toggleVisualizerFullscreen();
+      return;
+    }
+    lastClickAt = now;
     const rect = visFrame.getBoundingClientRect();
     popBubbleAt(e.clientX - rect.left, e.clientY - rect.top);
   });
@@ -217,14 +225,7 @@ function escClose(e) {
     const ae = document.activeElement;
     if (ae && (ae.tagName === 'SELECT' || ae.tagName === 'INPUT')) return;
     e.preventDefault();
-    const frame = document.getElementById('lounge-visualizer-frame');
-    if (!frame) return;
-    const fsEl = document.fullscreenElement || document.webkitFullscreenElement;
-    if (fsEl) {
-      (document.exitFullscreen || document.webkitExitFullscreen).call(document);
-    } else {
-      (frame.requestFullscreen || frame.webkitRequestFullscreen).call(frame);
-    }
+    toggleVisualizerFullscreen();
     return;
   }
   if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
@@ -232,6 +233,17 @@ function escClose(e) {
     if (ae && (ae.tagName === 'SELECT' || ae.tagName === 'INPUT')) return;
     e.preventDefault();
     if (e.key === 'ArrowUp') addBubble(); else removeBubble();
+  }
+}
+
+function toggleVisualizerFullscreen() {
+  const frame = document.getElementById('lounge-visualizer-frame');
+  if (!frame) return;
+  const fsEl = document.fullscreenElement || document.webkitFullscreenElement;
+  if (fsEl) {
+    (document.exitFullscreen || document.webkitExitFullscreen).call(document);
+  } else {
+    (frame.requestFullscreen || frame.webkitRequestFullscreen).call(frame);
   }
 }
 
