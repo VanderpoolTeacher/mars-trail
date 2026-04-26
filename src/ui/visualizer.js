@@ -62,11 +62,14 @@ function makeBubble(palette, i, now = performance.now()) {
     entrySide: fromRight ? 1 : -1,         // +1 right, -1 left
     entryStartedAt: now,
     // Animated "clear" highlight inside the bubble — orbits the center
-    // and slowly rotates on its own axis.
+    // and rotates on its own axis. Direction (sign) and speed vary per
+    // bubble so no two move alike.
     highlightOrbitPhase: Math.random() * Math.PI * 2,
-    highlightOrbitFreq:  0.0006 + Math.random() * 0.0008,
+    highlightOrbitFreq:  (Math.random() < 0.5 ? -1 : 1) * (0.0004 + Math.random() * 0.0014),
     highlightTiltPhase:  Math.random() * Math.PI * 2,
-    highlightTiltFreq:   0.0003 + Math.random() * 0.0005,
+    highlightTiltFreq:   (Math.random() < 0.5 ? -1 : 1) * (0.0002 + Math.random() * 0.0010),
+    highlightMajor:      0.18 + Math.random() * 0.10,   // ellipse semi-major as fraction of r
+    highlightMinor:      0.07 + Math.random() * 0.06,   // ellipse semi-minor as fraction of r
     color: i % 2 === 0 ? palette.accent : palette.bg,
     state: 'alive',                         // or 'popping'
     popStartedAt: 0,
@@ -149,16 +152,17 @@ function drawBubbleBody(b, cx, cy, r, bodyProgress, t) {
   ctx.lineWidth = 1.5;
   ctx.stroke();
 
-  // Clear (outlined) highlight — orbits the bubble center + slowly tilts.
+  // Clear (outlined) highlight — orbits the bubble center, rotates with
+  // its own per-bubble direction + speed.
   const orbitAngle = b.highlightOrbitPhase + t * b.highlightOrbitFreq;
   const tiltAngle  = b.highlightTiltPhase  + t * b.highlightTiltFreq;
   const orbitR     = rr * 0.38;
   const hx = cx + Math.cos(orbitAngle) * orbitR;
   const hy = cy + Math.sin(orbitAngle) * orbitR;
-  ctx.strokeStyle = `rgba(255,255,255,${0.55 * alphaMul})`;
-  ctx.lineWidth = 1.2;
+  ctx.strokeStyle = `rgba(255,255,255,${0.92 * alphaMul})`;
+  ctx.lineWidth = 1.4;
   ctx.beginPath();
-  ctx.ellipse(hx, hy, rr * 0.22, rr * 0.10, tiltAngle, 0, Math.PI * 2);
+  ctx.ellipse(hx, hy, rr * b.highlightMajor, rr * b.highlightMinor, tiltAngle, 0, Math.PI * 2);
   ctx.stroke();
 }
 
