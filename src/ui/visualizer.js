@@ -6,7 +6,7 @@
 import { getAnalyser, resumeAudioContext, isPlaying, playSfx } from '../audio.js';
 import { getPalette } from '../content/trackPalettes.js';
 
-const ORB_COUNT      = 5;
+const ORB_COUNT      = 12;
 const RING_LIFETIME  = 900;    // ms
 const RING_MAX       = 8;      // concurrent rings cap
 const TRIGGER_FACTOR = 1.40;   // RMS must exceed avg * this to spawn a ring
@@ -41,6 +41,10 @@ let startTime = 0;
 let lastFrameTime = 0;
 let lastW = 0;
 let lastH = 0;
+let score = 0;
+
+const BUBBLE_MIN = 1;
+const BUBBLE_MAX = 14;
 
 function resizeCanvasToBackingStore() {
   const dpr = window.devicePixelRatio || 1;
@@ -210,19 +214,21 @@ function drawBubbles(w, h, t, now) {
       }
       const popProgress = age / POP_DURATION;
       const bodyProgress = Math.min(1, popProgress / 0.25);
-      drawBubbleBody(b, b.x, b.y, b.r, bodyProgress, t);
+      drawBubbleBody(b, b.x, b.y, b.r, bodyProgress, t, 1);
       drawPopParticles(b, popProgress, w, h);
       continue;
     }
 
-    drawBubbleBody(b, b.x, b.y, b.r, 0, t);
+    const entryAlpha = Math.min(1, (now - b.entryStartedAt) / 1500);
+    drawBubbleBody(b, b.x, b.y, b.r, 0, t, entryAlpha);
   }
 }
 
-function drawBubbleBody(b, cx, cy, r, bodyProgress, t) {
+function drawBubbleBody(b, cx, cy, r, bodyProgress, t, entryAlpha = 1) {
   // bodyProgress 0 → 1 inflates the bubble and fades it out.
+  // entryAlpha 0 → 1 fades the bubble in as it glides from off-screen.
   const scale = 1 + bodyProgress * 0.4;
-  const alphaMul = 1 - bodyProgress;
+  const alphaMul = (1 - bodyProgress) * entryAlpha;
   if (alphaMul <= 0) return;
   const rr = r * scale;
 
@@ -276,6 +282,7 @@ function popBubble(b, kind, now) {
     speed: 0.55 + Math.random() * 0.55,
     size:  2 + Math.random() * 3
   }));
+  score += (kind === 'good') ? 1 : -1;
   playSfx(kind);
 }
 
@@ -325,6 +332,36 @@ function drawDiamond(w, h, t) {
   ctx.stroke();
   ctx.restore();
 }
+
+function drawScore(w, h) {
+  ctx.save();
+  ctx.font = '11px monospace';
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'top';
+  ctx.fillStyle = 'rgba(255,255,255,0.45)';
+  ctx.fillText(`SCORE  ${score >= 0 ? '+' : ''}${score}`, 8, 8);
+  ctx.fillStyle = 'rgba(255,255,255,0.28)';
+  ctx.fillText(`BUBBLES  ${bubbles.length}`, 8, 22);
+  ctx.restore();
+}
+
+export function addBubble() {
+  if (bubbles.length >= BUBBLE_MAX) return bubbles.length;
+  if (!getTrackIdFn || !canvas) return bubbles.length;
+  const palette = getPalette(getTrackIdFn());
+  const rect = canvas.getBoundingClientRect();
+  bubbles.push(makeBubble(palette, bubbles.length, performance.now(), rect.width, rect.height));
+  return bubbles.length;
+}
+
+export function removeBubble() {
+  if (bubbles.length <= BUBBLE_MIN) return bubbles.length;
+  bubbles.pop();
+  return bubbles.length;
+}
+
+export function getScore() { return score; }
+export function getBubbleCount() { return bubbles.length; }
 
 function checkDiamondHits(w, h, now) {
   const cx = w / 2;
@@ -476,6 +513,7 @@ function frame(now) {
   drawBubbles(w, h, t, now);
   maybeSpawnRing(palette, now);
   drawRings(w, h, now);
+  drawScore(w, h);
 
   rafId = requestAnimationFrame(frame);
 }
@@ -510,6 +548,7 @@ export function startVisualizer(canvasEl, getTrackId) {
   lastFrameTime = 0;
   lastW = 0;
   lastH = 0;
+  score = 0;
   startTime = performance.now();
   rafId = requestAnimationFrame(frame);
 }

@@ -23,7 +23,7 @@ import {
 } from '../audio.js';
 import { getFlavor } from '../content/trackFlavor.js';
 import { getActiveTheme, setActiveTheme, THEMES } from '../theme.js';
-import { startVisualizer, stopVisualizer, popBubbleAt } from './visualizer.js';
+import { startVisualizer, stopVisualizer, popBubbleAt, addBubble, removeBubble } from './visualizer.js';
 
 const ALL_TRACKS = [TITLE_TRACK, ...GAMEPLAY_TRACKS];
 
@@ -203,7 +203,6 @@ function escClose(e) {
     return;
   }
   if (e.key === 'f' || e.key === 'F') {
-    // Don't hijack the key while a select/input is focused.
     const ae = document.activeElement;
     if (ae && (ae.tagName === 'SELECT' || ae.tagName === 'INPUT')) return;
     e.preventDefault();
@@ -215,6 +214,13 @@ function escClose(e) {
     } else {
       (frame.requestFullscreen || frame.webkitRequestFullscreen).call(frame);
     }
+    return;
+  }
+  if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+    const ae = document.activeElement;
+    if (ae && (ae.tagName === 'SELECT' || ae.tagName === 'INPUT')) return;
+    e.preventDefault();
+    if (e.key === 'ArrowUp') addBubble(); else removeBubble();
   }
 }
 
