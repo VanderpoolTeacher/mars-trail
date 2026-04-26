@@ -13,11 +13,12 @@ const TRIGGER_FACTOR = 1.40;   // RMS must exceed avg * this to spawn a ring
 const TRIGGER_MIN_GAP = 350;   // ms between ring spawns
 const RMS_HISTORY    = 30;     // ~0.5s @ 60fps for moving average
 
-const BUBBLE_COUNT     = 4;
-const BUBBLE_POINTS    = 64;
-const BUBBLE_HARMONICS = 3;
-const POP_DURATION     = 280;    // ms — how long the burst animation lasts
-const POP_HIT_PADDING  = 6;      // px slop on the hit radius (forgiving clicks)
+const BUBBLE_COUNT     = 5;
+const POP_DURATION     = 1800;   // ms — particles travel slowly past the edges
+const POP_PARTICLES    = 14;
+const POP_HIT_PADDING  = 6;
+const ENTRY_DURATION   = 1200;
+const ENTRY_OFFSCREEN  = 0.18;   // cx offset just past the visible edge
 
 let canvas = null;
 let ctx    = null;
@@ -44,110 +45,124 @@ function resizeCanvasToBackingStore() {
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 }
 
-function makeBubble(palette, i) {
-  // Closed wobbly curve with a slight spec highlight — reads as a soft
-  // bubble. Drifts slowly until popped.
+function makeBubble(palette, i, now = performance.now()) {
+  // Plain circle (not wobbly). Enters from the left or right edge, then
+  // settles into a slow sine drift around its target position.
+  const fromRight = Math.random() < 0.5;
   return {
     cx: 0.2 + Math.random() * 0.6,
     cy: 0.2 + Math.random() * 0.6,
-    baseR: 0.10 + Math.random() * 0.10,
+    baseR: 0.07 + Math.random() * 0.06,
     driftFreqX: 0.00006 + Math.random() * 0.0001,
     driftFreqY: 0.00006 + Math.random() * 0.0001,
-    driftAmpX: 0.08 + Math.random() * 0.06,
-    driftAmpY: 0.06 + Math.random() * 0.06,
+    driftAmpX: 0.06 + Math.random() * 0.06,
+    driftAmpY: 0.05 + Math.random() * 0.05,
     phaseX: Math.random() * Math.PI * 2,
     phaseY: Math.random() * Math.PI * 2,
-    harmonics: Array.from({ length: BUBBLE_HARMONICS }, () => ({
-      k:     2 + Math.floor(Math.random() * 4),
-      amp:   0.03 + Math.random() * 0.05,
-      freq:  0.0003 + Math.random() * 0.0006,
-      phase: Math.random() * Math.PI * 2
-    })),
+    entrySide: fromRight ? 1 : -1,         // +1 right, -1 left
+    entryStartedAt: now,
     color: i % 2 === 0 ? palette.accent : palette.bg,
-    state: 'alive',           // or 'popping'
+    state: 'alive',                         // or 'popping'
     popStartedAt: 0,
-    popParticles: null,       // populated when popped
+    popParticles: null,
     _lastCx: 0, _lastCy: 0, _lastR: 0,
     _paletteSig: paletteSig(palette)
   };
 }
 
 function buildBubbles(palette) {
-  return Array.from({ length: BUBBLE_COUNT }, (_, i) => makeBubble(palette, i));
+  // Stagger entry times so they don't all glide in at once on first paint.
+  const now = performance.now();
+  return Array.from({ length: BUBBLE_COUNT }, (_, i) => {
+    const b = makeBubble(palette, i, now);
+    b.entryStartedAt = now - i * 180;        // start each ~180ms apart
+    return b;
+  });
+}
+
+function easeOutCubic(t) {
+  const u = 1 - t;
+  return 1 - u * u * u;
 }
 
 function drawBubbles(w, h, t, now) {
   const minDim = Math.min(w, h);
   for (let bi = 0; bi < bubbles.length; bi++) {
     const b = bubbles[bi];
-    const cx = w * (b.cx + Math.sin(t * b.driftFreqX + b.phaseX) * b.driftAmpX);
-    const cy = h * (b.cy + Math.cos(t * b.driftFreqY + b.phaseY) * b.driftAmpY);
+
+    // Settled position with slow sine drift around the target.
+    const targetCxFrac = b.cx + Math.sin(t * b.driftFreqX + b.phaseX) * b.driftAmpX;
+    const cyFrac       = b.cy + Math.cos(t * b.driftFreqY + b.phaseY) * b.driftAmpY;
+
+    // Side-entry: lerp from off-screen edge to settled cx over ENTRY_DURATION.
+    const entryAge = now - b.entryStartedAt;
+    let cxFrac = targetCxFrac;
+    if (entryAge < ENTRY_DURATION) {
+      const tEntry = easeOutCubic(Math.max(0, entryAge / ENTRY_DURATION));
+      const startCx = b.entrySide > 0 ? 1 + ENTRY_OFFSCREEN : -ENTRY_OFFSCREEN;
+      cxFrac = startCx + (targetCxFrac - startCx) * tEntry;
+    }
+
+    const cx = w * cxFrac;
+    const cy = h * cyFrac;
     const baseR = minDim * b.baseR;
 
-    // Cache for hit-testing in popBubbleAt().
     b._lastCx = cx; b._lastCy = cy; b._lastR = baseR;
 
     if (b.state === 'popping') {
       const age = now - b.popStartedAt;
       if (age >= POP_DURATION) {
         const palette = getPalette(getTrackIdFn ? getTrackIdFn() : null);
-        bubbles[bi] = makeBubble(palette, bi);
+        bubbles[bi] = makeBubble(palette, bi, now);
         continue;
       }
-      drawBubbleBody(b, cx, cy, baseR, t, /*popProgress*/ age / POP_DURATION);
-      drawPopParticles(b, age / POP_DURATION);
+      const popProgress = age / POP_DURATION;
+      // Body fades fast (first ~25% of pop), then only fragments remain.
+      const bodyProgress = Math.min(1, popProgress / 0.25);
+      drawBubbleBody(b, cx, cy, baseR, bodyProgress);
+      drawPopParticles(b, popProgress, w, h);
       continue;
     }
 
-    drawBubbleBody(b, cx, cy, baseR, t, 0);
+    drawBubbleBody(b, cx, cy, baseR, 0);
   }
 }
 
-function drawBubbleBody(b, cx, cy, baseR, t, popProgress) {
-  // popProgress 0 → 1 inflates the bubble and fades it out.
-  const scale = 1 + popProgress * 0.5;
-  const alphaMul = 1 - popProgress;
-  const r = baseR * scale;
+function drawBubbleBody(b, cx, cy, r, bodyProgress) {
+  // bodyProgress 0 → 1 inflates the bubble and fades it out.
+  const scale = 1 + bodyProgress * 0.4;
+  const alphaMul = 1 - bodyProgress;
+  if (alphaMul <= 0) return;
+  const rr = r * scale;
 
   ctx.beginPath();
-  for (let i = 0; i <= BUBBLE_POINTS; i++) {
-    const theta = (i / BUBBLE_POINTS) * Math.PI * 2;
-    let rr = r;
-    for (const harm of b.harmonics) {
-      rr += r * harm.amp * Math.sin(theta * harm.k + t * harm.freq + harm.phase);
-    }
-    const x = cx + rr * Math.cos(theta);
-    const y = cy + rr * Math.sin(theta);
-    if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
-  }
-  ctx.closePath();
-  ctx.fillStyle = hexWithAlpha(b.color, 0.08 * alphaMul);
+  ctx.arc(cx, cy, rr, 0, Math.PI * 2);
+  ctx.fillStyle = hexWithAlpha(b.color, 0.10 * alphaMul);
   ctx.fill();
-  ctx.strokeStyle = hexWithAlpha(b.color, 0.45 * alphaMul);
+  ctx.strokeStyle = hexWithAlpha(b.color, 0.55 * alphaMul);
   ctx.lineWidth = 1.5;
   ctx.stroke();
 
   // Specular highlight — small ellipse near top-left.
-  if (popProgress < 0.7) {
-    const hx = cx - r * 0.35;
-    const hy = cy - r * 0.45;
-    ctx.fillStyle = `rgba(255,255,255,${0.20 * alphaMul})`;
-    ctx.beginPath();
-    ctx.ellipse(hx, hy, r * 0.18, r * 0.10, -0.6, 0, Math.PI * 2);
-    ctx.fill();
-  }
+  const hx = cx - rr * 0.35;
+  const hy = cy - rr * 0.45;
+  ctx.fillStyle = `rgba(255,255,255,${0.22 * alphaMul})`;
+  ctx.beginPath();
+  ctx.ellipse(hx, hy, rr * 0.18, rr * 0.10, -0.6, 0, Math.PI * 2);
+  ctx.fill();
 }
 
-function drawPopParticles(b, popProgress) {
+function drawPopParticles(b, popProgress, w, h) {
   if (!b.popParticles) return;
-  const fade = 1 - popProgress;
-  ctx.fillStyle = hexWithAlpha(b.color, 0.7 * fade);
+  const maxDist = Math.max(w, h) * 1.1;       // enough to fly past either edge
+  const fade = Math.max(0, 1 - popProgress * 0.85);
+  ctx.fillStyle = hexWithAlpha(b.color, 0.85 * fade);
   for (const p of b.popParticles) {
-    const dist = p.dist * popProgress;
+    const dist = maxDist * p.speed * popProgress;
     const x = b._lastCx + Math.cos(p.angle) * dist;
     const y = b._lastCy + Math.sin(p.angle) * dist;
     ctx.beginPath();
-    ctx.arc(x, y, p.size * fade, 0, Math.PI * 2);
+    ctx.arc(x, y, p.size * Math.max(0.4, 1 - popProgress * 0.5), 0, Math.PI * 2);
     ctx.fill();
   }
 }
@@ -172,12 +187,13 @@ export function popBubbleAt(xCss, yCss, now = performance.now()) {
   const b = bubbles[hit];
   b.state = 'popping';
   b.popStartedAt = now;
-  // Spawn a small ring of particles for the burst.
-  const N = 8;
-  b.popParticles = Array.from({ length: N }, (_, i) => ({
-    angle: (i / N) * Math.PI * 2 + Math.random() * 0.4,
-    dist:  b._lastR * (1.4 + Math.random() * 0.6),
-    size:  2 + Math.random() * 2
+  // Shatter into a ring of fragments. Each fragment has its own outward
+  // speed multiplier and size, so they break apart unevenly and travel
+  // past the visible edges of the panel.
+  b.popParticles = Array.from({ length: POP_PARTICLES }, (_, i) => ({
+    angle: (i / POP_PARTICLES) * Math.PI * 2 + (Math.random() - 0.5) * 0.5,
+    speed: 0.55 + Math.random() * 0.55,
+    size:  2 + Math.random() * 3
   }));
   return true;
 }
