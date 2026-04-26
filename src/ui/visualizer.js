@@ -17,7 +17,7 @@ const BUBBLE_COUNT     = 5;
 const POP_DURATION     = 1800;   // ms — particles travel slowly past the edges
 const POP_PARTICLES    = 14;
 const POP_HIT_PADDING  = 6;
-const ENTRY_DURATION   = 1200;
+const ENTRY_DURATION   = 3500;   // ms — slow glide from off-screen edge
 const ENTRY_OFFSCREEN  = 0.18;   // cx offset just past the visible edge
 
 let canvas = null;
@@ -75,7 +75,7 @@ function buildBubbles(palette) {
   const now = performance.now();
   return Array.from({ length: BUBBLE_COUNT }, (_, i) => {
     const b = makeBubble(palette, i, now);
-    b.entryStartedAt = now - i * 180;        // start each ~180ms apart
+    b.entryStartedAt = now - i * 400;        // stagger first paint
     return b;
   });
 }
