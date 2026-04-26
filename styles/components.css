@@ -1101,6 +1101,43 @@ body[data-theme="lcars"] .eor-col-facts {
   background: #000;
   pointer-events: none;     /* click passes through to the frame */
 }
+
+.lounge-hud {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  z-index: 1;
+  padding: 6px 10px;
+  background: rgba(0, 0, 0, 0.50);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  line-height: 1.5;
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-width: 60%;
+}
+.hud-track {
+  color: rgba(255, 255, 255, 0.85);
+  font-weight: bold;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.hud-time {
+  color: rgba(255, 255, 255, 0.45);
+}
+.hud-stats {
+  display: flex;
+  gap: 12px;
+  color: rgba(255, 255, 255, 0.55);
+  margin-top: 1px;
+}
 .lounge-visualizer-footer {
   display: flex;
   align-items: center;

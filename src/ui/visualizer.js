@@ -348,18 +348,6 @@ function drawDiamond(w, h, t) {
   ctx.restore();
 }
 
-function drawScore(w, h) {
-  ctx.save();
-  ctx.font = '11px monospace';
-  ctx.textAlign = 'left';
-  ctx.textBaseline = 'top';
-  ctx.fillStyle = 'rgba(255,255,255,0.45)';
-  ctx.fillText(`SCORE  ${score >= 0 ? '+' : ''}${score}`, 8, 8);
-  ctx.fillStyle = 'rgba(255,255,255,0.28)';
-  ctx.fillText(`BUBBLES  ${bubbles.length}`, 8, 22);
-  ctx.restore();
-}
-
 export function addBubble() {
   if (bubbles.length >= BUBBLE_MAX) return bubbles.length;
   if (!getTrackIdFn || !canvas) return bubbles.length;
@@ -530,7 +518,6 @@ function frame(now) {
   drawBubbles(w, h, t, now);
   maybeSpawnRing(palette, now);
   drawRings(w, h, now);
-  drawScore(w, h);
 
   rafId = requestAnimationFrame(frame);
 }

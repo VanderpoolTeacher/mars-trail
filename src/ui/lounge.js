@@ -23,12 +23,13 @@ import {
 } from '../audio.js';
 import { getFlavor } from '../content/trackFlavor.js';
 import { getActiveTheme, setActiveTheme, THEMES } from '../theme.js';
-import { startVisualizer, stopVisualizer, popBubbleAt, addBubble, removeBubble } from './visualizer.js';
+import { startVisualizer, stopVisualizer, popBubbleAt, addBubble, removeBubble, getScore, getBubbleCount } from './visualizer.js';
 
 const ALL_TRACKS = [TITLE_TRACK, ...GAMEPLAY_TRACKS];
 
 let opened = false;
 let onCloseCb = null;
+let hudInterval = 0;
 
 // Listeners are registered exactly once at module load. They no-op
 // whenever the Lounge is closed, so re-opening doesn't accumulate them.
@@ -108,6 +109,14 @@ function render() {
         <div class="lounge-visualizer-wrap">
           <div class="lounge-visualizer-frame" id="lounge-visualizer-frame">
             <canvas class="lounge-visualizer" id="lounge-visualizer" aria-hidden="true"></canvas>
+            <div class="lounge-hud" id="lounge-hud" aria-hidden="true">
+              <div class="hud-track" id="hud-track">—</div>
+              <div class="hud-time"  id="hud-time">0:00 / 0:00</div>
+              <div class="hud-stats">
+                <span id="hud-score">SCORE  +0</span>
+                <span id="hud-bubbles">BUBBLES  0</span>
+              </div>
+            </div>
           </div>
           <div class="lounge-visualizer-footer">
             <span class="lounge-visualizer-hint">POP BUBBLES BEFORE THEY HIT THE DIAMOND · F FULLSCREEN</span>
@@ -224,6 +233,24 @@ function escClose(e) {
   }
 }
 
+function refreshHud() {
+  const layer = document.getElementById('lounge-layer');
+  if (!layer) return;
+  const trackEl = layer.querySelector('#hud-track');
+  const timeEl  = layer.querySelector('#hud-time');
+  const scoreEl = layer.querySelector('#hud-score');
+  const bubEl   = layer.querySelector('#hud-bubbles');
+  if (!trackEl || !timeEl || !scoreEl || !bubEl) return;
+
+  const id = getCurrentTrackId();
+  const track = ALL_TRACKS.find(t => t.id === id);
+  trackEl.textContent = track ? track.name : '—';
+  timeEl.textContent  = `${fmtTime(getCurrentTime())} / ${fmtTime(getDuration())}`;
+  const s = getScore();
+  scoreEl.textContent  = `SCORE  ${s >= 0 ? '+' : ''}${s}`;
+  bubEl.textContent    = `BUBBLES  ${getBubbleCount()}`;
+}
+
 function refreshNowPlaying() {
   const id = getCurrentTrackId();
   const track = ALL_TRACKS.find(t => t.id === id);
@@ -278,12 +305,16 @@ export function openLounge(onClose) {
   const canvas = layer.querySelector('#lounge-visualizer');
   if (canvas) startVisualizer(canvas, getCurrentTrackId);
 
+  refreshHud();
+  hudInterval = setInterval(refreshHud, 200);
+
   document.addEventListener('keydown', escClose);
 }
 
 export function close() {
   if (!opened) return;
   opened = false;
+  if (hudInterval) { clearInterval(hudInterval); hudInterval = 0; }
   stopVisualizer();
   const layer = document.getElementById('lounge-layer');
   if (layer) {
