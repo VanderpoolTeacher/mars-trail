@@ -13,6 +13,12 @@ const TRIGGER_FACTOR = 1.40;   // RMS must exceed avg * this to spawn a ring
 const TRIGGER_MIN_GAP = 350;   // ms between ring spawns
 const RMS_HISTORY    = 30;     // ~0.5s @ 60fps for moving average
 
+const BUBBLE_COUNT     = 4;
+const BUBBLE_POINTS    = 64;
+const BUBBLE_HARMONICS = 3;
+const POP_DURATION     = 280;    // ms — how long the burst animation lasts
+const POP_HIT_PADDING  = 6;      // px slop on the hit radius (forgiving clicks)
+
 let canvas = null;
 let ctx    = null;
 let getTrackIdFn = null;
@@ -20,6 +26,7 @@ let rafId = 0;
 let analyser = null;
 let timeData = null;
 let orbs = [];
+let bubbles = [];
 let rings = [];
 let rmsHistory = [];
 let lastTriggerAt = 0;
@@ -35,6 +42,144 @@ function resizeCanvasToBackingStore() {
     canvas.height = targetH;
   }
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+}
+
+function makeBubble(palette, i) {
+  // Closed wobbly curve with a slight spec highlight — reads as a soft
+  // bubble. Drifts slowly until popped.
+  return {
+    cx: 0.2 + Math.random() * 0.6,
+    cy: 0.2 + Math.random() * 0.6,
+    baseR: 0.10 + Math.random() * 0.10,
+    driftFreqX: 0.00006 + Math.random() * 0.0001,
+    driftFreqY: 0.00006 + Math.random() * 0.0001,
+    driftAmpX: 0.08 + Math.random() * 0.06,
+    driftAmpY: 0.06 + Math.random() * 0.06,
+    phaseX: Math.random() * Math.PI * 2,
+    phaseY: Math.random() * Math.PI * 2,
+    harmonics: Array.from({ length: BUBBLE_HARMONICS }, () => ({
+      k:     2 + Math.floor(Math.random() * 4),
+      amp:   0.03 + Math.random() * 0.05,
+      freq:  0.0003 + Math.random() * 0.0006,
+      phase: Math.random() * Math.PI * 2
+    })),
+    color: i % 2 === 0 ? palette.accent : palette.bg,
+    state: 'alive',           // or 'popping'
+    popStartedAt: 0,
+    popParticles: null,       // populated when popped
+    _lastCx: 0, _lastCy: 0, _lastR: 0,
+    _paletteSig: paletteSig(palette)
+  };
+}
+
+function buildBubbles(palette) {
+  return Array.from({ length: BUBBLE_COUNT }, (_, i) => makeBubble(palette, i));
+}
+
+function drawBubbles(w, h, t, now) {
+  const minDim = Math.min(w, h);
+  for (let bi = 0; bi < bubbles.length; bi++) {
+    const b = bubbles[bi];
+    const cx = w * (b.cx + Math.sin(t * b.driftFreqX + b.phaseX) * b.driftAmpX);
+    const cy = h * (b.cy + Math.cos(t * b.driftFreqY + b.phaseY) * b.driftAmpY);
+    const baseR = minDim * b.baseR;
+
+    // Cache for hit-testing in popBubbleAt().
+    b._lastCx = cx; b._lastCy = cy; b._lastR = baseR;
+
+    if (b.state === 'popping') {
+      const age = now - b.popStartedAt;
+      if (age >= POP_DURATION) {
+        const palette = getPalette(getTrackIdFn ? getTrackIdFn() : null);
+        bubbles[bi] = makeBubble(palette, bi);
+        continue;
+      }
+      drawBubbleBody(b, cx, cy, baseR, t, /*popProgress*/ age / POP_DURATION);
+      drawPopParticles(b, age / POP_DURATION);
+      continue;
+    }
+
+    drawBubbleBody(b, cx, cy, baseR, t, 0);
+  }
+}
+
+function drawBubbleBody(b, cx, cy, baseR, t, popProgress) {
+  // popProgress 0 → 1 inflates the bubble and fades it out.
+  const scale = 1 + popProgress * 0.5;
+  const alphaMul = 1 - popProgress;
+  const r = baseR * scale;
+
+  ctx.beginPath();
+  for (let i = 0; i <= BUBBLE_POINTS; i++) {
+    const theta = (i / BUBBLE_POINTS) * Math.PI * 2;
+    let rr = r;
+    for (const harm of b.harmonics) {
+      rr += r * harm.amp * Math.sin(theta * harm.k + t * harm.freq + harm.phase);
+    }
+    const x = cx + rr * Math.cos(theta);
+    const y = cy + rr * Math.sin(theta);
+    if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+  }
+  ctx.closePath();
+  ctx.fillStyle = hexWithAlpha(b.color, 0.08 * alphaMul);
+  ctx.fill();
+  ctx.strokeStyle = hexWithAlpha(b.color, 0.45 * alphaMul);
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+
+  // Specular highlight — small ellipse near top-left.
+  if (popProgress < 0.7) {
+    const hx = cx - r * 0.35;
+    const hy = cy - r * 0.45;
+    ctx.fillStyle = `rgba(255,255,255,${0.20 * alphaMul})`;
+    ctx.beginPath();
+    ctx.ellipse(hx, hy, r * 0.18, r * 0.10, -0.6, 0, Math.PI * 2);
+    ctx.fill();
+  }
+}
+
+function drawPopParticles(b, popProgress) {
+  if (!b.popParticles) return;
+  const fade = 1 - popProgress;
+  ctx.fillStyle = hexWithAlpha(b.color, 0.7 * fade);
+  for (const p of b.popParticles) {
+    const dist = p.dist * popProgress;
+    const x = b._lastCx + Math.cos(p.angle) * dist;
+    const y = b._lastCy + Math.sin(p.angle) * dist;
+    ctx.beginPath();
+    ctx.arc(x, y, p.size * fade, 0, Math.PI * 2);
+    ctx.fill();
+  }
+}
+
+export function popBubbleAt(xCss, yCss, now = performance.now()) {
+  // Returns true if a live bubble was hit and popped.
+  let hit = -1;
+  let bestDistSq = Infinity;
+  for (let i = 0; i < bubbles.length; i++) {
+    const b = bubbles[i];
+    if (b.state !== 'alive') continue;
+    const dx = xCss - b._lastCx;
+    const dy = yCss - b._lastCy;
+    const dSq = dx * dx + dy * dy;
+    const r = b._lastR + POP_HIT_PADDING;
+    if (dSq <= r * r && dSq < bestDistSq) {
+      hit = i;
+      bestDistSq = dSq;
+    }
+  }
+  if (hit === -1) return false;
+  const b = bubbles[hit];
+  b.state = 'popping';
+  b.popStartedAt = now;
+  // Spawn a small ring of particles for the burst.
+  const N = 8;
+  b.popParticles = Array.from({ length: N }, (_, i) => ({
+    angle: (i / N) * Math.PI * 2 + Math.random() * 0.4,
+    dist:  b._lastR * (1.4 + Math.random() * 0.6),
+    size:  2 + Math.random() * 2
+  }));
+  return true;
 }
 
 function buildOrbs(palette) {
@@ -150,8 +295,12 @@ function frame(now) {
   if (orbs.length === 0 || orbs[0]._paletteSig !== paletteSig(palette)) {
     orbs = buildOrbs(palette);
   }
+  if (bubbles.length === 0 || bubbles[0]._paletteSig !== paletteSig(palette)) {
+    bubbles = buildBubbles(palette);
+  }
 
   drawBackdrop(palette, w, h, t);
+  drawBubbles(w, h, t, now);
   maybeSpawnRing(palette, now);
   drawRings(w, h, now);
 
@@ -181,6 +330,7 @@ export function startVisualizer(canvasEl, getTrackId) {
   }
 
   orbs = [];
+  bubbles = [];
   rings = [];
   rmsHistory = [];
   lastTriggerAt = 0;

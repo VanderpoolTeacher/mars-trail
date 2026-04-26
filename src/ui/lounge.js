@@ -21,7 +21,7 @@ import {
 } from '../audio.js';
 import { getFlavor } from '../content/trackFlavor.js';
 import { getActiveTheme, setActiveTheme, THEMES } from '../theme.js';
-import { startVisualizer, stopVisualizer } from './visualizer.js';
+import { startVisualizer, stopVisualizer, popBubbleAt } from './visualizer.js';
 
 const ALL_TRACKS = [TITLE_TRACK, ...GAMEPLAY_TRACKS];
 
@@ -103,8 +103,11 @@ function render() {
             <button class="lounge-ctrl" id="lounge-mute"  type="button" aria-label="Mute/Unmute">🔊</button>
           </div>
         </div>
-        <div class="lounge-visualizer-frame" id="lounge-visualizer-frame" role="button" tabindex="0" aria-label="Toggle fullscreen visualizer" title="Click for fullscreen">
-          <canvas class="lounge-visualizer" id="lounge-visualizer" aria-hidden="true"></canvas>
+        <div class="lounge-visualizer-wrap">
+          <div class="lounge-visualizer-frame" id="lounge-visualizer-frame">
+            <canvas class="lounge-visualizer" id="lounge-visualizer" aria-hidden="true"></canvas>
+          </div>
+          <div class="lounge-visualizer-hint">CLICK BUBBLES TO POP · F TO TOGGLE FULLSCREEN</div>
         </div>
       </section>
 
@@ -158,20 +161,9 @@ function wire() {
   });
 
   const visFrame = layer.querySelector('#lounge-visualizer-frame');
-  const toggleFullscreen = () => {
-    const fsEl = document.fullscreenElement || document.webkitFullscreenElement;
-    if (fsEl) {
-      (document.exitFullscreen || document.webkitExitFullscreen).call(document);
-    } else {
-      (visFrame.requestFullscreen || visFrame.webkitRequestFullscreen).call(visFrame);
-    }
-  };
-  visFrame.addEventListener('click', toggleFullscreen);
-  visFrame.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter' || e.key === ' ') {
-      e.preventDefault();
-      toggleFullscreen();
-    }
+  visFrame.addEventListener('click', (e) => {
+    const rect = visFrame.getBoundingClientRect();
+    popBubbleAt(e.clientX - rect.left, e.clientY - rect.top);
   });
 
   // Seek by clicking anywhere on the progress bar.
@@ -191,7 +183,28 @@ function wire() {
 }
 
 function escClose(e) {
-  if (e.key === 'Escape' && opened) close();
+  if (!opened) return;
+  if (e.key === 'Escape') {
+    // If in fullscreen, let the browser handle ESC (it'll exit fullscreen);
+    // only close the Lounge when not in fullscreen.
+    const fsEl = document.fullscreenElement || document.webkitFullscreenElement;
+    if (!fsEl) close();
+    return;
+  }
+  if (e.key === 'f' || e.key === 'F') {
+    // Don't hijack the key while a select/input is focused.
+    const ae = document.activeElement;
+    if (ae && (ae.tagName === 'SELECT' || ae.tagName === 'INPUT')) return;
+    e.preventDefault();
+    const frame = document.getElementById('lounge-visualizer-frame');
+    if (!frame) return;
+    const fsEl = document.fullscreenElement || document.webkitFullscreenElement;
+    if (fsEl) {
+      (document.exitFullscreen || document.webkitExitFullscreen).call(document);
+    } else {
+      (frame.requestFullscreen || frame.webkitRequestFullscreen).call(frame);
+    }
+  }
 }
 
 function refreshNowPlaying() {
