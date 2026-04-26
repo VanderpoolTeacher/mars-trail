@@ -6,7 +6,7 @@
 import { getAnalyser, resumeAudioContext, isPlaying, playSfx } from '../audio.js';
 import { getPalette } from '../content/trackPalettes.js';
 
-const ORB_COUNT      = 12;
+const ORB_COUNT      = 22;
 const RING_LIFETIME  = 900;    // ms
 const RING_MAX       = 8;      // concurrent rings cap
 const TRIGGER_FACTOR = 1.40;   // RMS must exceed avg * this to spawn a ring
@@ -382,7 +382,7 @@ function buildOrbs(palette) {
   return Array.from({ length: ORB_COUNT }, (_, i) => ({
     cx: Math.random(),
     cy: Math.random(),
-    r:  0.18 + Math.random() * 0.18,
+    r:  0.10 + Math.random() * 0.30,           // wider size range — small to large
     dxFreq: 0.00007 + Math.random() * 0.00012,
     dyFreq: 0.00007 + Math.random() * 0.00012,
     dxAmp:  0.18 + Math.random() * 0.10,
@@ -390,6 +390,7 @@ function buildOrbs(palette) {
     phaseX: Math.random() * Math.PI * 2,
     phaseY: Math.random() * Math.PI * 2,
     color:  i % 2 === 0 ? palette.bg : palette.accent,
+    intensity: 0.35 + Math.random() * 0.85,    // some orbs nearly invisible, some bright
     _paletteSig: paletteSig(palette)
   }));
 }
@@ -419,8 +420,8 @@ function drawBackdrop(palette, w, h, t) {
     const y = h * (orb.cy + Math.cos(t * orb.dyFreq + orb.phaseY) * orb.dyAmp);
     const r = minDim * orb.r;
     const grad = ctx.createRadialGradient(x, y, 0, x, y, r);
-    grad.addColorStop(0,   hexWithAlpha(orb.color, 0.45));
-    grad.addColorStop(0.6, hexWithAlpha(orb.color, 0.10));
+    grad.addColorStop(0,   hexWithAlpha(orb.color, 0.45 * orb.intensity));
+    grad.addColorStop(0.6, hexWithAlpha(orb.color, 0.10 * orb.intensity));
     grad.addColorStop(1,   hexWithAlpha(orb.color, 0));
     ctx.fillStyle = grad;
     ctx.fillRect(0, 0, w, h);
