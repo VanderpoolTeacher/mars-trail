@@ -4,6 +4,7 @@
 
 const STORAGE_KEY_TRACK = 'marsTrail.musicTrack';
 const STORAGE_KEY_MUTE  = 'marsTrail.musicMute';
+const STORAGE_KEY_SFX   = 'marsTrail.sfxMute';
 
 export const TITLE_TRACK = {
   id: 'title', name: 'Title Theme', file: 'assets/music/title-screen.mp3'
@@ -210,4 +211,101 @@ export function resumeAudio() {
 export function togglePlayPause() {
   if (audio.paused) resumeAudio(); else pauseAudio();
   return !audio.paused;
+}
+
+// ---- Web Audio analyser (used by the Lounge visualizer) ----
+// Lazily wires the existing <audio> element through an AnalyserNode.
+// Created on first call (which only happens after the user opens the
+// Lounge — i.e., after a user gesture, satisfying autoplay policies).
+let analyser = null;
+let audioCtx = null;
+let mediaSource = null;
+
+export function getAnalyser() {
+  if (analyser) return analyser;
+  try {
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    if (!AudioCtx) return null;
+    audioCtx    = new AudioCtx();
+    mediaSource = audioCtx.createMediaElementSource(audio);
+    analyser    = audioCtx.createAnalyser();
+    analyser.fftSize = 256;
+    analyser.smoothingTimeConstant = 0.6;
+    mediaSource.connect(analyser);
+    analyser.connect(audioCtx.destination);
+    return analyser;
+  } catch (err) {
+    // createMediaElementSource throws if called twice on the same element.
+    // Anything else: degrade silently — visualizer falls back to backdrop-only.
+    return analyser;
+  }
+}
+
+export function resumeAudioContext() {
+  if (audioCtx && audioCtx.state === 'suspended') {
+    audioCtx.resume().catch(() => {});
+  }
+}
+
+// ---- SFX (game-action sounds, separate from music mute) ----
+
+export function isSfxMuted() {
+  return localStorage.getItem(STORAGE_KEY_SFX) === '1';
+}
+
+export function setSfxMuted(muted) {
+  localStorage.setItem(STORAGE_KEY_SFX, muted ? '1' : '0');
+}
+
+export function toggleSfx() {
+  const next = !isSfxMuted();
+  setSfxMuted(next);
+  return next;
+}
+
+function getSfxContext() {
+  if (audioCtx) return audioCtx;
+  try {
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    if (!AudioCtx) return null;
+    audioCtx = new AudioCtx();
+    return audioCtx;
+  } catch { return null; }
+}
+
+export function playSfx(kind) {
+  if (isSfxMuted()) return;
+  const ac = getSfxContext();
+  if (!ac) return;
+  if (ac.state === 'suspended') ac.resume().catch(() => {});
+
+  const now = ac.currentTime;
+
+  if (kind === 'good') {
+    // Pleasant short pop — triangle wave, quick upward chirp.
+    const osc  = ac.createOscillator();
+    const gain = ac.createGain();
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(660, now);
+    osc.frequency.exponentialRampToValueAtTime(1320, now + 0.08);
+    gain.gain.setValueAtTime(0.0001, now);
+    gain.gain.exponentialRampToValueAtTime(0.22, now + 0.012);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.18);
+    osc.connect(gain).connect(ac.destination);
+    osc.start(now);
+    osc.stop(now + 0.22);
+  } else if (kind === 'bad') {
+    // Low thunk — square wave, downward slide.
+    const osc  = ac.createOscillator();
+    const gain = ac.createGain();
+    osc.type = 'square';
+    osc.frequency.setValueAtTime(220, now);
+    osc.frequency.exponentialRampToValueAtTime(70, now + 0.18);
+    gain.gain.setValueAtTime(0.0001, now);
+    gain.gain.exponentialRampToValueAtTime(0.28, now + 0.012);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.30);
+    osc.connect(gain).connect(ac.destination);
+    osc.start(now);
+    osc.stop(now + 0.34);
+  }
 }

@@ -17,15 +17,19 @@ import {
   seekTo,
   getCurrentTrackId,
   getDuration,
-  getCurrentTime
+  getCurrentTime,
+  isSfxMuted,
+  toggleSfx
 } from '../audio.js';
 import { getFlavor } from '../content/trackFlavor.js';
 import { getActiveTheme, setActiveTheme, THEMES } from '../theme.js';
+import { startVisualizer, stopVisualizer, popBubbleAt, addBubble, removeBubble, getScore, getBubbleCount } from './visualizer.js';
 
 const ALL_TRACKS = [TITLE_TRACK, ...GAMEPLAY_TRACKS];
 
 let opened = false;
 let onCloseCb = null;
+let hudInterval = 0;
 
 // Listeners are registered exactly once at module load. They no-op
 // whenever the Lounge is closed, so re-opening doesn't accumulate them.
@@ -83,22 +87,41 @@ function render() {
       </header>
 
       <section class="lounge-now-playing" id="lounge-now-playing" aria-live="polite">
-        <div class="lounge-np-label">NOW PLAYING</div>
-        <div class="lounge-np-name"  id="lounge-np-name">—</div>
-        <div class="lounge-np-flavor" id="lounge-np-flavor"></div>
-        <div class="lounge-progress-row">
-          <span class="lounge-time" id="lounge-time-current">0:00</span>
-          <div class="lounge-progress" id="lounge-progress" role="slider"
-               aria-label="Seek" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
-            <div class="lounge-progress-fill" id="lounge-progress-fill"></div>
+        <div class="lounge-np-text">
+          <div class="lounge-np-label">NOW PLAYING</div>
+          <div class="lounge-np-name"  id="lounge-np-name">—</div>
+          <div class="lounge-np-flavor" id="lounge-np-flavor"></div>
+          <div class="lounge-progress-row">
+            <span class="lounge-time" id="lounge-time-current">0:00</span>
+            <div class="lounge-progress" id="lounge-progress" role="slider"
+                 aria-label="Seek" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+              <div class="lounge-progress-fill" id="lounge-progress-fill"></div>
+            </div>
+            <span class="lounge-time" id="lounge-time-total">0:00</span>
           </div>
-          <span class="lounge-time" id="lounge-time-total">0:00</span>
+          <div class="lounge-controls">
+            <button class="lounge-ctrl" id="lounge-prev"  type="button" aria-label="Previous track">⏮</button>
+            <button class="lounge-ctrl lounge-ctrl-play" id="lounge-playpause" type="button" aria-label="Play/Pause">⏸</button>
+            <button class="lounge-ctrl" id="lounge-next"  type="button" aria-label="Next track">⏭</button>
+            <button class="lounge-ctrl" id="lounge-mute"  type="button" aria-label="Mute/Unmute">🔊</button>
+          </div>
         </div>
-        <div class="lounge-controls">
-          <button class="lounge-ctrl" id="lounge-prev"  type="button" aria-label="Previous track">⏮</button>
-          <button class="lounge-ctrl lounge-ctrl-play" id="lounge-playpause" type="button" aria-label="Play/Pause">⏸</button>
-          <button class="lounge-ctrl" id="lounge-next"  type="button" aria-label="Next track">⏭</button>
-          <button class="lounge-ctrl" id="lounge-mute"  type="button" aria-label="Mute/Unmute">🔊</button>
+        <div class="lounge-visualizer-wrap">
+          <div class="lounge-visualizer-frame" id="lounge-visualizer-frame">
+            <canvas class="lounge-visualizer" id="lounge-visualizer" aria-hidden="true"></canvas>
+            <div class="lounge-hud" id="lounge-hud" aria-hidden="true">
+              <div class="hud-track" id="hud-track">—</div>
+              <div class="hud-time"  id="hud-time">0:00 / 0:00</div>
+              <div class="hud-stats">
+                <span id="hud-score">SCORE  +0</span>
+                <span id="hud-bubbles">BUBBLES  0</span>
+              </div>
+            </div>
+          </div>
+          <div class="lounge-visualizer-footer">
+            <span class="lounge-visualizer-hint">POP BUBBLES BEFORE THEY HIT THE DIAMOND · F FULLSCREEN</span>
+            <button class="lounge-sfx-btn" id="lounge-sfx" type="button" aria-label="Toggle pop sounds" title="Toggle pop sounds">${isSfxMuted() ? '🔇' : '🔊'}</button>
+          </div>
         </div>
       </section>
 
@@ -123,7 +146,10 @@ function wire() {
 
   layer.querySelector('#lounge-theme-select').addEventListener('change', (e) => {
     setActiveTheme(e.target.value);
-    render();   // re-render so flavor copy + skin update immediately
+    stopVisualizer();
+    render();
+    const c = document.getElementById('lounge-visualizer');
+    if (c) startVisualizer(c, getCurrentTrackId);
   });
 
   layer.querySelector('#lounge-list').addEventListener('click', (e) => {
@@ -148,6 +174,18 @@ function wire() {
     refreshMute();
   });
 
+  const visFrame = layer.querySelector('#lounge-visualizer-frame');
+  visFrame.addEventListener('click', (e) => {
+    const rect = visFrame.getBoundingClientRect();
+    popBubbleAt(e.clientX - rect.left, e.clientY - rect.top);
+  });
+
+  const sfxBtn = layer.querySelector('#lounge-sfx');
+  sfxBtn.addEventListener('click', () => {
+    const muted = toggleSfx();
+    sfxBtn.textContent = muted ? '🔇' : '🔊';
+  });
+
   // Seek by clicking anywhere on the progress bar.
   const bar = layer.querySelector('#lounge-progress');
   const seekFromEvent = (e) => {
@@ -165,7 +203,52 @@ function wire() {
 }
 
 function escClose(e) {
-  if (e.key === 'Escape' && opened) close();
+  if (!opened) return;
+  if (e.key === 'Escape') {
+    // If in fullscreen, let the browser handle ESC (it'll exit fullscreen);
+    // only close the Lounge when not in fullscreen.
+    const fsEl = document.fullscreenElement || document.webkitFullscreenElement;
+    if (!fsEl) close();
+    return;
+  }
+  if (e.key === 'f' || e.key === 'F') {
+    const ae = document.activeElement;
+    if (ae && (ae.tagName === 'SELECT' || ae.tagName === 'INPUT')) return;
+    e.preventDefault();
+    const frame = document.getElementById('lounge-visualizer-frame');
+    if (!frame) return;
+    const fsEl = document.fullscreenElement || document.webkitFullscreenElement;
+    if (fsEl) {
+      (document.exitFullscreen || document.webkitExitFullscreen).call(document);
+    } else {
+      (frame.requestFullscreen || frame.webkitRequestFullscreen).call(frame);
+    }
+    return;
+  }
+  if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+    const ae = document.activeElement;
+    if (ae && (ae.tagName === 'SELECT' || ae.tagName === 'INPUT')) return;
+    e.preventDefault();
+    if (e.key === 'ArrowUp') addBubble(); else removeBubble();
+  }
+}
+
+function refreshHud() {
+  const layer = document.getElementById('lounge-layer');
+  if (!layer) return;
+  const trackEl = layer.querySelector('#hud-track');
+  const timeEl  = layer.querySelector('#hud-time');
+  const scoreEl = layer.querySelector('#hud-score');
+  const bubEl   = layer.querySelector('#hud-bubbles');
+  if (!trackEl || !timeEl || !scoreEl || !bubEl) return;
+
+  const id = getCurrentTrackId();
+  const track = ALL_TRACKS.find(t => t.id === id);
+  trackEl.textContent = track ? track.name : '—';
+  timeEl.textContent  = `${fmtTime(getCurrentTime())} / ${fmtTime(getDuration())}`;
+  const s = getScore();
+  scoreEl.textContent  = `SCORE  ${s >= 0 ? '+' : ''}${s}`;
+  bubEl.textContent    = `BUBBLES  ${getBubbleCount()}`;
 }
 
 function refreshNowPlaying() {
@@ -219,12 +302,20 @@ export function openLounge(onClose) {
   layer.classList.add('active');
   render();
 
+  const canvas = layer.querySelector('#lounge-visualizer');
+  if (canvas) startVisualizer(canvas, getCurrentTrackId);
+
+  refreshHud();
+  hudInterval = setInterval(refreshHud, 200);
+
   document.addEventListener('keydown', escClose);
 }
 
 export function close() {
   if (!opened) return;
   opened = false;
+  if (hudInterval) { clearInterval(hudInterval); hudInterval = 0; }
+  stopVisualizer();
   const layer = document.getElementById('lounge-layer');
   if (layer) {
     layer.classList.remove('active');
