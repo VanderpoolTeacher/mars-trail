@@ -9,8 +9,8 @@ import { getPalette } from '../content/trackPalettes.js';
 const ORB_COUNT      = 5;
 const RING_LIFETIME  = 900;    // ms
 const RING_MAX       = 8;      // concurrent rings cap
-const TRIGGER_FACTOR = 1.18;   // RMS must exceed avg * this to spawn a ring
-const TRIGGER_MIN_GAP = 120;   // ms between ring spawns
+const TRIGGER_FACTOR = 1.40;   // RMS must exceed avg * this to spawn a ring
+const TRIGGER_MIN_GAP = 350;   // ms between ring spawns
 const RMS_HISTORY    = 30;     // ~0.5s @ 60fps for moving average
 
 let canvas = null;
