@@ -61,6 +61,12 @@ function makeBubble(palette, i, now = performance.now()) {
     phaseY: Math.random() * Math.PI * 2,
     entrySide: fromRight ? 1 : -1,         // +1 right, -1 left
     entryStartedAt: now,
+    // Animated "clear" highlight inside the bubble — orbits the center
+    // and slowly rotates on its own axis.
+    highlightOrbitPhase: Math.random() * Math.PI * 2,
+    highlightOrbitFreq:  0.0006 + Math.random() * 0.0008,
+    highlightTiltPhase:  Math.random() * Math.PI * 2,
+    highlightTiltFreq:   0.0003 + Math.random() * 0.0005,
     color: i % 2 === 0 ? palette.accent : palette.bg,
     state: 'alive',                         // or 'popping'
     popStartedAt: 0,
@@ -119,16 +125,16 @@ function drawBubbles(w, h, t, now) {
       const popProgress = age / POP_DURATION;
       // Body fades fast (first ~25% of pop), then only fragments remain.
       const bodyProgress = Math.min(1, popProgress / 0.25);
-      drawBubbleBody(b, cx, cy, baseR, bodyProgress);
+      drawBubbleBody(b, cx, cy, baseR, bodyProgress, t);
       drawPopParticles(b, popProgress, w, h);
       continue;
     }
 
-    drawBubbleBody(b, cx, cy, baseR, 0);
+    drawBubbleBody(b, cx, cy, baseR, 0, t);
   }
 }
 
-function drawBubbleBody(b, cx, cy, r, bodyProgress) {
+function drawBubbleBody(b, cx, cy, r, bodyProgress, t) {
   // bodyProgress 0 → 1 inflates the bubble and fades it out.
   const scale = 1 + bodyProgress * 0.4;
   const alphaMul = 1 - bodyProgress;
@@ -143,13 +149,17 @@ function drawBubbleBody(b, cx, cy, r, bodyProgress) {
   ctx.lineWidth = 1.5;
   ctx.stroke();
 
-  // Specular highlight — small ellipse near top-left.
-  const hx = cx - rr * 0.35;
-  const hy = cy - rr * 0.45;
-  ctx.fillStyle = `rgba(255,255,255,${0.22 * alphaMul})`;
+  // Clear (outlined) highlight — orbits the bubble center + slowly tilts.
+  const orbitAngle = b.highlightOrbitPhase + t * b.highlightOrbitFreq;
+  const tiltAngle  = b.highlightTiltPhase  + t * b.highlightTiltFreq;
+  const orbitR     = rr * 0.38;
+  const hx = cx + Math.cos(orbitAngle) * orbitR;
+  const hy = cy + Math.sin(orbitAngle) * orbitR;
+  ctx.strokeStyle = `rgba(255,255,255,${0.55 * alphaMul})`;
+  ctx.lineWidth = 1.2;
   ctx.beginPath();
-  ctx.ellipse(hx, hy, rr * 0.18, rr * 0.10, -0.6, 0, Math.PI * 2);
-  ctx.fill();
+  ctx.ellipse(hx, hy, rr * 0.22, rr * 0.10, tiltAngle, 0, Math.PI * 2);
+  ctx.stroke();
 }
 
 function drawPopParticles(b, popProgress, w, h) {
