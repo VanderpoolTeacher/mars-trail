@@ -106,9 +106,7 @@ export function toggleMute() {
 
 export function selectTrack(trackId) {
   localStorage.setItem(STORAGE_KEY_TRACK, trackId);
-  if (currentTrackId !== 'title') {
-    play(trackId);
-  }
+  play(trackId);
 }
 
 export function cycleTrack(direction) {

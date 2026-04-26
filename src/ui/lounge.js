@@ -20,7 +20,7 @@ import {
   getCurrentTime
 } from '../audio.js';
 import { getFlavor } from '../content/trackFlavor.js';
-import { getActiveTheme } from '../theme.js';
+import { getActiveTheme, setActiveTheme, THEMES } from '../theme.js';
 
 const ALL_TRACKS = [TITLE_TRACK, ...GAMEPLAY_TRACKS];
 
@@ -71,7 +71,15 @@ function render() {
     <div class="lounge-screen">
       <header class="lounge-header">
         <h1 class="lounge-title">THE LOUNGE</h1>
-        <button class="lounge-close" id="lounge-close" type="button" aria-label="Close the Lounge">CLOSE ✕</button>
+        <div class="lounge-header-actions">
+          <label class="lounge-theme-label">
+            THEME
+            <select class="lounge-theme-select" id="lounge-theme-select" aria-label="Interface theme">
+              ${THEMES.map(t => `<option value="${t.id}" ${t.id === theme ? 'selected' : ''}>${escapeHtml(t.label)}</option>`).join('')}
+            </select>
+          </label>
+          <button class="lounge-close" id="lounge-close" type="button" aria-label="Close the Lounge">CLOSE ✕</button>
+        </div>
       </header>
 
       <section class="lounge-now-playing" id="lounge-now-playing" aria-live="polite">
@@ -112,6 +120,11 @@ function wire() {
   const layer = document.getElementById('lounge-layer');
 
   layer.querySelector('#lounge-close').addEventListener('click', close);
+
+  layer.querySelector('#lounge-theme-select').addEventListener('change', (e) => {
+    setActiveTheme(e.target.value);
+    render();   // re-render so flavor copy + skin update immediately
+  });
 
   layer.querySelector('#lounge-list').addEventListener('click', (e) => {
     const row = e.target.closest('.lounge-row');

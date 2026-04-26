@@ -999,7 +999,7 @@ body[data-theme="lcars"] .eor-col-facts {
 .lounge-layer {
   position: fixed;
   inset: 0;
-  z-index: 90;
+  z-index: 600;        /* above title-layer (500), below modal-root (1000) */
   display: none;
   background: var(--bg);
   overflow: auto;
@@ -1027,6 +1027,32 @@ body[data-theme="lcars"] .eor-col-facts {
   letter-spacing: 0.15em;
   color: var(--fg);
   text-shadow: var(--glow);
+}
+.lounge-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.lounge-theme-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  color: var(--fg-dim);
+}
+.lounge-theme-select {
+  background: transparent;
+  color: var(--fg);
+  border: 1px solid var(--fg-faint);
+  padding: 4px 8px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  cursor: pointer;
+}
+.lounge-theme-select option {
+  background: #000;
+  color: var(--fg);
 }
 .lounge-close {
   background: transparent;
@@ -1163,22 +1189,106 @@ body[data-theme="lcars"] .eor-col-facts {
 }
 .lounge-row.playing .lounge-row-indicator { visibility: visible; color: var(--fg); }
 
-/* Title screen — give the LOUNGE button a sibling layout */
-.title-actions {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  align-items: center;
-  margin-top: 6px;
-}
-.title-lounge {
-  background: transparent;
-  color: var(--fg);
-  border: 1px solid var(--fg-faint);
-  padding: 8px 18px;
-  font-family: var(--font-mono);
-  font-size: 13px;
-  letter-spacing: 0.15em;
+/* ----- Vinyl-record button ----- */
+/* Two stacked layers via background-image:
+   - top layer: thin concentric grooves (repeating-radial-gradient)
+   - bottom layer: solid black wax with a theme-colored center label
+   A separate ::after spot adds the center hole. */
+.lounge-vinyl {
+  appearance: none;
+  -webkit-appearance: none;
   cursor: pointer;
+  padding: 0;
+  box-sizing: border-box;
+  border: 1px solid var(--fg-faint);
+  border-radius: 50%;
+  overflow: hidden;
+  aspect-ratio: 1 / 1;
+  background-color: #1a1a1a;
+  background-image:
+    /* Solid wax + theme-colored center label — clean album icon look. */
+    radial-gradient(circle at center,
+      var(--fg) 0,
+      var(--fg) 30%,
+      #0a0a0a 30.5%,
+      #0a0a0a 100%);
+  display: inline-block;
+  position: relative;
+  transition: box-shadow 0.2s ease;
+  flex-shrink: 0;
+  line-height: 0;
 }
-.title-lounge:hover { border-color: var(--fg); box-shadow: var(--glow); }
+.lounge-vinyl:hover {
+  box-shadow: 0 0 0 2px var(--fg), var(--glow);
+  animation: lounge-vinyl-spin 4s linear infinite;
+}
+
+@keyframes lounge-vinyl-spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lounge-vinyl:hover { animation: none; }
+}
+.lounge-vinyl-center {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 10%;
+  height: 10%;
+  border-radius: 50%;
+  background: #000;
+  transform: translate(-50%, -50%);
+  box-shadow: 0 0 0 1px rgba(255,255,255,0.2);
+  z-index: 1;
+}
+
+/* Asymmetric outline arc — visible feature that reads as motion when
+   the disc spins. Lives inside the disc so overflow:hidden doesn't clip it. */
+.lounge-vinyl::after {
+  content: '';
+  position: absolute;
+  inset: 2px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  border-top-color: var(--fg);
+  pointer-events: none;
+}
+
+.lounge-vinyl-sm { width: 30px; height: 30px; }
+.lounge-vinyl-md { width: 56px; height: 56px; }
+.lounge-vinyl-lg { width: 110px; height: 110px; }
+
+/* Floating Lounge button — anchored to lower-right of the viewport.
+   z-index 550 sits above the title-layer (500) so it appears on the
+   title screen too, but below the lounge-layer (600) so it's covered
+   while the Lounge is open, and below modal-root (1000). */
+.lounge-vinyl-corner {
+  position: fixed;
+  right: 18px;
+  bottom: 18px;
+  z-index: 550;
+  box-shadow:
+    0 0 0 2px var(--fg-faint),
+    0 0 8px var(--fg-faint),
+    0 4px 14px rgba(0, 0, 0, 0.6);
+}
+
+.title-lounge {
+  background-color: transparent;     /* keep gradient from .lounge-vinyl */
+  color: var(--fg);
+  font-family: var(--font-mono);
+  position: relative;
+}
+.title-lounge-label {
+  position: absolute;
+  bottom: -22px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  color: var(--fg-dim);
+  white-space: nowrap;
+}
+.title-lounge:hover .title-lounge-label { color: var(--fg); }
