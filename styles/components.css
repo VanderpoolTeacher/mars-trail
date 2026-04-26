@@ -1101,13 +1101,31 @@ body[data-theme="lcars"] .eor-col-facts {
   background: #000;
   pointer-events: none;     /* click passes through to the frame */
 }
+.lounge-visualizer-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
 .lounge-visualizer-hint {
   font-size: 10px;
   letter-spacing: 0.2em;
   color: var(--fg-dim);
   text-align: center;
   font-family: var(--font-mono);
+  flex: 1;
 }
+.lounge-sfx-btn {
+  background: transparent;
+  color: var(--fg);
+  border: 1px solid var(--fg-faint);
+  padding: 2px 8px;
+  font-size: 12px;
+  font-family: var(--font-mono);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.lounge-sfx-btn:hover { border-color: var(--fg); box-shadow: var(--glow); }
 
 /* Fullscreen mode — frame fills the screen, 16:9 constraint relaxed,
    the hint label hides since the wrapper isn't part of fullscreen. */

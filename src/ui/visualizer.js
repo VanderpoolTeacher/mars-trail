@@ -3,7 +3,7 @@
 //   1. Per-track ambient backdrop (drifting orbs in the palette)
 //   2. Audio-reactive pulse rings (spawned on amplitude transients)
 
-import { getAnalyser, resumeAudioContext, isPlaying } from '../audio.js';
+import { getAnalyser, resumeAudioContext, isPlaying, playSfx } from '../audio.js';
 import { getPalette } from '../content/trackPalettes.js';
 
 const ORB_COUNT      = 5;
@@ -21,6 +21,10 @@ const ENTRY_DURATION   = 5500;   // ms — speed-decay from entry to drift
 const ENTRY_SPEED      = 0.16;   // px/ms — initial inward speed off-screen
 const DRIFT_SPEED_MIN  = 0.012;  // px/ms — gentle wandering speed
 const DRIFT_SPEED_MAX  = 0.034;
+
+const DIAMOND_VIS_R_FRAC = 0.07; // visual radius (fraction of minDim)
+const DIAMOND_HIT_R_FRAC = 0.055;// hit radius (slightly smaller — slightly forgiving)
+const DIAMOND_COLOR      = '#ffe066';
 
 let canvas = null;
 let ctx    = null;
@@ -261,6 +265,20 @@ function drawPopParticles(b, popProgress, w, h) {
   }
 }
 
+function popBubble(b, kind, now) {
+  if (b.state !== 'alive') return;
+  b.state = 'popping';
+  b.popStartedAt = now;
+  b.popOriginX = b.x;
+  b.popOriginY = b.y;
+  b.popParticles = Array.from({ length: POP_PARTICLES }, (_, i) => ({
+    angle: (i / POP_PARTICLES) * Math.PI * 2 + (Math.random() - 0.5) * 0.5,
+    speed: 0.55 + Math.random() * 0.55,
+    size:  2 + Math.random() * 3
+  }));
+  playSfx(kind);
+}
+
 export function popBubbleAt(xCss, yCss, now = performance.now()) {
   // Returns true if a live bubble was hit and popped.
   let hit = -1;
@@ -278,20 +296,49 @@ export function popBubbleAt(xCss, yCss, now = performance.now()) {
     }
   }
   if (hit === -1) return false;
-  const b = bubbles[hit];
-  b.state = 'popping';
-  b.popStartedAt = now;
-  b.popOriginX = b.x;
-  b.popOriginY = b.y;
-  // Shatter into a ring of fragments. Each fragment has its own outward
-  // speed multiplier and size, so they break apart unevenly and travel
-  // past the visible edges of the panel.
-  b.popParticles = Array.from({ length: POP_PARTICLES }, (_, i) => ({
-    angle: (i / POP_PARTICLES) * Math.PI * 2 + (Math.random() - 0.5) * 0.5,
-    speed: 0.55 + Math.random() * 0.55,
-    size:  2 + Math.random() * 3
-  }));
+  popBubble(bubbles[hit], 'good', now);
   return true;
+}
+
+function drawDiamond(w, h, t) {
+  const cx = w / 2;
+  const cy = h / 2;
+  const minDim = Math.min(w, h);
+  const r = minDim * DIAMOND_VIS_R_FRAC;
+  const rot = t * 0.0008;
+
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.rotate(rot);
+  ctx.shadowColor = DIAMOND_COLOR;
+  ctx.shadowBlur = 14;
+  ctx.beginPath();
+  ctx.moveTo(0, -r);
+  ctx.lineTo(r, 0);
+  ctx.lineTo(0, r);
+  ctx.lineTo(-r, 0);
+  ctx.closePath();
+  ctx.fillStyle = hexWithAlpha(DIAMOND_COLOR, 0.22);
+  ctx.fill();
+  ctx.strokeStyle = DIAMOND_COLOR;
+  ctx.lineWidth = 1.6;
+  ctx.stroke();
+  ctx.restore();
+}
+
+function checkDiamondHits(w, h, now) {
+  const cx = w / 2;
+  const cy = h / 2;
+  const dHitR = Math.min(w, h) * DIAMOND_HIT_R_FRAC;
+  for (const b of bubbles) {
+    if (b.state !== 'alive' || !b.inside) continue;
+    const dx = b.x - cx;
+    const dy = b.y - cy;
+    const sumR = b.r + dHitR;
+    if (dx * dx + dy * dy < sumR * sumR) {
+      popBubble(b, 'bad', now);
+    }
+  }
 }
 
 function buildOrbs(palette) {
@@ -422,8 +469,10 @@ function frame(now) {
   const dt = Math.min(48, lastFrameTime ? (now - lastFrameTime) : 16);
   lastFrameTime = now;
   updateBubbles(w, h, dt, now);
+  checkDiamondHits(w, h, now);
 
   drawBackdrop(palette, w, h, t);
+  drawDiamond(w, h, t);
   drawBubbles(w, h, t, now);
   maybeSpawnRing(palette, now);
   drawRings(w, h, now);

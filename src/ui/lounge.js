@@ -17,7 +17,9 @@ import {
   seekTo,
   getCurrentTrackId,
   getDuration,
-  getCurrentTime
+  getCurrentTime,
+  isSfxMuted,
+  toggleSfx
 } from '../audio.js';
 import { getFlavor } from '../content/trackFlavor.js';
 import { getActiveTheme, setActiveTheme, THEMES } from '../theme.js';
@@ -107,7 +109,10 @@ function render() {
           <div class="lounge-visualizer-frame" id="lounge-visualizer-frame">
             <canvas class="lounge-visualizer" id="lounge-visualizer" aria-hidden="true"></canvas>
           </div>
-          <div class="lounge-visualizer-hint">CLICK BUBBLES TO POP · F TO TOGGLE FULLSCREEN</div>
+          <div class="lounge-visualizer-footer">
+            <span class="lounge-visualizer-hint">POP BUBBLES BEFORE THEY HIT THE DIAMOND · F FULLSCREEN</span>
+            <button class="lounge-sfx-btn" id="lounge-sfx" type="button" aria-label="Toggle pop sounds" title="Toggle pop sounds">${isSfxMuted() ? '🔇' : '🔊'}</button>
+          </div>
         </div>
       </section>
 
@@ -164,6 +169,12 @@ function wire() {
   visFrame.addEventListener('click', (e) => {
     const rect = visFrame.getBoundingClientRect();
     popBubbleAt(e.clientX - rect.left, e.clientY - rect.top);
+  });
+
+  const sfxBtn = layer.querySelector('#lounge-sfx');
+  sfxBtn.addEventListener('click', () => {
+    const muted = toggleSfx();
+    sfxBtn.textContent = muted ? '🔇' : '🔊';
   });
 
   // Seek by clicking anywhere on the progress bar.

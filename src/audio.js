@@ -4,6 +4,7 @@
 
 const STORAGE_KEY_TRACK = 'marsTrail.musicTrack';
 const STORAGE_KEY_MUTE  = 'marsTrail.musicMute';
+const STORAGE_KEY_SFX   = 'marsTrail.sfxMute';
 
 export const TITLE_TRACK = {
   id: 'title', name: 'Title Theme', file: 'assets/music/title-screen.mp3'
@@ -243,5 +244,68 @@ export function getAnalyser() {
 export function resumeAudioContext() {
   if (audioCtx && audioCtx.state === 'suspended') {
     audioCtx.resume().catch(() => {});
+  }
+}
+
+// ---- SFX (game-action sounds, separate from music mute) ----
+
+export function isSfxMuted() {
+  return localStorage.getItem(STORAGE_KEY_SFX) === '1';
+}
+
+export function setSfxMuted(muted) {
+  localStorage.setItem(STORAGE_KEY_SFX, muted ? '1' : '0');
+}
+
+export function toggleSfx() {
+  const next = !isSfxMuted();
+  setSfxMuted(next);
+  return next;
+}
+
+function getSfxContext() {
+  if (audioCtx) return audioCtx;
+  try {
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    if (!AudioCtx) return null;
+    audioCtx = new AudioCtx();
+    return audioCtx;
+  } catch { return null; }
+}
+
+export function playSfx(kind) {
+  if (isSfxMuted()) return;
+  const ac = getSfxContext();
+  if (!ac) return;
+  if (ac.state === 'suspended') ac.resume().catch(() => {});
+
+  const now = ac.currentTime;
+
+  if (kind === 'good') {
+    // Pleasant short pop — triangle wave, quick upward chirp.
+    const osc  = ac.createOscillator();
+    const gain = ac.createGain();
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(660, now);
+    osc.frequency.exponentialRampToValueAtTime(1320, now + 0.08);
+    gain.gain.setValueAtTime(0.0001, now);
+    gain.gain.exponentialRampToValueAtTime(0.22, now + 0.012);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.18);
+    osc.connect(gain).connect(ac.destination);
+    osc.start(now);
+    osc.stop(now + 0.22);
+  } else if (kind === 'bad') {
+    // Low thunk — square wave, downward slide.
+    const osc  = ac.createOscillator();
+    const gain = ac.createGain();
+    osc.type = 'square';
+    osc.frequency.setValueAtTime(220, now);
+    osc.frequency.exponentialRampToValueAtTime(70, now + 0.18);
+    gain.gain.setValueAtTime(0.0001, now);
+    gain.gain.exponentialRampToValueAtTime(0.28, now + 0.012);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.30);
+    osc.connect(gain).connect(ac.destination);
+    osc.start(now);
+    osc.stop(now + 0.34);
   }
 }
