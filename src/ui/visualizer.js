@@ -159,8 +159,8 @@ function drawBubbleBody(b, cx, cy, r, bodyProgress, t) {
   const orbitR     = rr * 0.38;
   const hx = cx + Math.cos(orbitAngle) * orbitR;
   const hy = cy + Math.sin(orbitAngle) * orbitR;
-  ctx.strokeStyle = `rgba(255,255,255,${0.92 * alphaMul})`;
-  ctx.lineWidth = 1.4;
+  ctx.strokeStyle = `rgba(255,255,255,${0.35 * alphaMul})`;
+  ctx.lineWidth = 1;
   ctx.beginPath();
   ctx.ellipse(hx, hy, rr * b.highlightMajor, rr * b.highlightMinor, tiltAngle, 0, Math.PI * 2);
   ctx.stroke();
