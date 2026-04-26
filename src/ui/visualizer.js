@@ -307,6 +307,21 @@ export function popBubbleAt(xCss, yCss, now = performance.now()) {
   return true;
 }
 
+function drawDiamondHalo(w, h) {
+  // Static glow orb anchored to the panel center — sits behind the diamond
+  // so the diamond reads as the focal point even on busy palettes.
+  const cx = w / 2;
+  const cy = h / 2;
+  const minDim = Math.min(w, h);
+  const r = minDim * 0.32;
+  const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, r);
+  grad.addColorStop(0,   hexWithAlpha(DIAMOND_COLOR, 0.30));
+  grad.addColorStop(0.5, hexWithAlpha(DIAMOND_COLOR, 0.10));
+  grad.addColorStop(1,   hexWithAlpha(DIAMOND_COLOR, 0));
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, w, h);
+}
+
 function drawDiamond(w, h, t) {
   const cx = w / 2;
   const cy = h / 2;
@@ -510,6 +525,7 @@ function frame(now) {
   checkDiamondHits(w, h, now);
 
   drawBackdrop(palette, w, h, t);
+  drawDiamondHalo(w, h);
   drawDiamond(w, h, t);
   drawBubbles(w, h, t, now);
   maybeSpawnRing(palette, now);
