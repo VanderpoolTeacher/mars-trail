@@ -103,9 +103,8 @@ function render() {
             <button class="lounge-ctrl" id="lounge-mute"  type="button" aria-label="Mute/Unmute">🔊</button>
           </div>
         </div>
-        <div class="lounge-visualizer-frame" id="lounge-visualizer-frame">
+        <div class="lounge-visualizer-frame" id="lounge-visualizer-frame" role="button" tabindex="0" aria-label="Toggle fullscreen visualizer" title="Click for fullscreen">
           <canvas class="lounge-visualizer" id="lounge-visualizer" aria-hidden="true"></canvas>
-          <button class="lounge-fullscreen-btn" id="lounge-fullscreen" type="button" aria-label="Toggle fullscreen visualizer" title="Fullscreen">⛶</button>
         </div>
       </section>
 
@@ -158,14 +157,20 @@ function wire() {
     refreshMute();
   });
 
-  layer.querySelector('#lounge-fullscreen').addEventListener('click', () => {
-    const frame = layer.querySelector('#lounge-visualizer-frame');
-    if (!frame) return;
+  const visFrame = layer.querySelector('#lounge-visualizer-frame');
+  const toggleFullscreen = () => {
     const fsEl = document.fullscreenElement || document.webkitFullscreenElement;
     if (fsEl) {
       (document.exitFullscreen || document.webkitExitFullscreen).call(document);
     } else {
-      (frame.requestFullscreen || frame.webkitRequestFullscreen).call(frame);
+      (visFrame.requestFullscreen || visFrame.webkitRequestFullscreen).call(visFrame);
+    }
+  };
+  visFrame.addEventListener('click', toggleFullscreen);
+  visFrame.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      toggleFullscreen();
     }
   });
 
