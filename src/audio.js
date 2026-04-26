@@ -106,9 +106,7 @@ export function toggleMute() {
 
 export function selectTrack(trackId) {
   localStorage.setItem(STORAGE_KEY_TRACK, trackId);
-  if (currentTrackId !== 'title') {
-    play(trackId);
-  }
+  play(trackId);
 }
 
 export function cycleTrack(direction) {
@@ -182,3 +180,34 @@ export function fadeInGameplay(durationMs = 1500) {
 }
 
 export function isUnlocked() { return unlocked; }
+
+// ---- Seek / progress / play-pause API (used by the Lounge) ----
+
+const timeUpdateListeners = [];
+export function onTimeUpdate(cb) { timeUpdateListeners.push(cb); }
+audio.addEventListener('timeupdate', () => {
+  timeUpdateListeners.forEach(cb => { try { cb(audio.currentTime, audio.duration || 0); } catch {} });
+});
+
+export function getCurrentTime() { return audio.currentTime || 0; }
+export function getDuration()    { return audio.duration   || 0; }
+export function getProgress()    {
+  const d = audio.duration;
+  return (d && isFinite(d)) ? (audio.currentTime / d) : 0;
+}
+export function seekTo(fraction) {
+  const d = audio.duration;
+  if (!d || !isFinite(d)) return;
+  audio.currentTime = Math.max(0, Math.min(1, fraction)) * d;
+}
+export function isPlaying() { return !audio.paused; }
+export function getCurrentTrackId() { return currentTrackId; }
+
+export function pauseAudio() { audio.pause(); }
+export function resumeAudio() {
+  if (currentTrackId) audio.play().catch(() => {});
+}
+export function togglePlayPause() {
+  if (audio.paused) resumeAudio(); else pauseAudio();
+  return !audio.paused;
+}

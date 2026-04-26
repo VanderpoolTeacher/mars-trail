@@ -288,3 +288,21 @@ body[data-theme="lcars"] .theme-select option {
   color: var(--fg);
   background: #000;
 }
+
+/* ----- Lounge — LCARS skin ----- */
+body[data-theme="lcars"] .lounge-now-playing,
+body[data-theme="lcars"] .lounge-row { border-radius: 0 12px 0 12px; }
+body[data-theme="lcars"] .lounge-row.playing {
+  background: var(--fg);
+  color: var(--bg);
+}
+body[data-theme="lcars"] .lounge-row.playing .lounge-row-name,
+body[data-theme="lcars"] .lounge-row.playing .lounge-row-flavor {
+  color: var(--bg);
+}
+body[data-theme="lcars"] .lounge-row.playing .lounge-row-indicator {
+  color: var(--bg);
+}
+body[data-theme="lcars"] .lounge-progress { border-radius: 999px; height: 8px; }
+body[data-theme="lcars"] .lounge-progress-fill { border-radius: 999px; }
+body[data-theme="lcars"] .lounge-title { letter-spacing: 0.18em; }

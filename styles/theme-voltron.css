@@ -231,3 +231,28 @@ body[data-theme="voltron"] .theme-select option {
   background: var(--bg);
   color: var(--fg);
 }
+
+/* ----- Lounge — Voltron skin ----- */
+body[data-theme="voltron"] .lounge-title {
+  text-transform: uppercase;
+  letter-spacing: 0.22em;
+}
+body[data-theme="voltron"] .lounge-now-playing,
+body[data-theme="voltron"] .lounge-row {
+  border-width: 2px;
+  border-color: var(--fg-faint);
+}
+body[data-theme="voltron"] .lounge-row.playing {
+  border-color: var(--fg-dim);
+  box-shadow: var(--glow);
+}
+body[data-theme="voltron"] .lounge-progress {
+  background: rgba(75, 216, 255, 0.18);
+  height: 6px;
+}
+body[data-theme="voltron"] .lounge-progress-fill {
+  background: var(--fg-dim);
+  box-shadow: 0 0 6px rgba(75, 216, 255, 0.9);
+}
+body[data-theme="voltron"] .lounge-ctrl { border-color: var(--fg-faint); }
+body[data-theme="voltron"] .lounge-ctrl:hover { border-color: var(--fg-dim); }

@@ -47,6 +47,18 @@ function populate(select) {
   }
 }
 
+export function getActiveTheme() {
+  if (typeof localStorage === 'undefined') return 'mc';
+  return resolveTheme(localStorage.getItem(STORAGE_KEY));
+}
+
+export function setActiveTheme(raw) {
+  const next = resolveTheme(raw);
+  save(next);
+  apply(next);
+  return next;
+}
+
 export function initTheme() {
   if (typeof document === 'undefined') return;
   const current = load();
