@@ -30,6 +30,8 @@ const ALL_TRACKS = [TITLE_TRACK, ...GAMEPLAY_TRACKS];
 let opened = false;
 let onCloseCb = null;
 let hudInterval = 0;
+let mobileLandscapeMql = null;
+let mobileLandscapeHandler = null;
 
 // Listeners are registered exactly once at module load. They no-op
 // whenever the Lounge is closed, so re-opening doesn't accumulate them.
@@ -233,6 +235,31 @@ function escClose(e) {
   }
 }
 
+function applyMobileLandscape(matches) {
+  // On mobile landscape, auto-toggle visualizer fullscreen. The score-only
+  // HUD trim is handled in CSS so it still applies if fullscreen is denied
+  // (e.g. iOS Safari without a user gesture).
+  if (!opened) return;
+  const frame = document.getElementById('lounge-visualizer-frame');
+  if (!frame) return;
+  const fsEl = document.fullscreenElement || document.webkitFullscreenElement;
+  if (matches && !fsEl) {
+    const req = frame.requestFullscreen || frame.webkitRequestFullscreen;
+    if (!req) return;
+    try {
+      const result = req.call(frame);
+      if (result && typeof result.catch === 'function') result.catch(() => {});
+    } catch {}
+  } else if (!matches && fsEl === frame) {
+    const exit = document.exitFullscreen || document.webkitExitFullscreen;
+    if (!exit) return;
+    try {
+      const result = exit.call(document);
+      if (result && typeof result.catch === 'function') result.catch(() => {});
+    } catch {}
+  }
+}
+
 function refreshHud() {
   const layer = document.getElementById('lounge-layer');
   if (!layer) return;
@@ -308,6 +335,18 @@ export function openLounge(onClose) {
   refreshHud();
   hudInterval = setInterval(refreshHud, 200);
 
+  // Mobile landscape → auto-fullscreen + score-only HUD.
+  if (typeof window.matchMedia === 'function') {
+    mobileLandscapeMql = window.matchMedia('(orientation: landscape) and (max-width: 900px)');
+    mobileLandscapeHandler = (e) => applyMobileLandscape(e.matches);
+    if (mobileLandscapeMql.addEventListener) {
+      mobileLandscapeMql.addEventListener('change', mobileLandscapeHandler);
+    } else if (mobileLandscapeMql.addListener) {
+      mobileLandscapeMql.addListener(mobileLandscapeHandler);                 // older Safari
+    }
+    if (mobileLandscapeMql.matches) applyMobileLandscape(true);
+  }
+
   document.addEventListener('keydown', escClose);
 }
 
@@ -315,6 +354,15 @@ export function close() {
   if (!opened) return;
   opened = false;
   if (hudInterval) { clearInterval(hudInterval); hudInterval = 0; }
+  if (mobileLandscapeMql && mobileLandscapeHandler) {
+    if (mobileLandscapeMql.removeEventListener) {
+      mobileLandscapeMql.removeEventListener('change', mobileLandscapeHandler);
+    } else if (mobileLandscapeMql.removeListener) {
+      mobileLandscapeMql.removeListener(mobileLandscapeHandler);
+    }
+  }
+  mobileLandscapeMql = null;
+  mobileLandscapeHandler = null;
   stopVisualizer();
   const layer = document.getElementById('lounge-layer');
   if (layer) {
