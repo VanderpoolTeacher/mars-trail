@@ -57,6 +57,21 @@ function drawBackdrop(palette, w, h, t) {
   ctx.fillStyle = palette.bg;
   ctx.fillRect(0, 0, w, h);
 
+  // Slow rotational depth layer — a conic gradient that creeps around the
+  // center over ~40 seconds. Adds the impression of the whole panel
+  // drifting, not just the orbs floating.
+  const angle = (t * 0.00016) % (Math.PI * 2);
+  if (typeof ctx.createConicGradient === 'function') {
+    const conic = ctx.createConicGradient(angle, w / 2, h / 2);
+    conic.addColorStop(0,    hexWithAlpha(palette.accent, 0.07));
+    conic.addColorStop(0.25, 'rgba(0,0,0,0)');
+    conic.addColorStop(0.5,  hexWithAlpha(palette.accent, 0.05));
+    conic.addColorStop(0.75, 'rgba(0,0,0,0)');
+    conic.addColorStop(1,    hexWithAlpha(palette.accent, 0.07));
+    ctx.fillStyle = conic;
+    ctx.fillRect(0, 0, w, h);
+  }
+
   const minDim = Math.min(w, h);
   for (const orb of orbs) {
     const x = w * (orb.cx + Math.sin(t * orb.dxFreq + orb.phaseX) * orb.dxAmp);

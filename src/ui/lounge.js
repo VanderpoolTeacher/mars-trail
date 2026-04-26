@@ -103,7 +103,10 @@ function render() {
             <button class="lounge-ctrl" id="lounge-mute"  type="button" aria-label="Mute/Unmute">🔊</button>
           </div>
         </div>
-        <canvas class="lounge-visualizer" id="lounge-visualizer" aria-hidden="true"></canvas>
+        <div class="lounge-visualizer-frame" id="lounge-visualizer-frame">
+          <canvas class="lounge-visualizer" id="lounge-visualizer" aria-hidden="true"></canvas>
+          <button class="lounge-fullscreen-btn" id="lounge-fullscreen" type="button" aria-label="Toggle fullscreen visualizer" title="Fullscreen">⛶</button>
+        </div>
       </section>
 
       <section class="lounge-list-section">
@@ -153,6 +156,17 @@ function wire() {
   layer.querySelector('#lounge-mute').addEventListener('click', () => {
     toggleMute();
     refreshMute();
+  });
+
+  layer.querySelector('#lounge-fullscreen').addEventListener('click', () => {
+    const frame = layer.querySelector('#lounge-visualizer-frame');
+    if (!frame) return;
+    const fsEl = document.fullscreenElement || document.webkitFullscreenElement;
+    if (fsEl) {
+      (document.exitFullscreen || document.webkitExitFullscreen).call(document);
+    } else {
+      (frame.requestFullscreen || frame.webkitRequestFullscreen).call(frame);
+    }
   });
 
   // Seek by clicking anywhere on the progress bar.

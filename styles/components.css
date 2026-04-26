@@ -1080,21 +1080,66 @@ body[data-theme="lcars"] .eor-col-facts {
   flex-direction: column;
   justify-content: center;
 }
-.lounge-visualizer {
+.lounge-visualizer-frame {
+  position: relative;
   width: 100%;
   aspect-ratio: 16 / 9;
-  height: auto;
+  align-self: center;
   border: 1px solid var(--fg-faint);
   background: #000;
+}
+.lounge-visualizer {
   display: block;
-  align-self: center;
+  width: 100%;
+  height: 100%;
+  background: #000;
+}
+.lounge-fullscreen-btn {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  z-index: 2;
+  width: 28px;
+  height: 28px;
+  background: rgba(0, 0, 0, 0.55);
+  color: var(--fg);
+  border: 1px solid var(--fg-faint);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+  opacity: 0.55;
+  transition: opacity 0.15s ease, border-color 0.15s ease;
+}
+.lounge-visualizer-frame:hover .lounge-fullscreen-btn,
+.lounge-fullscreen-btn:focus {
+  opacity: 1;
+  border-color: var(--fg);
+}
+
+/* Fullscreen mode — frame fills the screen, canvas fills the frame,
+   16:9 constraint relaxed. */
+.lounge-visualizer-frame:fullscreen,
+.lounge-visualizer-frame:-webkit-full-screen {
+  width: 100vw;
+  height: 100vh;
+  aspect-ratio: auto;
+  border: none;
+}
+.lounge-visualizer-frame:fullscreen .lounge-fullscreen-btn,
+.lounge-visualizer-frame:-webkit-full-screen .lounge-fullscreen-btn {
+  top: 18px;
+  right: 18px;
+  width: 36px;
+  height: 36px;
+  font-size: 18px;
 }
 
 @media (max-width: 640px) {
   .lounge-now-playing {
     grid-template-columns: 1fr;
   }
-  .lounge-visualizer {
+  .lounge-visualizer-frame {
     order: -1;
   }
 }
