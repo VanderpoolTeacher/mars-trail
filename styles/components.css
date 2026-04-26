@@ -1070,6 +1070,33 @@ body[data-theme="lcars"] .eor-col-facts {
   border: 1px solid var(--fg-faint);
   padding: 14px 16px;
   background: var(--bg-panel);
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  align-items: stretch;
+}
+.lounge-np-text {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+.lounge-visualizer {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  height: auto;
+  border: 1px solid var(--fg-faint);
+  background: #000;
+  display: block;
+  align-self: center;
+}
+
+@media (max-width: 640px) {
+  .lounge-now-playing {
+    grid-template-columns: 1fr;
+  }
+  .lounge-visualizer {
+    order: -1;
+  }
 }
 .lounge-np-label {
   font-size: 10px;
