@@ -1138,6 +1138,17 @@ body[data-theme="lcars"] .eor-col-facts {
   color: rgba(255, 255, 255, 0.55);
   margin-top: 1px;
 }
+
+/* Mobile landscape: hide track name + time + bubble count, leave only the
+   score visible in the HUD. JS auto-fullscreens the visualizer frame in
+   the same condition; CSS also covers the case where fullscreen is denied. */
+@media (orientation: landscape) and (max-width: 900px) {
+  .lounge-hud .hud-track,
+  .lounge-hud .hud-time,
+  .lounge-hud #hud-bubbles {
+    display: none;
+  }
+}
 .lounge-visualizer-footer {
   display: flex;
   align-items: center;
