@@ -211,3 +211,37 @@ export function togglePlayPause() {
   if (audio.paused) resumeAudio(); else pauseAudio();
   return !audio.paused;
 }
+
+// ---- Web Audio analyser (used by the Lounge visualizer) ----
+// Lazily wires the existing <audio> element through an AnalyserNode.
+// Created on first call (which only happens after the user opens the
+// Lounge — i.e., after a user gesture, satisfying autoplay policies).
+let analyser = null;
+let audioCtx = null;
+let mediaSource = null;
+
+export function getAnalyser() {
+  if (analyser) return analyser;
+  try {
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    if (!AudioCtx) return null;
+    audioCtx    = new AudioCtx();
+    mediaSource = audioCtx.createMediaElementSource(audio);
+    analyser    = audioCtx.createAnalyser();
+    analyser.fftSize = 256;
+    analyser.smoothingTimeConstant = 0.6;
+    mediaSource.connect(analyser);
+    analyser.connect(audioCtx.destination);
+    return analyser;
+  } catch (err) {
+    // createMediaElementSource throws if called twice on the same element.
+    // Anything else: degrade silently — visualizer falls back to backdrop-only.
+    return analyser;
+  }
+}
+
+export function resumeAudioContext() {
+  if (audioCtx && audioCtx.state === 'suspended') {
+    audioCtx.resume().catch(() => {});
+  }
+}
