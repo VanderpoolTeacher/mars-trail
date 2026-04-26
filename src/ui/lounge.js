@@ -21,6 +21,7 @@ import {
 } from '../audio.js';
 import { getFlavor } from '../content/trackFlavor.js';
 import { getActiveTheme, setActiveTheme, THEMES } from '../theme.js';
+import { startVisualizer, stopVisualizer } from './visualizer.js';
 
 const ALL_TRACKS = [TITLE_TRACK, ...GAMEPLAY_TRACKS];
 
@@ -83,23 +84,26 @@ function render() {
       </header>
 
       <section class="lounge-now-playing" id="lounge-now-playing" aria-live="polite">
-        <div class="lounge-np-label">NOW PLAYING</div>
-        <div class="lounge-np-name"  id="lounge-np-name">—</div>
-        <div class="lounge-np-flavor" id="lounge-np-flavor"></div>
-        <div class="lounge-progress-row">
-          <span class="lounge-time" id="lounge-time-current">0:00</span>
-          <div class="lounge-progress" id="lounge-progress" role="slider"
-               aria-label="Seek" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
-            <div class="lounge-progress-fill" id="lounge-progress-fill"></div>
+        <div class="lounge-np-text">
+          <div class="lounge-np-label">NOW PLAYING</div>
+          <div class="lounge-np-name"  id="lounge-np-name">—</div>
+          <div class="lounge-np-flavor" id="lounge-np-flavor"></div>
+          <div class="lounge-progress-row">
+            <span class="lounge-time" id="lounge-time-current">0:00</span>
+            <div class="lounge-progress" id="lounge-progress" role="slider"
+                 aria-label="Seek" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+              <div class="lounge-progress-fill" id="lounge-progress-fill"></div>
+            </div>
+            <span class="lounge-time" id="lounge-time-total">0:00</span>
           </div>
-          <span class="lounge-time" id="lounge-time-total">0:00</span>
+          <div class="lounge-controls">
+            <button class="lounge-ctrl" id="lounge-prev"  type="button" aria-label="Previous track">⏮</button>
+            <button class="lounge-ctrl lounge-ctrl-play" id="lounge-playpause" type="button" aria-label="Play/Pause">⏸</button>
+            <button class="lounge-ctrl" id="lounge-next"  type="button" aria-label="Next track">⏭</button>
+            <button class="lounge-ctrl" id="lounge-mute"  type="button" aria-label="Mute/Unmute">🔊</button>
+          </div>
         </div>
-        <div class="lounge-controls">
-          <button class="lounge-ctrl" id="lounge-prev"  type="button" aria-label="Previous track">⏮</button>
-          <button class="lounge-ctrl lounge-ctrl-play" id="lounge-playpause" type="button" aria-label="Play/Pause">⏸</button>
-          <button class="lounge-ctrl" id="lounge-next"  type="button" aria-label="Next track">⏭</button>
-          <button class="lounge-ctrl" id="lounge-mute"  type="button" aria-label="Mute/Unmute">🔊</button>
-        </div>
+        <canvas class="lounge-visualizer" id="lounge-visualizer" aria-hidden="true"></canvas>
       </section>
 
       <section class="lounge-list-section">
@@ -123,7 +127,10 @@ function wire() {
 
   layer.querySelector('#lounge-theme-select').addEventListener('change', (e) => {
     setActiveTheme(e.target.value);
-    render();   // re-render so flavor copy + skin update immediately
+    stopVisualizer();
+    render();
+    const c = document.getElementById('lounge-visualizer');
+    if (c) startVisualizer(c, getCurrentTrackId);
   });
 
   layer.querySelector('#lounge-list').addEventListener('click', (e) => {
@@ -219,12 +226,16 @@ export function openLounge(onClose) {
   layer.classList.add('active');
   render();
 
+  const canvas = layer.querySelector('#lounge-visualizer');
+  if (canvas) startVisualizer(canvas, getCurrentTrackId);
+
   document.addEventListener('keydown', escClose);
 }
 
 export function close() {
   if (!opened) return;
   opened = false;
+  stopVisualizer();
   const layer = document.getElementById('lounge-layer');
   if (layer) {
     layer.classList.remove('active');
